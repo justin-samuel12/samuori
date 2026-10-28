@@ -109,14 +109,14 @@ export function LoginPage({ notice }: { notice?: string }) {
     <main className="samuori-auth-page samuori-auth-page--split" id="main">
       <div className="samuori-auth-split">
         <section className="samuori-auth-brand" aria-label="About Samuori">
-          <BrandMark
-            kind="stacked"
-            finish="3d"
-            className="samuori-auth-brand-logo w-[280px]"
-          />
-          <p className="samuori-motto samuori-auth-brand-motto">
-            Woven into one
-          </p>
+          <div className="samuori-auth-brand-head">
+            <BrandMark
+              kind="stacked"
+              finish="3d"
+              className="samuori-auth-brand-logo w-[280px]"
+            />
+            <p className="samuori-motto">Woven into one</p>
+          </div>
           <p className="samuori-auth-brand-lead">
             Upload a project and get a tested, governed container image, ready
             for your registries.
