@@ -4,6 +4,7 @@ import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import { TextField } from "../components/Field";
 import { Alert } from "../components/Feedback";
+import { navigate } from "../router";
 import { useCan } from "../session/session";
 import type { Scope } from "../session/can";
 
@@ -22,11 +23,9 @@ function when(at?: string, by?: string) {
 export function ArchiveProjectButton({
   project,
   scope,
-  onChange,
 }: {
   project: Project;
   scope: Scope;
-  onChange: (p: Project) => void;
 }) {
   const can = useCan();
   const [open, setOpen] = useState(false);
@@ -47,7 +46,10 @@ export function ArchiveProjectButton({
       return;
     }
     setOpen(false);
-    onChange(data.project);
+    navigate(
+      "/projects",
+      `${project.name} was archived. Tick "Show archived projects" to find it.`,
+    );
   }
 
   return (
@@ -130,9 +132,7 @@ export function ArchivedBanner({
         <p className="mb-0">
           Images already pushed to external registries were not deleted.
         </p>
-        {can("purgeProject", scope) && (
-          <PurgeAction project={project} onChange={onChange} again />
-        )}
+        {can("purgeProject", scope) && <PurgeAction project={project} again />}
       </Alert>
     );
 
@@ -171,11 +171,7 @@ export function ArchivedBanner({
         )}
       </div>
       {purging && (
-        <PurgeDialog
-          project={project}
-          onClose={() => setPurging(false)}
-          onChange={onChange}
-        />
+        <PurgeDialog project={project} onClose={() => setPurging(false)} />
       )}
     </Alert>
   );
@@ -183,11 +179,9 @@ export function ArchivedBanner({
 
 function PurgeAction({
   project,
-  onChange,
   again,
 }: {
   project: Project;
-  onChange: (p: Project) => void;
   again?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -198,13 +192,7 @@ function PurgeAction({
           {again ? "Purge again" : "Purge"}
         </Button>
       </div>
-      {open && (
-        <PurgeDialog
-          project={project}
-          onClose={() => setOpen(false)}
-          onChange={onChange}
-        />
-      )}
+      {open && <PurgeDialog project={project} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -212,11 +200,9 @@ function PurgeAction({
 function PurgeDialog({
   project,
   onClose,
-  onChange,
 }: {
   project: Project;
   onClose: () => void;
-  onChange: (p: Project) => void;
 }) {
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string>();
@@ -240,7 +226,10 @@ function PurgeDialog({
   }
 
   function close() {
-    if (result) onChange(result.project);
+    if (result) {
+      navigate("/projects", `${project.name} was purged.`);
+      return;
+    }
     onClose();
   }
 

@@ -8,11 +8,21 @@ function emit() {
 
 window.addEventListener("popstate", emit);
 
-export function navigate(to: string) {
+let notice: string | undefined;
+
+/** Navigates; notice is a one-line confirmation the next page shows once (takeNotice). */
+export function navigate(to: string, message?: string) {
+  notice = message;
   if (to === window.location.pathname + window.location.search) return;
   window.history.pushState(null, "", to);
   window.scrollTo(0, 0);
   emit();
+}
+
+export function takeNotice(): string | undefined {
+  const n = notice;
+  notice = undefined;
+  return n;
 }
 
 function subscribe(l: () => void) {

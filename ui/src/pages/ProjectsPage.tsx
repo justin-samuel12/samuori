@@ -13,7 +13,7 @@ import {
   PageHeader,
 } from "../components/Feedback";
 import { Table } from "../components/Table";
-import { navigate } from "../router";
+import { navigate, takeNotice } from "../router";
 import { useCan } from "../session/session";
 import { teamName, useTeams, type Team } from "./useTeams";
 import { correctName, slug } from "../format";
@@ -42,6 +42,7 @@ export function ProjectsPage() {
   const [error, setError] = useState<string>();
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [notice] = useState(takeNotice);
   const can = useCan();
   // Creating a project needs maintainer or administrator on its team or the organization, not on another project.
   const creatable = (teams ?? []).filter((t) =>
@@ -93,6 +94,7 @@ export function ProjectsPage() {
       <Checkbox isSelected={showArchived} onChange={setShowArchived}>
         Show archived projects
       </Checkbox>
+      {notice && <Alert tone="success">{notice}</Alert>}
       {error && <Alert>{error}</Alert>}
       {!items && !error && <Loading />}
       {items && (

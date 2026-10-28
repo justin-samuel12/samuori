@@ -76,11 +76,7 @@ export function ProjectPage({ id }: { id: string }) {
         title={project.name}
         actions={
           can("archiveProject", scope) && (
-            <ArchiveProjectButton
-              project={project}
-              scope={scope}
-              onChange={setProject}
-            />
+            <ArchiveProjectButton project={project} scope={scope} />
           )
         }
       />
