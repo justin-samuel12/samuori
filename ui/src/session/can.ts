@@ -69,13 +69,21 @@ export function allows(
   );
 }
 
+/** Operations the server allows only through an organization-wide binding. */
+const organizationOnly: ReadonlySet<OperationId> = new Set<OperationId>([
+  "purgeProject",
+]);
+
 export function can(
   me: { roles: readonly Binding[] },
   op: OperationId,
   scope?: Scope,
 ): boolean {
   if (scope?.archived && projectWork.has(op)) return false;
-  return allows(operationAccess[op], me.roles, scope);
+  const roles = organizationOnly.has(op)
+    ? me.roles.filter((b) => b.scopeType === "organization")
+    : me.roles;
+  return allows(operationAccess[op], roles, scope);
 }
 
 /** True when any of the operations is allowed, for a page or section that offers several. */

@@ -102,4 +102,13 @@ test("an archived project offers no new work; its maintainers and administrators
   );
   assert.equal(can(maintainer, "purgeProject", archived), false);
   assert.equal(can(admin, "purgeProject", archived), true);
+  assert.equal(
+    can(
+      { roles: [bind("administrator", "team", "t1")] },
+      "purgeProject",
+      archived,
+    ),
+    false,
+    "a team-scoped administrator",
+  );
 });
