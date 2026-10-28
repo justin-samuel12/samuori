@@ -5,6 +5,13 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **API usable from outside the repository (2026-10-28, owner request, ADR 0066).** The server publishes its
+  contract at `GET /api/v1/openapi.yml` and `/openapi.json` to any signed-in caller (ETag, private caching); Help →
+  API reference renders it with search, roles, parameters, schemas, the error format and curl examples for API
+  tokens; operations marked `deprecated: true` with dates answer with `Deprecation` and `Sunset` headers; stability
+  rules, `docs/developers/api.md` and `docs/developers/api-changelog.md` added. Runnable: API and UI;
+  `TestContractIsServedToSignedInCallers`, `TestDeprecationHeadersOnlyOnMarkedOperations`,
+  `TestDeprecationDatesAreChecked` and `ui/src/help/apiref.test.ts` pass. Not yet run: a browser check of the page.
 - **Editable infrastructure administration (2026-10-28, owner request).** Nodes & workers deletes pools that never
   had workers (otherwise offers to disable), lists, adds and deletes locations (refusals name the pools, projects or
   federation route that use them; no rename API), and lists and revokes unused worker join codes

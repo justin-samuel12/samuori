@@ -44,6 +44,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
 
+  /openapi.yml:
+    get:
+      tags: [system]
+      operationId: getApiContract
+      description: This API contract as published by the running release. Revalidate with If-None-Match. ADR 0066.
+      x-samuori-roles: [any]
+      responses:
+        "200":
+          description: The OpenAPI document, as written
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/yaml:
+              schema: { type: string }
+        "304": { description: Unchanged since the ETag in If-None-Match }
+
+  /openapi.json:
+    get:
+      tags: [system]
+      operationId: getApiContractJson
+      description: The same contract as JSON, for tools without a YAML parser and for the in-app API reference.
+      x-samuori-roles: [any]
+      responses:
+        "200":
+          description: The OpenAPI document as JSON
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "304": { description: Unchanged since the ETag in If-None-Match }
+
   /system/storage:
     get:
       tags: [system]

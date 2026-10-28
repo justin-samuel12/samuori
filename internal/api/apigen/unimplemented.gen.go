@@ -517,6 +517,14 @@ func (Unimplemented) MarkNotificationsRead(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "MarkNotificationsRead")
 }
 
+func (Unimplemented) GetApiContractJson(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "GetApiContractJson")
+}
+
+func (Unimplemented) GetApiContract(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "GetApiContract")
+}
+
 func (Unimplemented) GetOperation(w http.ResponseWriter, r *http.Request, _ Id) {
 	NotImplemented(w, r, "GetOperation")
 }

@@ -73,6 +73,12 @@ export function HelpPage({ topic }: { topic?: string }) {
                 </ul>
               </div>
             ))}
+            <Link
+              href="/help/api-reference"
+              className="block rounded-lg px-3 py-1.5 text-sm text-muted no-underline outline-none hover:bg-raised hover:text-fg data-[focus-visible]:outline-2 data-[focus-visible]:outline-[var(--samuori-focus)]"
+            >
+              API reference
+            </Link>
           </nav>
           <article className="samuori-card min-w-0">
             {guide.isPending && current ? (

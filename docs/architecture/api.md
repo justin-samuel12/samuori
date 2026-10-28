@@ -1,7 +1,8 @@
 # API Design (`/api/v1`)
 
 Status: **M0 skeleton** (2026-10-19). Contract: `api/openapi/samuori.v1.yml` (OpenAPI 3.0.3, ADR 0010). Checked by
-`tools/apicheck` (see "Automated checks"). No services implement it yet.
+`tools/apicheck` (see "Automated checks"). The running server publishes it (ADR 0066); a guide for callers is
+[developers/api.md](../developers/api.md).
 
 ## Principles
 
@@ -66,6 +67,8 @@ Status: **M0 skeleton** (2026-10-19). Contract: `api/openapi/samuori.v1.yml` (Op
 | Browser auth | `samuori_session` cookie, plus `X-CSRF-Token` on unsafe methods |
 | API clients | Bearer tokens (scoped, expiring API tokens or OIDC) |
 | Streaming | Build events over server-sent events with `Last-Event-ID` resume |
+| Contract | Served at `/openapi.yml` and `/openapi.json` to any signed-in caller, with `ETag` and private caching (ADR 0066) |
+| Deprecation | `deprecated: true` with `x-samuori-deprecated` and optional `x-samuori-sunset` dates; the guard adds `Deprecation` and `Sunset` headers and refuses to start on a missing date or under 30 days' notice (ADR 0066, `docs/developers/api-changelog.md`) |
 
 ## Automated checks (`tools/apicheck`)
 
@@ -100,6 +103,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | Area | Method | Path | Operation | Roles |
 |---|---|---|---|---|
 | system | GET | `/system/health` | `getHealth` | public |
+| system | GET | `/openapi.yml` | `getApiContract` | any (ADR 0066) |
+| system | GET | `/openapi.json` | `getApiContractJson` | any (ADR 0066) |
 | system | GET | `/system/diagnostics` | `getDiagnostics` | administrator, operator |
 | system | GET | `/build-caches` | `listBuildCaches` | administrator, operator |
 | system | POST | `/build-caches/{scope}/purge` | `purgeBuildCache` | administrator |

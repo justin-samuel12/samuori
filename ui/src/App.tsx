@@ -4,6 +4,7 @@ import { Link, RouterProvider } from "react-aria-components";
 import { Button } from "./components/Button";
 import { Alert, PageHeader, PageSpinner } from "./components/Feedback";
 import { AccountPage } from "./pages/AccountPage";
+import { ApiReferencePage } from "./help/ApiReferencePage";
 import { HelpPage } from "./help/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -125,6 +126,11 @@ const routes: Route[] = [
   },
   { path: "/account", title: "Account", render: () => <AccountPage /> },
   { path: "/help", title: "Help", render: () => <HelpPage /> },
+  {
+    path: "/help/api-reference",
+    title: "API reference",
+    render: () => <ApiReferencePage />,
+  },
   {
     path: "/help/:topic",
     title: "Help",

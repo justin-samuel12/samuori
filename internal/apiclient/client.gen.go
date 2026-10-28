@@ -12157,6 +12157,16 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	MarkNotificationsRead(ctx context.Context, params *MarkNotificationsReadParams, body MarkNotificationsReadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApiContractJson performs a GET /openapi.json (the `GetApiContractJson` operationId) request.
+	//
+	// The same contract as JSON, for tools without a YAML parser and for the in-app API reference.
+	GetApiContractJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiContract performs a GET /openapi.yml (the `GetApiContract` operationId) request.
+	//
+	// This API contract as published by the running release. Revalidate with If-None-Match. ADR 0066.
+	GetApiContract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetOperation performs a GET /operations/{operationId} (the `GetOperation` operationId) request.
 	GetOperation(ctx context.Context, operationId Id, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15953,6 +15963,36 @@ func (c *Client) MarkNotificationsReadWithBody(ctx context.Context, params *Mark
 // Takes a body of the `application/json` content type.
 func (c *Client) MarkNotificationsRead(ctx context.Context, params *MarkNotificationsReadParams, body MarkNotificationsReadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewMarkNotificationsReadRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetApiContractJson performs a GET /openapi.json (the `GetApiContractJson` operationId) request.
+//
+// The same contract as JSON, for tools without a YAML parser and for the in-app API reference.
+func (c *Client) GetApiContractJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiContractJsonRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetApiContract performs a GET /openapi.yml (the `GetApiContract` operationId) request.
+//
+// This API contract as published by the running release. Revalidate with If-None-Match. ADR 0066.
+func (c *Client) GetApiContract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiContractRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -26103,6 +26143,60 @@ func NewMarkNotificationsReadRequestWithBody(server string, params *MarkNotifica
 	return req, nil
 }
 
+// NewGetApiContractJsonRequest constructs an http.Request for the GetApiContractJson method
+func NewGetApiContractJsonRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/openapi.json")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiContractRequest constructs an http.Request for the GetApiContract method
+func NewGetApiContractRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/openapi.yml")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetOperationRequest constructs an http.Request for the GetOperation method
 func NewGetOperationRequest(server string, operationId Id) (*http.Request, error) {
 	var err error
@@ -36239,6 +36333,20 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	MarkNotificationsReadWithResponse(ctx context.Context, params *MarkNotificationsReadParams, body MarkNotificationsReadJSONRequestBody, reqEditors ...RequestEditorFn) (*MarkNotificationsReadResponse, error)
 
+	// GetApiContractJsonWithResponse performs a GET /openapi.json (the `GetApiContractJson` operationId) request.
+	//
+	// The same contract as JSON, for tools without a YAML parser and for the in-app API reference.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetApiContractJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiContractJsonResponse, error)
+
+	// GetApiContractWithResponse performs a GET /openapi.yml (the `GetApiContract` operationId) request.
+	//
+	// This API contract as published by the running release. Revalidate with If-None-Match. ADR 0066.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetApiContractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiContractResponse, error)
+
 	// GetOperationWithResponse performs a GET /operations/{operationId} (the `GetOperation` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -43902,6 +44010,102 @@ func (r MarkNotificationsReadResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r MarkNotificationsReadResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetApiContractJsonResponse200Headers the declared response headers of an HTTP 200 response for GetApiContractJson
+type GetApiContractJsonResponse200Headers struct {
+	ETag *string
+}
+
+type GetApiContractJsonResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *map[string]interface{}
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetApiContractJsonResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetApiContractJsonResponse) GetJSON200() *map[string]interface{} {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r GetApiContractJsonResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiContractJsonResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiContractJsonResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetApiContractJsonResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetApiContractResponse200Headers the declared response headers of an HTTP 200 response for GetApiContract
+type GetApiContractResponse200Headers struct {
+	ETag *string
+}
+
+type GetApiContractResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// YAML200 the response for an HTTP 200 `application/yaml` response
+	YAML200 *string
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetApiContractResponse200Headers
+}
+
+// GetYAML200 returns the response for an HTTP 200 `application/yaml` response
+func (r GetApiContractResponse) GetYAML200() *string {
+	return r.YAML200
+}
+
+// GetBody returns the raw response body bytes
+func (r GetApiContractResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiContractResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiContractResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetApiContractResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -54743,6 +54947,32 @@ func (c *ClientWithResponses) MarkNotificationsReadWithResponse(ctx context.Cont
 	return ParseMarkNotificationsReadResponse(rsp)
 }
 
+// GetApiContractJsonWithResponse performs a GET /openapi.json (the `GetApiContractJson` operationId) request.
+//
+// The same contract as JSON, for tools without a YAML parser and for the in-app API reference.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetApiContractJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiContractJsonResponse, error) {
+	rsp, err := c.GetApiContractJson(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiContractJsonResponse(rsp)
+}
+
+// GetApiContractWithResponse performs a GET /openapi.yml (the `GetApiContract` operationId) request.
+//
+// This API contract as published by the running release. Revalidate with If-None-Match. ADR 0066.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetApiContractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiContractResponse, error) {
+	rsp, err := c.GetApiContract(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiContractResponse(rsp)
+}
+
 // GetOperationWithResponse performs a GET /operations/{operationId} (the `GetOperation` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -62010,6 +62240,90 @@ func ParseMarkNotificationsReadResponse(rsp *http.Response) (*MarkNotificationsR
 	response := &MarkNotificationsReadResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiContractJsonResponse parses an HTTP response from a GetApiContractJsonWithResponse call
+func ParseGetApiContractJsonResponse(rsp *http.Response) (*GetApiContractJsonResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiContractJsonResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetApiContractJsonResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetApiContractResponse parses an HTTP response from a GetApiContractWithResponse call
+func ParseGetApiContractResponse(rsp *http.Response) (*GetApiContractResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiContractResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
+		var dest string
+		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.YAML200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetApiContractResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil

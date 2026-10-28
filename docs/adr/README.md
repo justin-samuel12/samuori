@@ -71,3 +71,4 @@ owner approval.
 | [0062](0062-editing-withdrawing-and-deleting.md) | Renaming, withdrawing requests and deleting pipelines and conversions | Accepted (provisional) |
 | [0064](0064-editing-secret-grants.md) | Editing secret grants | Accepted (provisional) |
 | [0065](0065-disabling-users-and-resetting-passwords.md) | Disabling users and resetting passwords | Accepted (provisional) |
+| [0066](0066-api-stability-and-deprecation.md) | API stability and deprecation | Accepted (provisional) |

@@ -39,3 +39,6 @@ Roles come from an administrator, under Administration > Users, or from your gro
 On **Account**, **Edit name** changes how your name is shown. With a local password, **Change password** asks for
 the current one; your other signed-in browsers are signed out, and your API tokens keep working. If an administrator
 reset your password, sign in with the temporary one and choose a new password on the sign-in page.
+
+**API tokens** on Account let scripts call the API as you. The [API reference](/help/api-reference) lists every
+operation, the roles it needs and a `curl` example; send the token as `Authorization: Bearer <token>`.

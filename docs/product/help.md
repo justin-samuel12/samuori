@@ -28,3 +28,8 @@ covers the filtering, the load checks and broken links between guides.
 
 `PageHeader` takes `help="<id>"`; a **?** next to the page title links to that guide, shown only when the server
 lists it for the user.
+
+**API reference** (`/help/api-reference`, linked from the guide list and the account menu) renders the contract the
+server publishes at `/api/v1/openapi.json` for every signed-in user: operations by tag with search, roles,
+parameters, schemas and a curl example for an API token (ADR 0066). It is not a guide and is not role-filtered;
+the contract holds no data.

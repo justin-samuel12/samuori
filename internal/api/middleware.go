@@ -42,8 +42,16 @@ func guard(next http.Handler, authn Authenticator, limit *limiter) (http.Handler
 	if err != nil {
 		return nil, err
 	}
+	return guardSpec(spec, next, authn, limit)
+}
+
+func guardSpec(spec *openapi3.T, next http.Handler, authn Authenticator, limit *limiter) (http.Handler, error) {
 	spec.Servers = nil
 	router, err := legacy.NewRouter(spec)
+	if err != nil {
+		return nil, err
+	}
+	deprecated, err := deprecations(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +65,9 @@ func guard(next http.Handler, authn Authenticator, limit *limiter) (http.Handler
 		}
 		op := route.Operation
 		telemetry.SetOperation(r.Context(), op.OperationID)
+		if d, ok := deprecated[op]; ok {
+			d.apply(w.Header())
+		}
 		maxBody := bodyLimit(op)
 		if r.ContentLength > maxBody {
 			apigen.WriteProblem(w, http.StatusRequestEntityTooLarge, "too_large", "the request body is too large")

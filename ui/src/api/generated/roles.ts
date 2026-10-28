@@ -96,6 +96,8 @@ export const operationAccess = {
   extendSession: "any",
   finishOidcSignIn: "public",
   fulfillRepositoryRequest: ["administrator"],
+  getApiContract: "any",
+  getApiContractJson: "any",
   getArtifact: ["developer", "maintainer", "publisher", "security-reviewer", "administrator"],
   getAuditPolicy: ["administrator", "security-reviewer"],
   getBuild: ["developer", "maintainer", "publisher", "operator", "security-reviewer", "administrator"],

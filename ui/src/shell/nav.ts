@@ -3,6 +3,7 @@ import {
   Bell,
   Blocks,
   Boxes,
+  Braces,
   ChefHat,
   Cpu,
   Database,
@@ -365,6 +366,7 @@ export const accountNav: NavItem[] = [
   { href: "/account", label: "Account", icon: UserRound },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/help", label: "Help", icon: LifeBuoy },
+  { href: "/help/api-reference", label: "API reference", icon: Braces },
 ];
 
 function hasOrgRole(me: Me, role: string): boolean {

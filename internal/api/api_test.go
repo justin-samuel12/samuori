@@ -107,8 +107,8 @@ func allOperations(t *testing.T) []opCase {
 			out = append(out, opCase{method, fillPath(path), op, h})
 		}
 	}
-	if len(out) != 306 {
-		t.Fatalf("operations = %d, want 306", len(out))
+	if len(out) != 308 {
+		t.Fatalf("operations = %d, want 308", len(out))
 	}
 	return out
 }
