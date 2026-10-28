@@ -28,11 +28,25 @@ at admission.
 A spec's `application.runtime.versionConstraint` (`>=22`, `^3.12`, `~3.12`, `3.13`, `net9.0`, ranges joined with
 spaces or commas) selects the newest matching runtime. Built-in versions are approved until an organization
 administrator deprecates (admission warns) or withdraws (admission refuses; developers no longer see it) them, with
-a recorded reason.
+a recorded reason. The same applies to each runtime a built-in version ships, for example Node.js 22 in
+`node-service` 1.0.0 while 24 stays approved ([ADR 0060](../adr/0060-deprecating-and-withdrawing-built-in-runtimes.md));
+see below. Both decisions apply at admission and planning; builds already planned or queued keep their plan.
 
 ### Organization runtimes ([ADR 0051](../adr/0051-organization-runtimes.md))
 
-Shipped runtimes are read-only and change only with a Samuori release. Organization administrators add runtime versions
+Shipped runtimes change only with a Samuori release, but each organization decides whether to keep offering each
+one ([ADR 0060](../adr/0060-deprecating-and-withdrawing-built-in-runtimes.md)). Under **Recipes & base images >
+Runtimes** an organization administrator can **Deprecate**, **Withdraw** or **Approve again** a shipped runtime, each
+with a required reason (`PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status`). Decisions are
+stored per organization (migration 00068, `shipped_runtime_status`; no row means approved, and approving again
+deletes the row) and audited as `recipe.runtime.status`. A deprecated runtime still builds; admission warns
+(`runtime-deprecated`) with the reason, and New image marks it. A withdrawn runtime is hidden from developers in
+`GET /recipes` and New image, a range such as `>=22` resolves to the newest runtime still available, and a
+constraint that matches only withdrawn runtimes is refused at admission (`runtime-unavailable`) naming the runtime and
+the reason. An organization runtime with the same label as a withdrawn shipped runtime stays shadowed, so withdrawing
+never swaps in other images.
+
+Organization administrators add runtime versions
 to a built-in recipe version under **Recipes & base images > Runtimes**: a label (`26`, `3.14`, `10.0`), a build
 image and a run image, both full references pinned by digest and allowed by the base-image policy, and an optional
 note. They are stored per organization (migration 00060, `organization_runtimes`), so Samuori updates never overwrite
@@ -43,7 +57,7 @@ checked against the policy again); any administrator may approve, as for custom 
 `GET /recipes` with `source: organization` and the wizard offers them; drafts and withdrawn runtimes never appear
 there. Withdrawing needs a reason, keeps the runtime as history and refuses new builds that ask for it.
 
-A version constraint resolves to the newest matching **shipped** runtime first, and only when none matches to the
+A version constraint resolves to the newest matching non-withdrawn **shipped** runtime first, and only when none matches to the
 newest matching approved organization runtime, so adding a runtime never changes what an existing spec builds. If a
 later release ships the same label, the shipped one wins and the added one is marked superseded. A constraint that
 matches only a draft or withdrawn runtime is refused at admission (`runtime-unavailable`) with that reason. The plan

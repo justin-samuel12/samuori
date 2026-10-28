@@ -11,6 +11,12 @@ independently testable, not scope cuts. Update task status in the same PR that d
   which deletes its stored files and keeps its records and audit trail. Runnable: API and UI; `TestProjectArchiveRestorePurge`
   and the `can` test pass on SQLite. Not yet run: PostgreSQL, a browser check, and a purge with a real worker's
   images or a remote blob store.
+- **Deprecating and withdrawing built-in runtimes (2026-10-28, owner decision, ADR 0060).** Organization
+  administrators deprecate (builds warn), withdraw (hidden from developers, refused at admission with the reason;
+  ranges resolve to the newest runtime still available) or approve again one runtime a built-in recipe version ships,
+  stored per organization (migration 00068) and audited. A same-label organization runtime stays shadowed. Runnable:
+  API and the Runtimes dialog; `TestShippedRuntimeStatus`, `TestShippedRuntimeStatusAPI` and the `can` test pass on
+  SQLite. Not yet run: PostgreSQL, a browser check of the dialog and New image, and a worker build.
 - **Name and brand (2026-10-27, owner decision, ADR 0057).** The logo and palette come from `docs/brand/`; the UI
   loading indicators animate the mark.
 - **Deployment files (2026-10-28, owner request, ADR 0059).** Next to "Download image", the build page and the Images

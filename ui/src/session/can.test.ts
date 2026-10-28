@@ -112,3 +112,15 @@ test("an archived project offers no new work; its maintainers and administrators
     "a team-scoped administrator",
   );
 });
+
+test("only organization administrators decide about shipped runtimes", () => {
+  assert.equal(can(admin, "setShippedRuntimeStatus"), true);
+  assert.equal(can(dev, "setShippedRuntimeStatus"), false);
+  assert.equal(
+    can(
+      { roles: [bind("administrator", "team", "t1")] },
+      "setShippedRuntimeStatus",
+    ),
+    false,
+  );
+});

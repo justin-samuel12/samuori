@@ -66,3 +66,4 @@ owner approval.
 | [0057](0057-samuori-name-and-brand.md) | The product is named Samuori | Accepted |
 | [0058](0058-archiving-restoring-and-purging-projects.md) | Archiving, restoring and purging projects | Accepted (provisional) |
 | [0059](0059-deployment-files-for-built-images.md) | Deployment files for built images | Accepted (provisional) |
+| [0060](0060-deprecating-and-withdrawing-built-in-runtimes.md) | Deprecating and withdrawing built-in runtimes | Accepted (provisional) |

@@ -147,6 +147,9 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | specs | POST | `/specs/{specId}/revisions` | `createSpecRevision` | developer, maintainer |
 | specs | GET | `/specs/{specId}/revisions/{revision}` | `getSpecRevision` | developer, maintainer, publisher, administrator |
 | specs | POST | `/specs/{specId}/revisions/{revision}/admission-checks` | `checkAdmission` | developer, maintainer |
+| recipes | GET | `/recipes` | `listRecipes` | developer, maintainer, publisher, administrator (withdrawn versions and runtimes: administrators only) |
+| recipes | PUT | `/recipes/{recipeId}/versions/{version}/status` | `setRecipeStatus` | administrator (organization) |
+| recipes | PUT | `/recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status` | `setShippedRuntimeStatus` | administrator (organization; ADR 0060) |
 | builds | GET | `/builds` | `listBuilds` | developer, maintainer, publisher, operator, security-reviewer, administrator |
 | builds | POST | `/builds` | `createBuild` | developer, maintainer |
 | builds | GET | `/builds/{buildId}` | `getBuild` | developer, maintainer, publisher, operator, security-reviewer, administrator |

@@ -586,6 +586,9 @@ func (c *Checker) recipeChecks(ctx context.Context, orgID string, d *buildspec.D
 		semantic("runtime-unavailable", "/spec/application/runtime/versionConstraint", "%s", err.Error())
 		return nil
 	}
+	if rt.Status == recipes.Deprecated {
+		warn("runtime-deprecated", "Runtime %s of %s is deprecated: %s", rt.Version, recipe.DisplayName, rt.Reason)
+	}
 	if _, _, problems := rt.SystemPackages(app.Type, ref.SystemPackages); len(problems) > 0 {
 		for _, p := range problems {
 			semantic("system-packages-unsupported", p.Path, "%s", p.Message)
@@ -602,6 +605,9 @@ func (c *Checker) recipeChecks(ctx context.Context, orgID string, d *buildspec.D
 		if err != nil {
 			semantic("frontend-runtime", "/spec/build/recipe/frontend/node", "%s", err.Error())
 			return images
+		}
+		if nrt.Status == recipes.Deprecated {
+			warn("runtime-deprecated", "Frontend runtime %s of %s is deprecated: %s", nrt.Version, node.DisplayName, nrt.Reason)
 		}
 		images = append(images, nrt.BuildImage)
 	}

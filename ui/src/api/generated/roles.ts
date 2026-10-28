@@ -255,6 +255,7 @@ export const operationAccess = {
   setPublicationDeprecation: ["publisher", "maintainer"],
   setRecipeStatus: ["administrator"],
   setServiceIdentityState: ["administrator"],
+  setShippedRuntimeStatus: ["administrator"],
   setTopologyPlan: ["administrator"],
   startCaRotation: ["administrator"],
   startDiscovery: ["developer", "maintainer"],

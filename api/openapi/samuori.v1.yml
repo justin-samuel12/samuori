@@ -1924,7 +1924,7 @@ paths:
       x-samuori-roles: [developer, maintainer, publisher, administrator]
       responses:
         "200":
-          description: Recipe versions with this organization's status; developers see approved and deprecated versions only
+          description: "Recipe versions with this organization's status; developers see approved and deprecated versions and runtimes only"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RecipeList" }
@@ -2006,6 +2006,27 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/OrganizationRuntime" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status:
+    parameters:
+      - { name: recipeId, in: path, required: true, schema: { type: string, pattern: "^[a-z0-9-]{1,64}$" } }
+      - { name: version, in: path, required: true, schema: { type: string, pattern: "^[0-9A-Za-z.+-]{1,32}$" } }
+      - { name: label, in: path, required: true, schema: { type: string, pattern: "^[0-9A-Za-z.+-]{1,16}$" } }
+    put:
+      tags: [recipes]
+      operationId: setShippedRuntimeStatus
+      description: "Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShippedRuntimeStatusWrite" }
+      responses:
+        "204": { description: Status recorded and audited }
         "404": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
 
@@ -7469,7 +7490,10 @@ components:
         version: { type: string }
         images: { type: array, items: { type: string }, description: Digest-pinned base images }
         source: { type: string, enum: [built-in, organization], description: "Shipped with Samuori, or added by an administrator (ADR 0051)" }
-        status: { type: string, enum: [approved], description: Only approved runtimes are offered for builds }
+        status: { type: string, enum: [approved, deprecated, withdrawn], description: "This organization's decision about a shipped runtime (ADR 0060); deprecated runtimes build with a warning, and only administrators see withdrawn ones" }
+        statusReason: { type: string }
+        statusBy: { type: string, description: The administrator who decided; administrators only }
+        statusAt: { $ref: "#/components/schemas/Timestamp" }
         id: { type: string, description: The organization runtime's ID }
     RecipeRuntimes:
       type: object
@@ -7579,6 +7603,13 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/Recipe" } }
+    ShippedRuntimeStatusWrite:
+      type: object
+      additionalProperties: false
+      required: [status, reason]
+      properties:
+        status: { type: string, enum: [approved, deprecated, withdrawn] }
+        reason: { type: string, minLength: 3, maxLength: 1024 }
     RecipeStatusWrite:
       type: object
       required: [status, reason]

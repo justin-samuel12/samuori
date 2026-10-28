@@ -8,7 +8,7 @@ import (
 	"samuori.invalid/samuori/internal/recipes"
 )
 
-func toRecipeRuntime(rt recipes.Runtime) apigen.RecipeRuntime {
+func toRecipeRuntime(rt recipes.Runtime, admin bool) apigen.RecipeRuntime {
 	images := rt.Images("http-service")
 	for _, img := range rt.RunImages {
 		images = append(images, img)
@@ -17,7 +17,25 @@ func toRecipeRuntime(rt recipes.Runtime) apigen.RecipeRuntime {
 	if rt.ID != "" {
 		out.Id = ptr(rt.ID)
 	}
+	if rt.Source == recipes.SourceBuiltIn && rt.Status != recipes.Approved {
+		out.Status, out.StatusReason = apigen.RecipeRuntimeStatus(rt.Status), ptr(rt.Reason)
+		if admin {
+			out.StatusBy, out.StatusAt = ptr(rt.StatusBy), rt.StatusAt
+		}
+	}
 	return out
+}
+
+func (a *API) SetShippedRuntimeStatus(w http.ResponseWriter, r *http.Request, id, version, label string, _ apigen.SetShippedRuntimeStatusParams) {
+	var in apigen.ShippedRuntimeStatusWrite
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	if err := a.recipes.SetShippedRuntimeStatus(r.Context(), principal(r), id, version, label, string(in.Status), in.Reason, requestID(w)); err != nil {
+		a.recipeRuntimeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func toOrgRuntime(o recipes.OrgRuntime) apigen.OrganizationRuntime {
@@ -62,7 +80,7 @@ func (a *API) ListRecipeRuntimes(w http.ResponseWriter, r *http.Request, id, ver
 	}
 	out := apigen.RecipeRuntimes{Shipped: []apigen.RecipeRuntime{}, Organization: []apigen.OrganizationRuntime{}}
 	for _, rt := range shipped {
-		out.Shipped = append(out.Shipped, toRecipeRuntime(rt))
+		out.Shipped = append(out.Shipped, toRecipeRuntime(rt, principal(r).IsOrgAdmin()))
 	}
 	for _, o := range org {
 		out.Organization = append(out.Organization, toOrgRuntime(o))

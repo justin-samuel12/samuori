@@ -45,3 +45,17 @@ refuses new builds. Every step is recorded in the audit log.
 
 Builds from custom recipes go through the same checks as any build: base-image and image-source rules, network
 rules, secret grants, validation and publication.
+
+## Built-in recipes and their runtimes
+
+Built-in recipes come with Samuori. Under **Recipes & base images**, **Change status** deprecates or withdraws a
+whole recipe version. **Runtimes** lists the runtime versions it ships, for example Node.js 22 and 24, and lets you
+act on one of them with a reason:
+
+- **Deprecate**: builds still run, with a warning that shows your reason. New image marks it as deprecated.
+- **Withdraw**: developers no longer see it. A spec that asks for exactly that version is refused with your reason;
+  a range such as `>=22` uses the newest runtime still available.
+- **Approve again**: offers it as before.
+
+Your decisions belong to your organization and are kept when Samuori is updated. They apply to new builds; builds
+already queued are not changed. Every decision is recorded in the audit log.

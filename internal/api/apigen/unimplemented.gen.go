@@ -729,6 +729,10 @@ func (Unimplemented) DecideRecipeRuntime(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "DecideRecipeRuntime")
 }
 
+func (Unimplemented) SetShippedRuntimeStatus(w http.ResponseWriter, r *http.Request, _ string, _ string, _ string, _ SetShippedRuntimeStatusParams) {
+	NotImplemented(w, r, "SetShippedRuntimeStatus")
+}
+
 func (Unimplemented) SetRecipeStatus(w http.ResponseWriter, r *http.Request, _ string, _ string, _ SetRecipeStatusParams) {
 	NotImplemented(w, r, "SetRecipeStatus")
 }

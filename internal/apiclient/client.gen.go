@@ -2719,13 +2719,19 @@ func (e RecipeRuntimeSource) Valid() bool {
 
 // Defines values for RecipeRuntimeStatus.
 const (
-	RecipeRuntimeStatusApproved RecipeRuntimeStatus = "approved"
+	RecipeRuntimeStatusApproved   RecipeRuntimeStatus = "approved"
+	RecipeRuntimeStatusDeprecated RecipeRuntimeStatus = "deprecated"
+	RecipeRuntimeStatusWithdrawn  RecipeRuntimeStatus = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the RecipeRuntimeStatus enum.
 func (e RecipeRuntimeStatus) Valid() bool {
 	switch e {
 	case RecipeRuntimeStatusApproved:
+		return true
+	case RecipeRuntimeStatusDeprecated:
+		return true
+	case RecipeRuntimeStatusWithdrawn:
 		return true
 	default:
 		return false
@@ -3575,6 +3581,27 @@ func (e SensitiveFindingOutcome) Valid() bool {
 	case SensitiveFindingOutcomeRequireException:
 		return true
 	case SensitiveFindingOutcomeWarn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ShippedRuntimeStatusWriteStatus.
+const (
+	ShippedRuntimeStatusWriteStatusApproved   ShippedRuntimeStatusWriteStatus = "approved"
+	ShippedRuntimeStatusWriteStatusDeprecated ShippedRuntimeStatusWriteStatus = "deprecated"
+	ShippedRuntimeStatusWriteStatusWithdrawn  ShippedRuntimeStatusWriteStatus = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the ShippedRuntimeStatusWriteStatus enum.
+func (e ShippedRuntimeStatusWriteStatus) Valid() bool {
+	switch e {
+	case ShippedRuntimeStatusWriteStatusApproved:
+		return true
+	case ShippedRuntimeStatusWriteStatusDeprecated:
+		return true
+	case ShippedRuntimeStatusWriteStatusWithdrawn:
 		return true
 	default:
 		return false
@@ -7609,15 +7636,20 @@ type RecipeRuntime struct {
 	// Source Shipped with Samuori, or added by an administrator (ADR 0051)
 	Source RecipeRuntimeSource `json:"source"`
 
-	// Status Only approved runtimes are offered for builds
-	Status  RecipeRuntimeStatus `json:"status"`
-	Version string              `json:"version"`
+	// Status This organization's decision about a shipped runtime (ADR 0060); deprecated runtimes build with a warning, and only administrators see withdrawn ones
+	Status   RecipeRuntimeStatus `json:"status"`
+	StatusAt *Timestamp          `json:"statusAt,omitempty"`
+
+	// StatusBy The administrator who decided; administrators only
+	StatusBy     *string `json:"statusBy,omitempty"`
+	StatusReason *string `json:"statusReason,omitempty"`
+	Version      string  `json:"version"`
 }
 
 // RecipeRuntimeSource Shipped with Samuori, or added by an administrator (ADR 0051)
 type RecipeRuntimeSource string
 
-// RecipeRuntimeStatus Only approved runtimes are offered for builds
+// RecipeRuntimeStatus This organization's decision about a shipped runtime (ADR 0060); deprecated runtimes build with a warning, and only administrators see withdrawn ones
 type RecipeRuntimeStatus string
 
 // RecipeRuntimes defines model for RecipeRuntimes.
@@ -8368,6 +8400,15 @@ type SessionTimeouts struct {
 type SetupStatus struct {
 	Completed bool `json:"completed"`
 }
+
+// ShippedRuntimeStatusWrite defines model for ShippedRuntimeStatusWrite.
+type ShippedRuntimeStatusWrite struct {
+	Reason string                          `json:"reason"`
+	Status ShippedRuntimeStatusWriteStatus `json:"status"`
+}
+
+// ShippedRuntimeStatusWriteStatus defines model for ShippedRuntimeStatusWrite.Status.
+type ShippedRuntimeStatusWriteStatus string
 
 // SignInProviderList defines model for SignInProviderList.
 type SignInProviderList struct {
@@ -9838,6 +9879,12 @@ type DecideRecipeRuntimeParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// SetShippedRuntimeStatusParams defines parameters for SetShippedRuntimeStatus.
+type SetShippedRuntimeStatusParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // SetRecipeStatusParams defines parameters for SetRecipeStatus.
 type SetRecipeStatusParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -10478,6 +10525,9 @@ type CreateRecipeRuntimeJSONRequestBody = OrganizationRuntimeWrite
 
 // DecideRecipeRuntimeJSONRequestBody defines body for DecideRecipeRuntime for application/json ContentType.
 type DecideRecipeRuntimeJSONRequestBody = OrganizationRuntimeAction
+
+// SetShippedRuntimeStatusJSONRequestBody defines body for SetShippedRuntimeStatus for application/json ContentType.
+type SetShippedRuntimeStatusJSONRequestBody = ShippedRuntimeStatusWrite
 
 // SetRecipeStatusJSONRequestBody defines body for SetRecipeStatus for application/json ContentType.
 type SetRecipeStatusJSONRequestBody = RecipeStatusWrite
@@ -11964,6 +12014,18 @@ type ClientInterface interface {
 	//
 	// Approves a draft runtime, or withdraws a draft or approved one, with a reason. Withdrawn runtimes stay as history.
 	DecideRecipeRuntime(ctx context.Context, recipeId string, version string, runtimeId string, params *DecideRecipeRuntimeParams, body DecideRecipeRuntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetShippedRuntimeStatusWithBody performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+	SetShippedRuntimeStatusWithBody(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetShippedRuntimeStatus performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+	SetShippedRuntimeStatus(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, body SetShippedRuntimeStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetRecipeStatusWithBody performs a PUT /recipes/{recipeId}/versions/{version}/status (the `SetRecipeStatus` operationId) request,
 	// with any type of body and a specified content type.
@@ -16303,6 +16365,38 @@ func (c *Client) DecideRecipeRuntimeWithBody(ctx context.Context, recipeId strin
 // Approves a draft runtime, or withdraws a draft or approved one, with a reason. Withdrawn runtimes stay as history.
 func (c *Client) DecideRecipeRuntime(ctx context.Context, recipeId string, version string, runtimeId string, params *DecideRecipeRuntimeParams, body DecideRecipeRuntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDecideRecipeRuntimeRequest(c.Server, recipeId, version, runtimeId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetShippedRuntimeStatusWithBody performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request,
+// with any type of body and a specified content type.
+//
+// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+func (c *Client) SetShippedRuntimeStatusWithBody(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetShippedRuntimeStatusRequestWithBody(c.Server, recipeId, version, label, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetShippedRuntimeStatus performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+func (c *Client) SetShippedRuntimeStatus(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, body SetShippedRuntimeStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetShippedRuntimeStatusRequest(c.Server, recipeId, version, label, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -27506,6 +27600,82 @@ func NewDecideRecipeRuntimeRequestWithBody(server string, recipeId string, versi
 	return req, nil
 }
 
+// NewSetShippedRuntimeStatusRequest calls the generic SetShippedRuntimeStatus builder with application/json body
+func NewSetShippedRuntimeStatusRequest(server string, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, body SetShippedRuntimeStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetShippedRuntimeStatusRequestWithBody(server, recipeId, version, label, params, "application/json", bodyReader)
+}
+
+// NewSetShippedRuntimeStatusRequestWithBody constructs an http.Request for the SetShippedRuntimeStatus method, with any body, and a specified content type
+func NewSetShippedRuntimeStatusRequestWithBody(server string, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recipeId", recipeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "version", version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "label", label, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/recipes/%s/versions/%s/shipped-runtimes/%s/status", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewSetRecipeStatusRequest calls the generic SetRecipeStatus builder with application/json body
 func NewSetRecipeStatusRequest(server string, recipeId string, version string, params *SetRecipeStatusParams, body SetRecipeStatusJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -33674,6 +33844,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Approves a draft runtime, or withdraws a draft or approved one, with a reason. Withdrawn runtimes stay as history.
 	DecideRecipeRuntimeWithResponse(ctx context.Context, recipeId string, version string, runtimeId string, params *DecideRecipeRuntimeParams, body DecideRecipeRuntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*DecideRecipeRuntimeResponse, error)
+
+	// SetShippedRuntimeStatusWithBodyWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SetShippedRuntimeStatusWithBodyWithResponse(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetShippedRuntimeStatusResponse, error)
+
+	// SetShippedRuntimeStatusWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+	SetShippedRuntimeStatusWithResponse(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, body SetShippedRuntimeStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetShippedRuntimeStatusResponse, error)
 
 	// SetRecipeStatusWithBodyWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/status (the `SetRecipeStatus` operationId) request,
 	// with any type of body and a specified content type.
@@ -43157,6 +43341,54 @@ func (r DecideRecipeRuntimeResponse) ContentType() string {
 	return ""
 }
 
+type SetShippedRuntimeStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SetShippedRuntimeStatusResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r SetShippedRuntimeStatusResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r SetShippedRuntimeStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetShippedRuntimeStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetShippedRuntimeStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetShippedRuntimeStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetRecipeStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -50820,6 +51052,32 @@ func (c *ClientWithResponses) DecideRecipeRuntimeWithResponse(ctx context.Contex
 	return ParseDecideRecipeRuntimeResponse(rsp)
 }
 
+// SetShippedRuntimeStatusWithBodyWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request,
+// with any type of body and a specified content type.
+//
+// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetShippedRuntimeStatusWithBodyWithResponse(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetShippedRuntimeStatusResponse, error) {
+	rsp, err := c.SetShippedRuntimeStatusWithBody(ctx, recipeId, version, label, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetShippedRuntimeStatusResponse(rsp)
+}
+
+// SetShippedRuntimeStatusWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status (the `SetShippedRuntimeStatus` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan.
+func (c *ClientWithResponses) SetShippedRuntimeStatusWithResponse(ctx context.Context, recipeId string, version string, label string, params *SetShippedRuntimeStatusParams, body SetShippedRuntimeStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetShippedRuntimeStatusResponse, error) {
+	rsp, err := c.SetShippedRuntimeStatus(ctx, recipeId, version, label, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetShippedRuntimeStatusResponse(rsp)
+}
+
 // SetRecipeStatusWithBodyWithResponse performs a PUT /recipes/{recipeId}/versions/{version}/status (the `SetRecipeStatus` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -58358,6 +58616,42 @@ func ParseDecideRecipeRuntimeResponse(rsp *http.Response) (*DecideRecipeRuntimeR
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetShippedRuntimeStatusResponse parses an HTTP response from a SetShippedRuntimeStatusWithResponse call
+func ParseSetShippedRuntimeStatusResponse(rsp *http.Response) (*SetShippedRuntimeStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetShippedRuntimeStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest Problem

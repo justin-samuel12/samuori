@@ -16,8 +16,8 @@ order: 20
    policy, and says why. Or choose **Railpack** (plans and builds from your project files on a build worker, when an
    administrator enabled it), **Samuori recipe** (an approved recipe; your organization's own recipes appear in the
    **Recipe** list too, with their few settings; for a built-in recipe choose the **Runtime version** here, where
-   versions your organization added are marked), or **Custom Dockerfile** if your project has one (already chosen if
-   you picked it in step 2). **Paketo Buildpacks** detects and builds your project with the builder your
+   versions your organization added or deprecated are marked and withdrawn ones are not offered), or **Custom
+   Dockerfile** if your project has one (already chosen if you picked it in step 2). **Paketo Buildpacks** detects and builds your project with the builder your
    administrator approved, on a build worker; set buildpack options such as `BP_NODE_VERSION` under
    `spec.build.buildpacks.env` and give each build secret a binding under `spec.build.buildpacks.bindings` (for an npm
    token, type `npmrc` with key `.npmrc`). A choice your administrator has not allowed is greyed out with the reason.

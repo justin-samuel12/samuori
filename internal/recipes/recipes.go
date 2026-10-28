@@ -5,9 +5,11 @@ package recipes
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"samuori.invalid/samuori/internal/egress"
 	"samuori.invalid/samuori/internal/recipedef"
@@ -28,10 +30,13 @@ const (
 type Defaults = catalog.Defaults
 
 // Runtime is a shipped runtime or one an administrator added to a built-in recipe (ADR 0051). ID is set only for
-// organization runtimes.
+// organization runtimes. A shipped runtime's Status is the organization's decision about it (ADR 0060); StatusBy and
+// StatusAt are set when an administrator made one.
 type Runtime struct {
 	catalog.Runtime
 	ID, Source, Status, Reason string
+	StatusBy                   string
+	StatusAt                   *time.Time
 }
 
 type Recipe struct {
@@ -45,7 +50,8 @@ type Recipe struct {
 	EgressPresets    []string  `json:"egressPresets"`
 	Runtimes         []Runtime `json:"runtimes"`
 	Defaults         Defaults  `json:"defaults"`
-	// Unavailable holds organization runtimes that are drafts or withdrawn, so resolution can say why.
+	// Unavailable holds withdrawn shipped runtimes and organization runtimes that are drafts or withdrawn, so
+	// resolution can say why.
 	Unavailable []Runtime `json:"-"`
 	// Custom is set for an administrator's recipe (ADR 0041); it has no runtimes.
 	Custom *recipedef.Definition `json:"-"`
@@ -125,7 +131,7 @@ func (c *Catalog) All() []Recipe {
 
 // ResolveRuntime picks the newest runtime satisfying constraint (for example ">=22", "^3.12", "3.13", "net9.0").
 // Shipped runtimes win over organization runtimes, so adding one never changes what an existing spec resolves to
-// (ADR 0051).
+// (ADR 0051). Withdrawn runtimes are never picked (ADR 0060).
 func (r Recipe) ResolveRuntime(constraint string) (Runtime, error) {
 	for _, source := range []string{SourceBuiltIn, SourceOrganization} {
 		best, err := newest(r.Runtimes, source, constraint)
@@ -136,7 +142,7 @@ func (r Recipe) ResolveRuntime(constraint string) (Runtime, error) {
 			return *best, nil
 		}
 	}
-	if rt, _ := newest(r.Unavailable, SourceOrganization, constraint); rt != nil {
+	if rt, _ := newest(r.Unavailable, "", constraint); rt != nil {
 		if rt.Status == Draft {
 			return Runtime{}, fmt.Errorf("runtime %s of %s is a draft that an administrator has not approved", rt.Version, r.DisplayName)
 		}
@@ -149,11 +155,34 @@ func (r Recipe) ResolveRuntime(constraint string) (Runtime, error) {
 	return Runtime{}, fmt.Errorf("no runtime of %s matches %q (available: %s)", r.DisplayName, constraint, strings.Join(versions, ", "))
 }
 
+// Listed is what a recipe offers, shipped runtimes first; withWithdrawn adds the withdrawn shipped runtimes that
+// administrators manage.
+func (r Recipe) Listed(withWithdrawn bool) []Runtime {
+	out := slices.Clone(r.Runtimes)
+	if withWithdrawn {
+		for _, rt := range r.Unavailable {
+			if rt.Source == SourceBuiltIn {
+				out = append(out, rt)
+			}
+		}
+	}
+	slices.SortStableFunc(out, func(a, b Runtime) int {
+		if a.Source != b.Source {
+			if a.Source == SourceBuiltIn {
+				return -1
+			}
+			return 1
+		}
+		return compare(parse(a.Version), parse(b.Version))
+	})
+	return out
+}
+
 func newest(list []Runtime, source, constraint string) (*Runtime, error) {
 	var best *Runtime
 	for i := range list {
 		rt := list[i]
-		if rt.Source != source {
+		if source != "" && rt.Source != source {
 			continue
 		}
 		ok, err := Satisfies(rt.Version, constraint)

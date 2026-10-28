@@ -6,6 +6,91 @@ import (
 	"testing"
 )
 
+// TestShippedRuntimeStatusAPI: only organization administrators deprecate, withdraw and approve again a shipped
+// runtime; developers stop seeing a withdrawn one, admission refuses it by name with the reason and resolves ranges to
+// the next runtime, a deprecated one builds with a warning, and approving again restores it (ADR 0060).
+func TestShippedRuntimeStatusAPI(t *testing.T) {
+	l := newLiveWith(t, false, smallChunks(), nil)
+	alice, _, projA, _ := twoTeams(t, l)
+	admin := l.adminMember(t)
+	var teamA string
+	_ = l.db.SQL.QueryRow(l.db.Rebind(`SELECT team_id FROM projects WHERE id = ?`), projA).Scan(&teamA)
+	carol := l.memberWith(t, admin, "carol", "maintainer", teamA)
+	set := func(m member, label, status string) int {
+		st, _, _ := l.json(t, m, "PUT", "/recipes/node-service/versions/1.0.0/shipped-runtimes/"+label+"/status", fmt.Sprintf(`{"status":%q,"reason":"Node.js 22 reaches end of life"}`, status), nil)
+		return st
+	}
+	listed := func(m member) map[string]map[string]any {
+		_, _, list := l.json(t, m, "GET", "/recipes", "", nil)
+		out := map[string]map[string]any{}
+		for _, it := range list["items"].([]any) {
+			if r := it.(map[string]any); r["id"] == "node-service" {
+				for _, rt := range r["runtimes"].([]any) {
+					out[rt.(map[string]any)["version"].(string)] = rt.(map[string]any)
+				}
+			}
+		}
+		return out
+	}
+
+	for name, m := range map[string]member{"developer": alice, "maintainer": carol} {
+		if st := set(m, "22", "withdrawn"); st != 403 {
+			t.Fatalf("a %s withdrew a shipped runtime: %d", name, st)
+		}
+	}
+	if st := set(admin, "21", "withdrawn"); st != 404 {
+		t.Fatalf("an unshipped label = %d", st)
+	}
+	if st := set(admin, "22", "withdrawn"); st != 204 {
+		t.Fatalf("withdraw = %d", st)
+	}
+	if _, ok := listed(alice)["22"]; ok {
+		t.Fatal("a developer still sees the withdrawn runtime")
+	}
+	if rt := listed(admin)["22"]; rt["status"] != "withdrawn" || rt["statusBy"] == nil || rt["statusReason"] != "Node.js 22 reaches end of life" {
+		t.Fatalf("administrators see %v", rt)
+	}
+
+	snap := l.snapshotOf(t, alice, projA, map[string]string{"package.json": `{"name":"api","scripts":{"start":"node server.js"}}`, "server.js": "x"})
+	specs := 0
+	admission := func(constraint string) body {
+		specs++
+		spec := strings.Replace(strings.Replace(nodeSpec, `">=22"`, `"`+constraint+`"`, 1), "orders-api", fmt.Sprint("orders-api-", specs), 1)
+		st, _, created := l.json(t, alice, "POST", "/projects/"+projA+"/specs", doc(spec), nil)
+		if st != 201 {
+			t.Fatalf("create spec = %d %v", st, created)
+		}
+		_, _, rep := l.json(t, alice, "POST", "/specs/"+created["specId"].(string)+"/revisions/1/admission-checks", `{"snapshotId":"`+snap+`"}`, nil)
+		return rep
+	}
+	if rep := admission("22"); rep["admissible"] != false || !strings.Contains(fmt.Sprint(rep["semanticErrors"]), "runtime 22 of Node.js application has been withdrawn by an administrator: Node.js 22 reaches end of life") {
+		t.Fatalf("admission of a withdrawn runtime = %v", rep)
+	}
+	if rep := admission(">=22"); codes(rep, "semanticErrors") != "" {
+		t.Fatalf(">=22 with 22 withdrawn = %v", rep)
+	}
+
+	if st := set(admin, "24", "deprecated"); st != 204 {
+		t.Fatalf("deprecate = %d", st)
+	}
+	if rt := listed(alice)["24"]; rt["status"] != "deprecated" || rt["statusBy"] != nil {
+		t.Fatalf("a developer sees %v", rt)
+	}
+	if rep := admission("24"); codes(rep, "semanticErrors") != "" || !strings.Contains(codes(rep, "warnings"), "runtime-deprecated") {
+		t.Fatalf("admission of a deprecated runtime = %v", rep)
+	}
+
+	if st := set(admin, "22", "approved"); st != 204 {
+		t.Fatalf("approve again = %d", st)
+	}
+	if rt := listed(alice)["22"]; rt["status"] != "approved" {
+		t.Fatalf("approving again did not restore 22: %v", rt)
+	}
+	if rep := admission("22"); codes(rep, "semanticErrors") != "" {
+		t.Fatalf("admission after approving again = %v", rep)
+	}
+}
+
 // TestOrganizationRuntimesAPI: only organization administrators add and decide runtimes; images must be pinned
 // and allowed; developers see approved runtimes only, and admission refuses draft and withdrawn ones (ADR 0051).
 func TestOrganizationRuntimesAPI(t *testing.T) {

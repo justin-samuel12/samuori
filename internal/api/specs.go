@@ -222,8 +222,8 @@ func (a *API) ListRecipes(w http.ResponseWriter, r *http.Request) {
 		if st.Reason != "" {
 			item.StatusReason = ptr(st.Reason)
 		}
-		for _, rt := range rc.Runtimes {
-			item.Runtimes = append(item.Runtimes, toRecipeRuntime(rt))
+		for _, rt := range rc.Listed(p.IsOrgAdmin()) {
+			item.Runtimes = append(item.Runtimes, toRecipeRuntime(rt, p.IsOrgAdmin()))
 		}
 		defaults := map[string]string{}
 		if rc.Defaults.Install != "" {

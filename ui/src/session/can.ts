@@ -72,6 +72,7 @@ export function allows(
 /** Operations the server allows only through an organization-wide binding. */
 const organizationOnly: ReadonlySet<OperationId> = new Set<OperationId>([
   "purgeProject",
+  "setShippedRuntimeStatus",
 ]);
 
 export function can(

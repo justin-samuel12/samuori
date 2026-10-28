@@ -1669,15 +1669,19 @@ function EngineAt() {
   );
 }
 
-/** The recipe's approved runtimes, organization ones labelled, plus a constraint the spec already holds. */
+/** The recipe's runtimes that are not withdrawn, organization and deprecated ones labelled, plus a constraint the spec already holds. */
 function runtimeOptions(recipe: Recipe, current: unknown) {
-  const options = recipe.runtimes.map((r) => ({
-    id: r.version,
-    label:
-      r.source === "organization"
-        ? `${r.version} (added by your organization)`
-        : r.version,
-  }));
+  const options = recipe.runtimes
+    .filter((r) => r.status !== "withdrawn")
+    .map((r) => ({
+      id: r.version,
+      label:
+        r.source === "organization"
+          ? `${r.version} (added by your organization)`
+          : r.status === "deprecated"
+            ? `${r.version} (deprecated${r.statusReason ? `: ${r.statusReason}` : ""})`
+            : r.version,
+    }));
   if (
     typeof current === "string" &&
     current &&

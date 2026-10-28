@@ -171,12 +171,24 @@ func refusal(name, why string, err error) error {
 	return &Invalid{fmt.Sprintf("the base-image policy now refuses the %s: %s", name, why)}
 }
 
-// ListRuntimes returns a built-in recipe version's shipped runtimes and its organization runtimes. Administrators
-// see drafts and withdrawn runtimes too; everyone else sees only approved ones.
+// ListRuntimes returns a built-in recipe version's shipped runtimes with this organization's status for each, and
+// its organization runtimes. Administrators see drafts and withdrawn runtimes too; everyone else sees only approved
+// organization runtimes and no withdrawn shipped ones.
 func (s *Statuses) ListRuntimes(ctx context.Context, actor authz.Principal, recipeID, recipeVersion string) ([]Runtime, []OrgRuntime, error) {
 	r, ok := s.cat.Get(recipeID, recipeVersion)
 	if !ok {
 		return nil, nil, ErrNotFound
+	}
+	decided, err := s.shippedStatuses(ctx, `org_id = ? AND recipe_id = ? AND recipe_version = ?`, actor.OrgID, recipeID, recipeVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+	shipped := []Runtime{}
+	for _, rt := range r.Runtimes {
+		rt = decided.apply(r, rt)
+		if rt.Status != Withdrawn || actor.IsOrgAdmin() {
+			shipped = append(shipped, rt)
+		}
 	}
 	list, err := s.orgRuntimes(ctx, `org_id = ? AND recipe_id = ? AND recipe_version = ?`, actor.OrgID, recipeID, recipeVersion)
 	if err != nil {
@@ -189,14 +201,19 @@ func (s *Statuses) ListRuntimes(ctx context.Context, actor authz.Principal, reci
 			out = append(out, o)
 		}
 	}
-	return slices.Clone(r.Runtimes), out, nil
+	return shipped, out, nil
 }
 
-// withOrgRuntimes adds a built-in recipe version's organization runtimes: approved ones are offered, unless a
-// shipped runtime has the same label; drafts and withdrawn ones only explain a refusal.
+// withOrgRuntimes applies the organization's decisions to built-in recipe versions: withdrawn shipped runtimes and
+// organization runtimes that are drafts or withdrawn only explain a refusal; approved organization runtimes are
+// offered unless a shipped runtime has the same label, even a withdrawn one (ADR 0060).
 func (s *Statuses) withOrgRuntimes(ctx context.Context, orgID string, recipes []Recipe) error {
 	list, err := s.orgRuntimes(ctx, `org_id = ?`, orgID)
-	if err != nil || len(list) == 0 {
+	if err != nil {
+		return err
+	}
+	decided, err := s.shippedStatuses(ctx, `org_id = ?`, orgID)
+	if err != nil || len(list) == 0 && len(decided) == 0 {
 		return err
 	}
 	for i := range recipes {
@@ -204,14 +221,21 @@ func (s *Statuses) withOrgRuntimes(ctx context.Context, orgID string, recipes []
 		if r.Custom != nil {
 			continue
 		}
-		r.Runtimes = slices.Clone(r.Runtimes)
-		shipped := len(r.Runtimes)
+		shipped := r.Runtimes
+		r.Runtimes = make([]Runtime, 0, len(shipped))
+		for _, rt := range shipped {
+			if rt = decided.apply(*r, rt); rt.Status == Withdrawn {
+				r.Unavailable = append(r.Unavailable, rt)
+			} else {
+				r.Runtimes = append(r.Runtimes, rt)
+			}
+		}
 		for _, o := range list {
 			if o.RecipeID != r.ID || o.RecipeVersion != r.Version {
 				continue
 			}
 			switch {
-			case slices.ContainsFunc(r.Runtimes[:shipped], func(rt Runtime) bool { return rt.Version == o.Label }):
+			case slices.ContainsFunc(shipped, func(rt Runtime) bool { return rt.Version == o.Label }):
 			case o.Status == Approved:
 				r.Runtimes = append(r.Runtimes, o.runtime())
 			default:
@@ -220,6 +244,73 @@ func (s *Statuses) withOrgRuntimes(ctx context.Context, orgID string, recipes []
 		}
 	}
 	return nil
+}
+
+type shippedDecisions map[string]Runtime
+
+func shippedKey(recipeID, recipeVersion, label string) string {
+	return recipeID + "@" + recipeVersion + "/" + label
+}
+
+func (d shippedDecisions) apply(r Recipe, rt Runtime) Runtime {
+	if got, ok := d[shippedKey(r.ID, r.Version, rt.Version)]; ok {
+		rt.Status, rt.Reason, rt.StatusBy, rt.StatusAt = got.Status, got.Reason, got.StatusBy, got.StatusAt
+	}
+	return rt
+}
+
+func (s *Statuses) shippedStatuses(ctx context.Context, where string, args ...any) (shippedDecisions, error) {
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT recipe_id, recipe_version, label, status, reason, updated_by, updated_at FROM shipped_runtime_status WHERE `+where), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := shippedDecisions{}
+	for rows.Next() {
+		var id, version, label string
+		var rt Runtime
+		var at time.Time
+		if err := rows.Scan(&id, &version, &label, &rt.Status, &rt.Reason, &rt.StatusBy, &at); err != nil {
+			return nil, err
+		}
+		rt.StatusAt = &at
+		out[shippedKey(id, version, label)] = rt
+	}
+	return out, rows.Err()
+}
+
+// SetShippedRuntimeStatus records an organization administrator's decision about one shipped runtime, with a reason
+// (ADR 0060). Approved deletes the decision; the audit log keeps every change. It applies from the next admission;
+// builds already planned keep their plan.
+func (s *Statuses) SetShippedRuntimeStatus(ctx context.Context, actor authz.Principal, recipeID, recipeVersion, label, status, reason, requestID string) error {
+	if !actor.IsOrgAdmin() {
+		return ErrForbidden
+	}
+	r, ok := s.cat.Get(recipeID, recipeVersion)
+	if !ok || !slices.ContainsFunc(r.Runtimes, func(rt Runtime) bool { return rt.Version == label }) {
+		return ErrNotFound
+	}
+	if !slices.Contains([]string{Approved, Deprecated, Withdrawn}, status) {
+		return &Invalid{"the status must be approved, deprecated or withdrawn"}
+	}
+	reason = strings.TrimSpace(reason)
+	if len(reason) < 3 {
+		return &Invalid{"a reason is required"}
+	}
+	return s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM shipped_runtime_status WHERE org_id = ? AND recipe_id = ? AND recipe_version = ? AND label = ?`),
+			actor.OrgID, recipeID, recipeVersion, label); err != nil {
+			return err
+		}
+		if status != Approved {
+			if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO shipped_runtime_status (org_id, recipe_id, recipe_version, label, status, reason, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
+				actor.OrgID, recipeID, recipeVersion, label, status, reason, actor.ID, time.Now().UTC()); err != nil {
+				return err
+			}
+		}
+		return audit.Append(ctx, s.db, tx, audit.Event{Actor: actor, Action: "recipe.runtime.status", ResourceType: "recipe-runtime",
+			ResourceID: shippedKey(recipeID, recipeVersion, label), Outcome: "succeeded", Reason: status + ": " + reason, RequestID: requestID})
+	})
 }
 
 func (s *Statuses) orgRuntime(ctx context.Context, orgID, recipeID, recipeVersion, id string) (OrgRuntime, error) {

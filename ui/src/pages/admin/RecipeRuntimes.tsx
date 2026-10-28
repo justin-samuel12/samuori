@@ -6,11 +6,41 @@ import { TextField } from "../../components/Field";
 import { Alert, Badge, Loading } from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
+import { useCan } from "../../session/session";
 
 type OrgRuntime = Schemas["OrganizationRuntime"];
 type Runtimes = Schemas["RecipeRuntimes"];
+type ShippedRuntime = Schemas["RecipeRuntime"];
+type ShippedStatus = ShippedRuntime["status"];
 
-const tone = { draft: "neutral", approved: "ok", withdrawn: "bad" } as const;
+const tone = {
+  draft: "neutral",
+  approved: "ok",
+  deprecated: "warn",
+  withdrawn: "bad",
+} as const;
+
+const shippedActions: {
+  status: ShippedStatus;
+  label: string;
+  shownWhen: (s: ShippedStatus) => boolean;
+}[] = [
+  {
+    status: "deprecated",
+    label: "Deprecate",
+    shownWhen: (s) => s === "approved",
+  },
+  {
+    status: "withdrawn",
+    label: "Withdraw",
+    shownWhen: (s) => s !== "withdrawn",
+  },
+  {
+    status: "approved",
+    label: "Approve again",
+    shownWhen: (s) => s !== "approved",
+  },
+];
 
 /** Runtimes of one built-in recipe version: shipped ones are read-only; administrators add their own (ADR 0051). */
 export function RecipeRuntimes({
@@ -28,6 +58,11 @@ export function RecipeRuntimes({
     runtime: OrgRuntime;
     action: "approve" | "withdraw";
   }>();
+  const [settingShipped, setSettingShipped] = useState<{
+    runtime: ShippedRuntime;
+    status: ShippedStatus;
+  }>();
+  const canSetShipped = useCan()("setShippedRuntimeStatus");
   const path = { recipeId: recipe.id, version: recipe.version };
   const load = useCallback(async () => {
     const { data } = await api.GET(
@@ -40,6 +75,7 @@ export function RecipeRuntimes({
   const done = () => {
     setAdding(false);
     setDeciding(undefined);
+    setSettingShipped(undefined);
     void load();
     onChange();
   };
@@ -59,8 +95,10 @@ export function RecipeRuntimes({
           <>
             <h3 className="mt-0">Shipped with Samuori</h3>
             <p className="samuori-muted">
-              Read-only. A Samuori release changes these; your own runtimes
-              below are kept across updates.
+              A Samuori release changes these. You can deprecate one (builds
+              warn) or withdraw it (new builds are refused and developers no
+              longer see it); your decisions and your own runtimes below are
+              kept across updates.
             </p>
             <Table
               label="Shipped runtimes"
@@ -85,7 +123,51 @@ export function RecipeRuntimes({
                     </ul>
                   ),
                 },
+                {
+                  id: "status",
+                  name: "Status",
+                  render: (r) => (
+                    <>
+                      <Badge tone={tone[r.status]}>{r.status}</Badge>
+                      {r.statusReason && (
+                        <div className="samuori-muted text-xs">
+                          {r.statusReason}
+                        </div>
+                      )}
+                    </>
+                  ),
+                },
+                ...(canSetShipped
+                  ? [
+                      {
+                        id: "actions",
+                        name: "Actions",
+                        render: (r: ShippedRuntime) => (
+                          <span className="inline-flex flex-wrap gap-1">
+                            {shippedActions
+                              .filter((a) => a.shownWhen(r.status))
+                              .map((a) => (
+                                <Button
+                                  key={a.status}
+                                  variant="quiet"
+                                  aria-label={`${a.label} runtime ${r.version}`}
+                                  onPress={() =>
+                                    setSettingShipped({
+                                      runtime: r,
+                                      status: a.status,
+                                    })
+                                  }
+                                >
+                                  {a.label}
+                                </Button>
+                              ))}
+                          </span>
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
+              dependencies={[data, canSetShipped]}
             />
             <div className="samuori-section-head">
               <div>
@@ -206,7 +288,95 @@ export function RecipeRuntimes({
           onDone={done}
         />
       )}
+      {settingShipped && (
+        <SetShippedStatus
+          path={path}
+          runtime={settingShipped.runtime}
+          status={settingShipped.status}
+          onClose={() => setSettingShipped(undefined)}
+          onDone={done}
+        />
+      )}
     </>
+  );
+}
+
+const shippedCopy: Record<ShippedStatus, { verb: string; effect: string }> = {
+  deprecated: {
+    verb: "Deprecate",
+    effect:
+      "Builds that use it still run, with a warning that shows your reason. Developers see it marked as deprecated.",
+  },
+  withdrawn: {
+    verb: "Withdraw",
+    effect:
+      "Developers no longer see it. New builds that ask for exactly this version are refused with your reason; a range such as >=22 picks the newest runtime still available. Builds already queued are not affected.",
+  },
+  approved: {
+    verb: "Approve again",
+    effect:
+      "Developers can choose it again and builds use it without a warning.",
+  },
+};
+
+function SetShippedStatus({
+  path,
+  runtime,
+  status,
+  onClose,
+  onDone,
+}: {
+  path: { recipeId: string; version: string };
+  runtime: ShippedRuntime;
+  status: ShippedStatus;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const { verb, effect } = shippedCopy[status];
+  async function save() {
+    setBusy(true);
+    setError(undefined);
+    const { response, error } = await api.PUT(
+      "/recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status",
+      {
+        params: { path: { ...path, label: runtime.version } },
+        body: { status, reason },
+      },
+    );
+    setBusy(false);
+    if (response.ok) onDone();
+    else setError(describeError(error));
+  }
+  return (
+    <Dialog
+      title={`${verb} runtime ${runtime.version}`}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <p className="mt-0">{effect}</p>
+      {error && <Alert>{error}</Alert>}
+      <TextField
+        label="Reason"
+        value={reason}
+        onChange={setReason}
+        isRequired
+      />
+      <div className="samuori-actions">
+        <Button variant="secondary" onPress={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant={status === "withdrawn" ? "danger" : "primary"}
+          isDisabled={busy || reason.trim().length < 3}
+          onPress={() => void save()}
+        >
+          {verb}
+        </Button>
+      </div>
+    </Dialog>
   );
 }
 

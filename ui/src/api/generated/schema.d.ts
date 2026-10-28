@@ -1766,6 +1766,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recipeId: string;
+                version: string;
+                label: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Deprecates, withdraws or approves again one runtime a built-in recipe version ships, for this organization, with a reason (ADR 0060). It applies from the next admission; builds already planned keep their plan. */
+        put: operations["setShippedRuntimeStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/custom-recipes": {
         parameters: {
             query?: never;
@@ -6513,10 +6534,14 @@ export interface components {
              */
             source: "built-in" | "organization";
             /**
-             * @description Only approved runtimes are offered for builds
+             * @description This organization's decision about a shipped runtime (ADR 0060); deprecated runtimes build with a warning, and only administrators see withdrawn ones
              * @enum {string}
              */
-            status: "approved";
+            status: "approved" | "deprecated" | "withdrawn";
+            statusReason?: string;
+            /** @description The administrator who decided; administrators only */
+            statusBy?: string;
+            statusAt?: components["schemas"]["Timestamp"];
             /** @description The organization runtime's ID */
             id?: string;
         };
@@ -6606,6 +6631,11 @@ export interface components {
         };
         RecipeList: {
             items: components["schemas"]["Recipe"][];
+        };
+        ShippedRuntimeStatusWrite: {
+            /** @enum {string} */
+            status: "approved" | "deprecated" | "withdrawn";
+            reason: string;
         };
         RecipeStatusWrite: {
             /** @enum {string} */
@@ -10164,7 +10194,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Recipe versions with this organization's status; developers see approved and deprecated versions only */
+            /** @description Recipe versions with this organization's status; developers see approved and deprecated versions and runtimes only */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -10289,6 +10319,37 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrganizationRuntime"];
                 };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    setShippedRuntimeStatus: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                recipeId: string;
+                version: string;
+                label: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShippedRuntimeStatusWrite"];
+            };
+        };
+        responses: {
+            /** @description Status recorded and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];

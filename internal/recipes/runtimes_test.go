@@ -110,3 +110,82 @@ func TestOrganizationRuntimeResolution(t *testing.T) {
 		t.Errorf("another organization sees these runtimes: %+v", org)
 	}
 }
+
+// TestShippedRuntimeStatus: only organization administrators deprecate or withdraw a shipped runtime; a withdrawn
+// one is never resolved, not even through an organization runtime with the same label; deprecated ones still resolve;
+// approving again clears the decision; other organizations are unaffected (ADR 0060).
+func TestShippedRuntimeStatus(t *testing.T) {
+	ctx := context.Background()
+	s, d := newRuntimeStore(t)
+	if _, err := d.SQL.ExecContext(ctx, `INSERT INTO organizations (id, name, created_at) VALUES ('o2', 'other', ?)`, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	admin := authz.Principal{ID: "admin", OrgID: "o1", Kind: authz.User, Bindings: []authz.Binding{{Role: authz.Administrator, ScopeType: authz.ScopeOrganization, ScopeID: "o1"}}}
+	dev := authz.Principal{ID: "dev", OrgID: "o1", Kind: authz.User, Bindings: []authz.Binding{{Role: authz.Developer, ScopeType: authz.ScopeOrganization, ScopeID: "o1"}}}
+	resolve := func(org, constraint string) (Runtime, error) {
+		r, _, err := s.Get(ctx, org, "node-service", "1.0.0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r.ResolveRuntime(constraint)
+	}
+	set := func(p authz.Principal, label, status, reason string) error {
+		return s.SetShippedRuntimeStatus(ctx, p, "node-service", "1.0.0", label, status, reason, "")
+	}
+
+	if err := set(dev, "22", Withdrawn, "end of life"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("a developer withdrew a shipped runtime: %v", err)
+	}
+	if err := set(admin, "21", Withdrawn, "end of life"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("an unshipped label = %v", err)
+	}
+	var inv *Invalid
+	if err := set(admin, "22", Withdrawn, " "); !errors.As(err, &inv) {
+		t.Fatalf("a withdrawal without a reason = %v", err)
+	}
+	if err := set(admin, "22", Withdrawn, "end of life"); err != nil {
+		t.Fatal(err)
+	}
+	if rt, err := resolve("o1", ">=22"); err != nil || rt.Version != "24" {
+		t.Errorf(">=22 resolved to %+v, %v; want 24", rt, err)
+	}
+	if _, err := resolve("o1", "22"); err == nil || !strings.Contains(err.Error(), "runtime 22 of Node.js application has been withdrawn by an administrator: end of life") {
+		t.Errorf("a withdrawn shipped runtime resolved: %v", err)
+	}
+	node22 := "docker.io/library/node:22-bookworm-slim@sha256:" + strings.Repeat("d", 64)
+	if _, err := d.SQL.ExecContext(ctx, `INSERT INTO organization_runtimes (id, org_id, recipe_id, recipe_version, label, build_image, run_image, status, created_by, created_at) VALUES ('same', 'o1', 'node-service', '1.0.0', '22', ?, ?, 'approved', 'admin', ?)`,
+		node22, node22, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	if rt, err := resolve("o1", "22"); err == nil {
+		t.Errorf("an organization runtime replaced a withdrawn shipped one: %+v", rt)
+	}
+	if rt, err := resolve("o2", "22"); err != nil || rt.Version != "22" || rt.Status != Approved {
+		t.Errorf("another organization is affected: %+v, %v", rt, err)
+	}
+	if shipped, _, _ := s.ListRuntimes(ctx, dev, "node-service", "1.0.0"); len(shipped) != 1 || shipped[0].Version != "24" {
+		t.Errorf("a developer lists %+v", shipped)
+	}
+	if shipped, _, _ := s.ListRuntimes(ctx, admin, "node-service", "1.0.0"); len(shipped) != 2 || shipped[0].Status != Withdrawn || shipped[0].StatusBy != "admin" || shipped[0].StatusAt == nil {
+		t.Errorf("an administrator lists %+v", shipped)
+	}
+
+	if err := set(admin, "24", Deprecated, "move to 26"); err != nil {
+		t.Fatal(err)
+	}
+	if rt, err := resolve("o1", ">=22"); err != nil || rt.Version != "24" || rt.Status != Deprecated || rt.Reason != "move to 26" {
+		t.Errorf("a deprecated runtime = %+v, %v", rt, err)
+	}
+	if err := set(admin, "22", Approved, "extended support"); err != nil {
+		t.Fatal(err)
+	}
+	if rt, err := resolve("o1", "22"); err != nil || rt.Source != SourceBuiltIn || rt.Status != Approved {
+		t.Errorf("approving again did not restore 22: %+v, %v", rt, err)
+	}
+	var rows, audited int
+	_ = d.SQL.QueryRow(`SELECT COUNT(*) FROM shipped_runtime_status WHERE org_id = 'o1'`).Scan(&rows)
+	_ = d.SQL.QueryRow(`SELECT COUNT(*) FROM audit_events WHERE action = 'recipe.runtime.status'`).Scan(&audited)
+	if rows != 1 || audited != 3 {
+		t.Errorf("rows = %d, audited = %d; want 1 and 3", rows, audited)
+	}
+}

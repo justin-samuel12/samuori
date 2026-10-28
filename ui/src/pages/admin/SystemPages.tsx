@@ -342,7 +342,9 @@ export function RecipesPage() {
                 .map((x) =>
                   x.source === "organization"
                     ? `${x.version} (added)`
-                    : x.version,
+                    : x.status === "approved"
+                      ? x.version
+                      : `${x.version} (${x.status})`,
                 )
                 .join(", "),
           },
@@ -600,7 +602,9 @@ function RecipeDetails({
             render: (r) =>
               r.source === "organization"
                 ? `${r.version} (added by your organization)`
-                : r.version,
+                : r.status === "approved"
+                  ? r.version
+                  : `${r.version} (${r.status}${r.statusReason ? `: ${r.statusReason}` : ""})`,
           },
           {
             id: "images",
