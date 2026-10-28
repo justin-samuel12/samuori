@@ -155,6 +155,9 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | builds | GET | `/builds/{buildId}/events` | `streamBuildEvents` | developer, maintainer, operator, security-reviewer, administrator |
 | builds | GET | `/builds/{buildId}/logs` | `getBuildLogs` | developer, maintainer, operator, security-reviewer, administrator |
 | artifacts | GET | `/artifacts/{artifactId}` | `getArtifact` | developer, maintainer, publisher, security-reviewer, administrator |
+| artifacts | GET | `/artifacts/{artifactId}/deploy` | `getDeploymentFiles` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; ADR 0059) |
+| artifacts | GET | `/artifacts/{artifactId}/deploy/compose` | `downloadDeploymentCompose` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
+| artifacts | GET | `/artifacts/{artifactId}/deploy/helm` | `downloadDeploymentHelmChart` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
 | validation | GET | `/artifacts/{artifactId}/validations` | `listValidations` | developer, maintainer, publisher, security-reviewer, administrator |
 | validation | POST | `/artifacts/{artifactId}/validations` | `startRevalidation` | maintainer, security-reviewer, administrator |
 | validation | GET | `/validations/{validationId}` | `getValidation` | developer, maintainer, publisher, security-reviewer, administrator |

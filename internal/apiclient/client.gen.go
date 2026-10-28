@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"go.yaml.in/yaml/v3"
+
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
@@ -5247,6 +5249,36 @@ type Decision struct {
 	Reason  string `json:"reason"`
 }
 
+// DeploymentFiles defines model for DeploymentFiles.
+type DeploymentFiles struct {
+	// ArtifactId ULID
+	ArtifactId      Id     `json:"artifactId"`
+	ChartFilename   string `json:"chartFilename"`
+	ComposeFilename string `json:"composeFilename"`
+
+	// PublicationId ULID
+	PublicationId *Id `json:"publicationId,omitempty"`
+
+	// Publications Successful, unretired publications of the image, newest first
+	Publications []DeploymentTarget `json:"publications"`
+
+	// Published False when the files name the local image, which must be downloaded and loaded first
+	Published bool `json:"published"`
+
+	// Reference The image reference the files use: registry/repository:tag@digest when published, otherwise the docker load name
+	Reference string `json:"reference"`
+}
+
+// DeploymentTarget defines model for DeploymentTarget.
+type DeploymentTarget struct {
+	DestinationName *string `json:"destinationName,omitempty"`
+
+	// PublicationId ULID
+	PublicationId Id        `json:"publicationId"`
+	PublishedAt   Timestamp `json:"publishedAt"`
+	Reference     string    `json:"reference"`
+}
+
 // Destination defines model for Destination.
 type Destination struct {
 	AcceptsRestricted *bool `json:"acceptsRestricted,omitempty"`
@@ -9010,6 +9042,9 @@ type CsrfToken = string
 // Cursor defines model for Cursor.
 type Cursor = string
 
+// DeployPublicationId ULID
+type DeployPublicationId = Id
+
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
@@ -9086,6 +9121,24 @@ type ReleaseArtifactQuarantineJSONBody struct {
 type ReleaseArtifactQuarantineParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// GetDeploymentFilesParams defines parameters for GetDeploymentFiles.
+type GetDeploymentFilesParams struct {
+	// PublicationId A successful publication of the image to reference; the newest one when omitted
+	PublicationId *DeployPublicationId `form:"publicationId,omitempty" json:"publicationId,omitempty"`
+}
+
+// DownloadDeploymentComposeParams defines parameters for DownloadDeploymentCompose.
+type DownloadDeploymentComposeParams struct {
+	// PublicationId A successful publication of the image to reference; the newest one when omitted
+	PublicationId *DeployPublicationId `form:"publicationId,omitempty" json:"publicationId,omitempty"`
+}
+
+// DownloadDeploymentHelmChartParams defines parameters for DownloadDeploymentHelmChart.
+type DownloadDeploymentHelmChartParams struct {
+	// PublicationId A successful publication of the image to reference; the newest one when omitted
+	PublicationId *DeployPublicationId `form:"publicationId,omitempty" json:"publicationId,omitempty"`
 }
 
 // StartRevalidationParams defines parameters for StartRevalidation.
@@ -10758,6 +10811,21 @@ type ClientInterface interface {
 
 	// GetArtifact performs a GET /artifacts/{artifactId} (the `GetArtifact` operationId) request.
 	GetArtifact(ctx context.Context, artifactId ArtifactId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDeploymentFiles performs a GET /artifacts/{artifactId}/deploy (the `GetDeploymentFiles` operationId) request.
+	//
+	// The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from.
+	GetDeploymentFiles(ctx context.Context, artifactId ArtifactId, params *GetDeploymentFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadDeploymentCompose performs a GET /artifacts/{artifactId}/deploy/compose (the `DownloadDeploymentCompose` operationId) request.
+	//
+	// A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+	DownloadDeploymentCompose(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentComposeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadDeploymentHelmChart performs a GET /artifacts/{artifactId}/deploy/helm (the `DownloadDeploymentHelmChart` operationId) request.
+	//
+	// A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+	DownloadDeploymentHelmChart(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DownloadArtifact performs a GET /artifacts/{artifactId}/download (the `DownloadArtifact` operationId) request.
 	//
@@ -12652,6 +12720,51 @@ func (c *Client) ReleaseArtifactQuarantine(ctx context.Context, quarantineId Id,
 // GetArtifact performs a GET /artifacts/{artifactId} (the `GetArtifact` operationId) request.
 func (c *Client) GetArtifact(ctx context.Context, artifactId ArtifactId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactRequest(c.Server, artifactId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetDeploymentFiles performs a GET /artifacts/{artifactId}/deploy (the `GetDeploymentFiles` operationId) request.
+//
+// The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from.
+func (c *Client) GetDeploymentFiles(ctx context.Context, artifactId ArtifactId, params *GetDeploymentFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDeploymentFilesRequest(c.Server, artifactId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadDeploymentCompose performs a GET /artifacts/{artifactId}/deploy/compose (the `DownloadDeploymentCompose` operationId) request.
+//
+// A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+func (c *Client) DownloadDeploymentCompose(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentComposeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadDeploymentComposeRequest(c.Server, artifactId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadDeploymentHelmChart performs a GET /artifacts/{artifactId}/deploy/helm (the `DownloadDeploymentHelmChart` operationId) request.
+//
+// A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+func (c *Client) DownloadDeploymentHelmChart(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadDeploymentHelmChartRequest(c.Server, artifactId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18555,6 +18668,189 @@ func NewGetArtifactRequest(server string, artifactId ArtifactId) (*http.Request,
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDeploymentFilesRequest constructs an http.Request for the GetDeploymentFiles method
+func NewGetDeploymentFilesRequest(server string, artifactId ArtifactId, params *GetDeploymentFilesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifactId", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/artifacts/%s/deploy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PublicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "publicationId", *params.PublicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadDeploymentComposeRequest constructs an http.Request for the DownloadDeploymentCompose method
+func NewDownloadDeploymentComposeRequest(server string, artifactId ArtifactId, params *DownloadDeploymentComposeParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifactId", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/artifacts/%s/deploy/compose", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PublicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "publicationId", *params.PublicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadDeploymentHelmChartRequest constructs an http.Request for the DownloadDeploymentHelmChart method
+func NewDownloadDeploymentHelmChartRequest(server string, artifactId ArtifactId, params *DownloadDeploymentHelmChartParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifactId", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/artifacts/%s/deploy/helm", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PublicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "publicationId", *params.PublicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -31882,6 +32178,27 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetArtifactWithResponse(ctx context.Context, artifactId ArtifactId, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
 
+	// GetDeploymentFilesWithResponse performs a GET /artifacts/{artifactId}/deploy (the `GetDeploymentFiles` operationId) request.
+	//
+	// The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetDeploymentFilesWithResponse(ctx context.Context, artifactId ArtifactId, params *GetDeploymentFilesParams, reqEditors ...RequestEditorFn) (*GetDeploymentFilesResponse, error)
+
+	// DownloadDeploymentComposeWithResponse performs a GET /artifacts/{artifactId}/deploy/compose (the `DownloadDeploymentCompose` operationId) request.
+	//
+	// A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DownloadDeploymentComposeWithResponse(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentComposeParams, reqEditors ...RequestEditorFn) (*DownloadDeploymentComposeResponse, error)
+
+	// DownloadDeploymentHelmChartWithResponse performs a GET /artifacts/{artifactId}/deploy/helm (the `DownloadDeploymentHelmChart` operationId) request.
+	//
+	// A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DownloadDeploymentHelmChartWithResponse(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*DownloadDeploymentHelmChartResponse, error)
+
 	// DownloadArtifactWithResponse performs a GET /artifacts/{artifactId}/download (the `DownloadArtifact` operationId) request.
 	//
 	// The image as an OCI archive for `docker load` or `podman load` (ADR 0053). Project maintainers, publishers and administrators, and developers when the organization's publication policy sets developerDownloads; only when the newest validation passed and the image is neither restricted nor quarantined. Audited.
@@ -34527,6 +34844,164 @@ func (r GetArtifactResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetArtifactResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDeploymentFilesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DeploymentFiles
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetDeploymentFilesResponse) GetJSON200() *DeploymentFiles {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetDeploymentFilesResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r GetDeploymentFilesResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r GetDeploymentFilesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDeploymentFilesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDeploymentFilesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDeploymentFilesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DownloadDeploymentComposeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// YAML200 the response for an HTTP 200 `application/yaml` response
+	YAML200 *string
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetYAML200 returns the response for an HTTP 200 `application/yaml` response
+func (r DownloadDeploymentComposeResponse) GetYAML200() *string {
+	return r.YAML200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DownloadDeploymentComposeResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DownloadDeploymentComposeResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadDeploymentComposeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadDeploymentComposeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadDeploymentComposeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadDeploymentComposeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DownloadDeploymentHelmChartResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DownloadDeploymentHelmChartResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DownloadDeploymentHelmChartResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadDeploymentHelmChartResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadDeploymentHelmChartResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadDeploymentHelmChartResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadDeploymentHelmChartResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -47390,6 +47865,45 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, artif
 	return ParseGetArtifactResponse(rsp)
 }
 
+// GetDeploymentFilesWithResponse performs a GET /artifacts/{artifactId}/deploy (the `GetDeploymentFiles` operationId) request.
+//
+// The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetDeploymentFilesWithResponse(ctx context.Context, artifactId ArtifactId, params *GetDeploymentFilesParams, reqEditors ...RequestEditorFn) (*GetDeploymentFilesResponse, error) {
+	rsp, err := c.GetDeploymentFiles(ctx, artifactId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDeploymentFilesResponse(rsp)
+}
+
+// DownloadDeploymentComposeWithResponse performs a GET /artifacts/{artifactId}/deploy/compose (the `DownloadDeploymentCompose` operationId) request.
+//
+// A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DownloadDeploymentComposeWithResponse(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentComposeParams, reqEditors ...RequestEditorFn) (*DownloadDeploymentComposeResponse, error) {
+	rsp, err := c.DownloadDeploymentCompose(ctx, artifactId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadDeploymentComposeResponse(rsp)
+}
+
+// DownloadDeploymentHelmChartWithResponse performs a GET /artifacts/{artifactId}/deploy/helm (the `DownloadDeploymentHelmChart` operationId) request.
+//
+// A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DownloadDeploymentHelmChartWithResponse(ctx context.Context, artifactId ArtifactId, params *DownloadDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*DownloadDeploymentHelmChartResponse, error) {
+	rsp, err := c.DownloadDeploymentHelmChart(ctx, artifactId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadDeploymentHelmChartResponse(rsp)
+}
+
 // DownloadArtifactWithResponse performs a GET /artifacts/{artifactId}/download (the `DownloadArtifact` operationId) request.
 //
 // The image as an OCI archive for `docker load` or `podman load` (ADR 0053). Project maintainers, publishers and administrators, and developers when the organization's publication policy sets developerDownloads; only when the newest validation passed and the image is neither restricted nor quarantined. Audited.
@@ -52110,6 +52624,119 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDeploymentFilesResponse parses an HTTP response from a GetDeploymentFilesWithResponse call
+func ParseGetDeploymentFilesResponse(rsp *http.Response) (*GetDeploymentFilesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDeploymentFilesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DeploymentFiles
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadDeploymentComposeResponse parses an HTTP response from a DownloadDeploymentComposeWithResponse call
+func ParseDownloadDeploymentComposeResponse(rsp *http.Response) (*DownloadDeploymentComposeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadDeploymentComposeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
+		var dest string
+		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.YAML200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadDeploymentHelmChartResponse parses an HTTP response from a DownloadDeploymentHelmChartWithResponse call
+func ParseDownloadDeploymentHelmChartResponse(rsp *http.Response) (*DownloadDeploymentHelmChartResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadDeploymentHelmChartResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 

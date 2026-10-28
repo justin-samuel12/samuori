@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
+import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
 import { TextField } from "../components/Field";
 import { EgressAccess, useEgressRequests } from "../components/EgressAccess";
@@ -142,6 +143,12 @@ export function BuildPage({ id }: { id: string }) {
                   Download image
                 </a>
               )}
+              {!run.deletion &&
+                run.state === "succeeded" &&
+                run.artifactId &&
+                can("getDeploymentFiles") && (
+                  <DeploymentFiles artifactId={run.artifactId} />
+                )}
               {can("createBuild") && (
                 <Button variant="secondary" onPress={() => void rebuild()}>
                   Build again

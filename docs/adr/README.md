@@ -65,3 +65,4 @@ owner approval.
 | [0056](0056-apache-2-license.md) | Samuori is licensed under Apache-2.0 | Accepted |
 | [0057](0057-samuori-name-and-brand.md) | The product is named Samuori | Accepted |
 | [0058](0058-archiving-restoring-and-purging-projects.md) | Archiving, restoring and purging projects | Accepted (provisional) |
+| [0059](0059-deployment-files-for-built-images.md) | Deployment files for built images | Accepted (provisional) |

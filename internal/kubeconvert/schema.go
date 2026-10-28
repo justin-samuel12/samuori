@@ -65,6 +65,9 @@ func (s *schemaSet) load() error {
 
 var errUnknownKind = errors.New("kind not in Samuori's schema set")
 
+// ValidateObject checks one Kubernetes object against Samuori's embedded schemas and returns each violation.
+func ValidateObject(obj map[string]any) ([]string, error) { return validateObject(obj) }
+
 // validateObject checks one object against the schema of its apiVersion and kind and returns each violation as
 // "field: message".
 func validateObject(obj map[string]any) ([]string, error) {

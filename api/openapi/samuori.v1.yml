@@ -2336,6 +2336,57 @@ paths:
         "404": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
 
+  /artifacts/{artifactId}/deploy:
+    parameters: [{ $ref: "#/components/parameters/ArtifactId" }]
+    get:
+      tags: [artifacts]
+      operationId: getDeploymentFiles
+      description: "The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPublicationId" }]
+      responses:
+        "200":
+          description: The reference and the publications to choose from
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeploymentFiles" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /artifacts/{artifactId}/deploy/compose:
+    parameters: [{ $ref: "#/components/parameters/ArtifactId" }]
+    get:
+      tags: [artifacts]
+      operationId: downloadDeploymentCompose
+      description: "A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPublicationId" }]
+      responses:
+        "200":
+          description: Compose file
+          content:
+            application/yaml:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /artifacts/{artifactId}/deploy/helm:
+    parameters: [{ $ref: "#/components/parameters/ArtifactId" }]
+    get:
+      tags: [artifacts]
+      operationId: downloadDeploymentHelmChart
+      description: "A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPublicationId" }]
+      responses:
+        "200":
+          description: Helm chart archive
+          content:
+            application/gzip:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
   /artifacts/{artifactId}/validations:
     parameters: [{ $ref: "#/components/parameters/ArtifactId" }]
     get:
@@ -4618,6 +4669,7 @@ components:
     UploadId: { name: uploadId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     BuildId: { name: buildId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     ArtifactId: { name: artifactId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
+    DeployPublicationId: { name: publicationId, in: query, required: false, description: "A successful publication of the image to reference; the newest one when omitted", schema: { $ref: "#/components/schemas/Id" } }
     WorkerId: { name: workerId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     ConversionId: { name: conversionId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
 
@@ -5631,6 +5683,30 @@ components:
         createdAt: { $ref: "#/components/schemas/Timestamp" }
         version: { type: string, description: "<UTC date>.<n>, counted per project and day (ADR 0054)" }
         defaultTags: { type: array, items: { type: string }, description: Tags a publication applies when the publisher gives none }
+
+    DeploymentFiles:
+      type: object
+      required: [artifactId, reference, published, composeFilename, chartFilename, publications]
+      properties:
+        artifactId: { $ref: "#/components/schemas/Id" }
+        reference: { type: string, description: "The image reference the files use: registry/repository:tag@digest when published, otherwise the docker load name" }
+        published: { type: boolean, description: "False when the files name the local image, which must be downloaded and loaded first" }
+        publicationId: { $ref: "#/components/schemas/Id" }
+        composeFilename: { type: string }
+        chartFilename: { type: string }
+        publications:
+          type: array
+          description: "Successful, unretired publications of the image, newest first"
+          items: { $ref: "#/components/schemas/DeploymentTarget" }
+
+    DeploymentTarget:
+      type: object
+      required: [publicationId, reference, publishedAt]
+      properties:
+        publicationId: { $ref: "#/components/schemas/Id" }
+        destinationName: { type: string }
+        reference: { type: string }
+        publishedAt: { $ref: "#/components/schemas/Timestamp" }
 
     ValidationSummary:
       type: object

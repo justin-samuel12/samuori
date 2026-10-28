@@ -77,18 +77,31 @@ func (s *Service) Download(ctx context.Context, p authz.Principal, roles []authz
 		return Download{}, &Invalid{"the image is no longer in internal storage"}
 	}
 	f.Close()
-	var project, app, ver string
-	_ = s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT p.name, COALESCE(sp.name, ''), COALESCE(r.version, '') FROM build_runs r JOIN projects p ON p.id = r.project_id LEFT JOIN build_specs sp ON sp.id = r.spec_id WHERE r.id = ?`), art.BuildRunID).Scan(&project, &app, &ver)
-	short := strings.TrimPrefix(art.Digest, "sha256:")[:12]
-	name := strings.Trim(unsafeName.ReplaceAllString(strings.ToLower(strings.Join([]string{project, app, short}, "-")), "-"), "-")
-	if ver == "" {
-		ver = "samuori-" + short
-	}
-	d := Download{Digest: art.Digest, Size: art.Size, Filename: name + ".tar", RepoTag: dockerRepoTag(project, app, ver)}
+	n := s.imageNames(ctx, art.BuildRunID, art.Digest)
+	d := Download{Digest: art.Digest, Size: art.Size, Filename: n.filename, RepoTag: n.repoTag}
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
 		return audit.Append(ctx, s.db, tx, audit.Event{Actor: p, Action: "image.download", ResourceType: "artifact", ResourceID: art.ID, Outcome: "succeeded", Reason: art.Digest, RequestID: requestID})
 	})
 	return d, err
+}
+
+type imageNames struct {
+	project, app, version, filename, repoTag, spec string
+}
+
+// imageNames are the names a build's image downloads under, and the BuildSpec document it was built from.
+func (s *Service) imageNames(ctx context.Context, runID, digest string) imageNames {
+	var n imageNames
+	_ = s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT p.name, COALESCE(sp.name, ''), COALESCE(r.version, ''), COALESCE(sr.document, '') FROM build_runs r JOIN projects p ON p.id = r.project_id
+		LEFT JOIN build_specs sp ON sp.id = r.spec_id LEFT JOIN spec_revisions sr ON sr.spec_id = r.spec_id AND sr.revision = r.spec_revision WHERE r.id = ?`), runID).Scan(&n.project, &n.app, &n.version, &n.spec)
+	short := strings.TrimPrefix(digest, "sha256:")[:12]
+	n.filename = strings.Trim(unsafeName.ReplaceAllString(strings.ToLower(strings.Join([]string{n.project, n.app, short}, "-")), "-"), "-") + ".tar"
+	tag := n.version
+	if tag == "" {
+		tag = "samuori-" + short
+	}
+	n.repoTag = dockerRepoTag(n.project, n.app, tag)
+	return n
 }
 
 // OpenDownload opens a download's archive for streaming with Docker's manifest.json added; the caller closes it.

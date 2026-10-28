@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Form, Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
+import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
 import { Checkbox, Select, TextField } from "../components/Field";
 import { Alert, EmptyState, Loading, PageHeader } from "../components/Feedback";
@@ -49,6 +50,7 @@ export function Verdict({
 }
 
 export function ImagesPage() {
+  const can = useCan();
   const canDownload = useCanDownload();
   const [projects, setProjects] = useState<{ id: string; label: string }[]>();
   const [project, setProject] = useState<string | null>(null);
@@ -144,17 +146,26 @@ export function ImagesPage() {
             {
               id: "actions",
               name: "Actions",
-              render: (i) =>
-                canDownload && i.validation?.verdict === "passed" ? (
-                  <a
-                    className="samuori-button samuori-button--quiet no-underline"
-                    href={`/api/v1/artifacts/${i.artifactId}/download`}
-                    download
-                    aria-label={`Download ${short(i.digest)}`}
-                  >
-                    Download
-                  </a>
-                ) : null,
+              render: (i) => (
+                <div className="flex flex-wrap gap-2">
+                  {canDownload && i.validation?.verdict === "passed" && (
+                    <a
+                      className="samuori-button samuori-button--quiet no-underline"
+                      href={`/api/v1/artifacts/${i.artifactId}/download`}
+                      download
+                      aria-label={`Download ${short(i.digest)}`}
+                    >
+                      Download
+                    </a>
+                  )}
+                  {can("getDeploymentFiles") && (
+                    <DeploymentFiles
+                      artifactId={i.artifactId}
+                      variant="quiet"
+                    />
+                  )}
+                </div>
+              ),
             },
           ]}
         />

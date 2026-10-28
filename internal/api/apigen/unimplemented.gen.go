@@ -45,6 +45,18 @@ func (Unimplemented) GetArtifact(w http.ResponseWriter, r *http.Request, _ Artif
 	NotImplemented(w, r, "GetArtifact")
 }
 
+func (Unimplemented) GetDeploymentFiles(w http.ResponseWriter, r *http.Request, _ ArtifactId, _ GetDeploymentFilesParams) {
+	NotImplemented(w, r, "GetDeploymentFiles")
+}
+
+func (Unimplemented) DownloadDeploymentCompose(w http.ResponseWriter, r *http.Request, _ ArtifactId, _ DownloadDeploymentComposeParams) {
+	NotImplemented(w, r, "DownloadDeploymentCompose")
+}
+
+func (Unimplemented) DownloadDeploymentHelmChart(w http.ResponseWriter, r *http.Request, _ ArtifactId, _ DownloadDeploymentHelmChartParams) {
+	NotImplemented(w, r, "DownloadDeploymentHelmChart")
+}
+
 func (Unimplemented) DownloadArtifact(w http.ResponseWriter, r *http.Request, _ ArtifactId) {
 	NotImplemented(w, r, "DownloadArtifact")
 }

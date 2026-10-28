@@ -163,6 +163,21 @@ projects are kept. Records with their IDs, digests and times and the audit trail
 external registries are not deleted. A purge that fails part-way answers 500 `purge_incomplete` and can be repeated;
 garbage collection no longer keeps a purged project's validation outputs either.
 
+## Deployment files (ADR 0059)
+
+`GET /artifacts/{id}/deploy/compose` and `/deploy/helm` return a starting `compose.yml` and Helm chart for a built
+image; `GET /artifacts/{id}/deploy` says which reference they use. A published image is named
+`<registry>/<repository>:<tag>@<digest>` from the newest successful, unretired publication or the chosen
+`publicationId`; an unpublished one by its `docker load` name, never pulled (`pull_policy: never`, `pullPolicy:
+Never`). Port, Service and `httpGet` probes come from `spec.application`; environment, secrets and resources are
+empty placeholders, and no secret IDs or values are written. Anyone who may see the image may download them; file
+downloads are audited as `image.deployment_files`. The build page and the Images page offer them under "Deployment
+files". `TestDeploymentFiles`, `TestPublishedImage`, `TestLocalImage`, `TestWorkersAndTasks` and `TestChartArchive`
+pass (2026-10-28; the charts render through the tests' Helm-compatible renderer and pass the embedded Kubernetes
+v1.36 schemas). Practical run, 2026-10-28, on generated samples: `docker compose config` (Docker 29.9.2) accepts the
+Compose files, and Helm 3.16.3 (`alpine/helm` container) lints and renders the charts. Not yet deployed to a
+cluster or run with `docker compose up`, and the dialog is not yet checked in a browser.
+
 ## Publication (WP21)
 
 Implemented for generic OCI registries: [`publication.md`](publication.md).

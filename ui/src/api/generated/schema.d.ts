@@ -2060,6 +2060,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/artifacts/{artifactId}/deploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        /** @description The image reference deployment files use (ADR 0059): the chosen or newest successful publication, by tag and digest, or the name `docker load` gives the downloaded image. Lists the publications to choose from. */
+        get: operations["getDeploymentFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/artifacts/{artifactId}/deploy/compose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        /** @description A starting compose.yml that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited. */
+        get: operations["downloadDeploymentCompose"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/artifacts/{artifactId}/deploy/helm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        /** @description A starting Helm chart (.tgz) that runs the image (ADR 0059). It holds references, never secret values; Samuori does not deploy it. Audited. */
+        get: operations["downloadDeploymentHelmChart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/artifacts/{artifactId}/validations": {
         parameters: {
             query?: never;
@@ -4781,6 +4838,24 @@ export interface components {
             /** @description Tags a publication applies when the publisher gives none */
             defaultTags?: string[];
         };
+        DeploymentFiles: {
+            artifactId: components["schemas"]["Id"];
+            /** @description The image reference the files use: registry/repository:tag@digest when published, otherwise the docker load name */
+            reference: string;
+            /** @description False when the files name the local image, which must be downloaded and loaded first */
+            published: boolean;
+            publicationId?: components["schemas"]["Id"];
+            composeFilename: string;
+            chartFilename: string;
+            /** @description Successful, unretired publications of the image, newest first */
+            publications: components["schemas"]["DeploymentTarget"][];
+        };
+        DeploymentTarget: {
+            publicationId: components["schemas"]["Id"];
+            destinationName?: string;
+            reference: string;
+            publishedAt: components["schemas"]["Timestamp"];
+        };
         ValidationSummary: {
             id: components["schemas"]["Id"];
             /** @enum {string} */
@@ -7070,6 +7145,8 @@ export interface components {
         UploadId: components["schemas"]["Id"];
         BuildId: components["schemas"]["Id"];
         ArtifactId: components["schemas"]["Id"];
+        /** @description A successful publication of the image to reference; the newest one when omitted */
+        DeployPublicationId: components["schemas"]["Id"];
         WorkerId: components["schemas"]["Id"];
         ConversionId: components["schemas"]["Id"];
     };
@@ -10698,6 +10775,87 @@ export interface operations {
                 };
             };
             403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getDeploymentFiles: {
+        parameters: {
+            query?: {
+                /** @description A successful publication of the image to reference; the newest one when omitted */
+                publicationId?: components["parameters"]["DeployPublicationId"];
+            };
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reference and the publications to choose from */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentFiles"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    downloadDeploymentCompose: {
+        parameters: {
+            query?: {
+                /** @description A successful publication of the image to reference; the newest one when omitted */
+                publicationId?: components["parameters"]["DeployPublicationId"];
+            };
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compose file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    downloadDeploymentHelmChart: {
+        parameters: {
+            query?: {
+                /** @description A successful publication of the image to reference; the newest one when omitted */
+                publicationId?: components["parameters"]["DeployPublicationId"];
+            };
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Helm chart archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/gzip": string;
+                };
+            };
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
         };
