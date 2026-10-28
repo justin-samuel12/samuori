@@ -1673,10 +1673,15 @@
     display: none;
   }
 
+  /* The stacked artwork has 50 units of space left of its wordmark and about 60 below it (of 700); this lines the
+     wordmark up with the text below. */
+  .samuori-auth-brand-logo {
+    margin-left: calc(280px * -50 / 700);
+    margin-bottom: calc(280px * -60 / 700);
+  }
+
   .samuori-auth-brand-motto {
-    width: 280px;
     margin: var(--samuori-space-1) 0 var(--samuori-space-6);
-    text-align: center;
   }
 
   .samuori-auth-brand-lead {
