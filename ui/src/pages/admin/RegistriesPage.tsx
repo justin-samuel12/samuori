@@ -20,6 +20,7 @@ export function RegistriesPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [secrets, setSecrets] = useState<Schemas["LocalSecret"][]>([]);
   const [keys, setKeys] = useState<Schemas["SigningKey"][]>([]);
+  const [retiring, setRetiring] = useState<Schemas["SigningKey"]>();
   const [keyName, setKeyName] = useState("");
   const [keyHome, setKeyHome] = useState<string | null>("controller");
   const [keyRef, setKeyRef] = useState("");
@@ -404,8 +405,71 @@ export function RegistriesPage() {
                 </details>
               ),
             },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (k) =>
+                k.state === "active" ? (
+                  <Button
+                    variant="quiet"
+                    aria-label={`Retire ${k.name}`}
+                    onPress={() => setRetiring(k)}
+                  >
+                    Retire
+                  </Button>
+                ) : (
+                  <span className="samuori-muted">
+                    Retired
+                    {k.retiredAt
+                      ? ` ${new Date(k.retiredAt).toLocaleDateString()}`
+                      : ""}
+                  </span>
+                ),
+            },
           ]}
         />
+        {retiring && (
+          <Dialog
+            title={`Retire ${retiring.name}?`}
+            size="confirm"
+            isOpen
+            onOpenChange={(o) => !o && setRetiring(undefined)}
+          >
+            <p>
+              The key stops signing now and can never sign again. Its public key
+              stays listed, so images it already signed still verify. Keys are
+              never deleted. Until you create a new key, destinations that sign
+              images cannot publish.
+            </p>
+            <div className="samuori-actions">
+              <Button
+                variant="secondary"
+                onPress={() => setRetiring(undefined)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onPress={async () => {
+                  const k = retiring;
+                  const { error } = await api.POST(
+                    "/signing-keys/{keyId}/retire",
+                    { params: { path: { keyId: k.id } } },
+                  );
+                  setRetiring(undefined);
+                  if (error)
+                    setMessage({ tone: "error", text: describeError(error) });
+                  else
+                    done(
+                      `Retired ${k.name}. Its signatures still verify; create a new key to keep signing.`,
+                    );
+                }}
+              >
+                Retire
+              </Button>
+            </div>
+          </Dialog>
+        )}
         <Form
           onSubmit={createKey}
           className="samuori-form samuori-form--inline"
@@ -1230,6 +1294,8 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
   const { teams } = useTeams();
   const [sources, setSources] = useState<Schemas["ImageSource"][]>();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Schemas["ImageSource"]>();
+  const [removing, setRemoving] = useState<Schemas["ImageSource"]>();
   const [config, setConfig] = useState<{
     name: string;
     config: string;
@@ -1337,6 +1403,20 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
                   >
                     {s.status === "active" ? "Disable" : "Enable"} {s.name}
                   </Button>
+                  <Button
+                    variant="quiet"
+                    aria-label={`Edit ${s.name}`}
+                    onPress={() => setEditing(s)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="quiet"
+                    aria-label={`Delete ${s.name}`}
+                    onPress={() => setRemoving(s)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               ),
             },
@@ -1354,6 +1434,41 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
           void load();
         }}
       />
+      {editing && (
+        <ImageSourceDialog
+          key={editing.id}
+          isOpen
+          existing={editing}
+          teams={teams ?? []}
+          pullProfiles={profiles.filter((p) => p.purpose === "pull")}
+          onClose={() => setEditing(undefined)}
+          onDone={(s) => {
+            setEditing(undefined);
+            setMessage({
+              tone: "success",
+              text: `Saved ${s.name}. New mirror tokens follow the change at once; tokens already issued expire within five minutes.`,
+            });
+            void load();
+          }}
+        />
+      )}
+      {removing && (
+        <DeleteDialog
+          name={removing.name}
+          text="Builds of its team can no longer pull from this upstream through Samuori. Tokens already issued expire within five minutes. Deleting is refused while an unfinished build plans to pull from it; disable the source to stop new pulls first."
+          remove={() =>
+            api.DELETE("/image-sources/{sourceId}", {
+              params: { path: { sourceId: removing.id } },
+            })
+          }
+          onClose={() => setRemoving(undefined)}
+          onDone={() => {
+            setMessage({ tone: "success", text: `Deleted ${removing.name}.` });
+            setRemoving(undefined);
+            void load();
+          }}
+        />
+      )}
       {config && (
         <Dialog
           title={`Mirror configuration for ${config.name}`}
@@ -1381,46 +1496,58 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
 
 function ImageSourceDialog({
   isOpen,
+  existing,
   teams,
   pullProfiles,
   onClose,
   onDone,
 }: {
   isOpen: boolean;
+  existing?: Schemas["ImageSource"];
   teams: { id: string; name: string }[];
   pullProfiles: Profile[];
   onClose: () => void;
   onDone: (s: Schemas["ImageSource"]) => void;
 }) {
-  const [name, setName] = useState("");
-  const [upstream, setUpstream] = useState("");
-  const [mirror, setMirror] = useState("");
-  const [patterns, setPatterns] = useState("");
-  const [team, setTeam] = useState<string | null>(null);
-  const [profile, setProfile] = useState<string | null>(null);
+  const [name, setName] = useState(existing?.name ?? "");
+  const [upstream, setUpstream] = useState(existing?.upstream ?? "");
+  const [mirror, setMirror] = useState(existing?.mirror ?? "");
+  const [patterns, setPatterns] = useState(
+    existing?.repositoryPatterns.join(", ") ?? "",
+  );
+  const [team, setTeam] = useState<string | null>(existing?.teamIds[0] ?? null);
+  const [profile, setProfile] = useState<string | null>(
+    existing?.pullProfileId ?? null,
+  );
   const [error, setError] = useState<string>();
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!team) return;
-    const { data, error } = await api.POST("/image-sources", {
-      body: {
-        name,
-        upstream,
-        mirror,
-        repositoryPatterns: patterns
-          .split(",")
-          .map((p) => p.trim())
-          .filter(Boolean),
-        teamIds: [team],
-        pullProfileId: profile ?? undefined,
-      },
-    });
+    const fields = {
+      name,
+      repositoryPatterns: patterns
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean),
+      teamIds: existing?.teamIds.length
+        ? [team, ...existing.teamIds.slice(1)]
+        : [team],
+      pullProfileId: profile ?? undefined,
+    };
+    const { data, error } = existing
+      ? await api.PUT("/image-sources/{sourceId}", {
+          params: { path: { sourceId: existing.id } },
+          body: fields,
+        })
+      : await api.POST("/image-sources", {
+          body: { ...fields, upstream, mirror },
+        });
     if (error || !data) setError(describeError(error));
     else onDone(data);
   }
   return (
     <Dialog
-      title="Add image source"
+      title={existing ? `Edit ${existing.name}` : "Add image source"}
       isOpen={isOpen}
       onOpenChange={(o) => !o && onClose()}
     >
@@ -1432,13 +1559,19 @@ function ImageSourceDialog({
           value={upstream}
           onChange={setUpstream}
           isRequired
-          description="As image references name it, such as registry.corp.example"
+          isDisabled={!!existing}
+          description={
+            existing
+              ? "Fixed: it names the mirror's deployment. Add another source for another upstream."
+              : "As image references name it, such as registry.corp.example"
+          }
         />
         <TextField
           label="Mirror"
           value={mirror}
           onChange={setMirror}
           isRequired
+          isDisabled={!!existing}
           description="host:port of the authorizing mirror, as workers reach it"
         />
         <TextField
@@ -1468,7 +1601,7 @@ function ImageSourceDialog({
           <Button variant="secondary" onPress={onClose}>
             Cancel
           </Button>
-          <Button type="submit">Add</Button>
+          <Button type="submit">{existing ? "Save" : "Add"}</Button>
         </div>
       </Form>
     </Dialog>

@@ -216,6 +216,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | secrets | POST | `/projects/{projectId}/secret-bindings` | `createSecretBinding` | administrator |
 | secrets | POST | `/secret-bindings/{bindingId}/actions` | `applySecretBindingAction` | administrator |
 | secrets | POST | `/projects/{projectId}/secret-requests` | `requestSecretBinding` | developer, maintainer |
+| secrets | PUT | `/projects/{projectId}/secret-grants/{grantId}` | `updateSecretGrant` | administrator (bindings the narrower grant no longer covers are disabled; ADR 0064) |
+| secrets | PUT | `/allowed-secrets/{allowedSecretId}` | `updateAllowedSecret` | administrator |
 | registries | GET | `/registries` | `listRegistries` | administrator |
 | registries | POST | `/registries` | `createRegistry` | administrator |
 | registries | GET | `/registry-credential-profiles` | `listRegistryCredentialProfiles` | administrator |
@@ -227,6 +229,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | registries | POST | `/registries/{registryId}/repositories` | `createEcrRepository` | administrator |
 | registries | GET | `/image-sources` | `listImageSources` | developer, maintainer, publisher, security-reviewer, administrator |
 | registries | POST | `/image-sources` | `createImageSource` | administrator |
+| registries | PUT | `/image-sources/{sourceId}` | `updateImageSource` | administrator |
+| registries | DELETE | `/image-sources/{sourceId}` | `deleteImageSource` | administrator (409 while an unfinished build of its teams plans to pull from its upstream) |
 | registries | POST | `/image-sources/{sourceId}/state` | `setImageSourceState` | administrator |
 | registries | GET | `/image-sources/{sourceId}/mirror-config` | `getImageSourceMirrorConfig` | administrator |
 | registries | POST | `/mirror-token-keys/rotations` | `rotateMirrorTokenKey` | administrator |

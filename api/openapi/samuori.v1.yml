@@ -3293,6 +3293,25 @@ paths:
       parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
       responses:
         "204": { description: Removed; grants already made stay until revoked }
+    put:
+      tags: [secrets]
+      operationId: updateAllowedSecret
+      description: Changes the label and note. Grants already made keep their own names.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AllowedSecretUpdate" }
+      responses:
+        "200":
+          description: Updated and audited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AllowedSecret" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
 
   /secret-providers/{providerId}:
     parameters: [{ name: providerId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
@@ -3439,6 +3458,30 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/SecretGrant" }
+
+  /projects/{projectId}/secret-grants/{grantId}:
+    parameters:
+      - { $ref: "#/components/parameters/ProjectId" }
+      - { name: grantId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
+    put:
+      tags: [secrets]
+      operationId: updateSecretGrant
+      description: "Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064)."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecretGrantUpdate" }
+      responses:
+        "200":
+          description: Updated and audited, with the bindings it disabled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecretGrantUpdated" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
 
   /projects/{projectId}/secret-grants/{grantId}/revoke:
     parameters:
@@ -4013,6 +4056,39 @@ paths:
               schema: { $ref: "#/components/schemas/ImageSource" }
         "409": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
+
+  /image-sources/{sourceId}:
+    parameters: [{ name: sourceId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    put:
+      tags: [registries]
+      operationId: updateImageSource
+      description: "Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImageSourceUpdate" }
+      responses:
+        "200":
+          description: Updated and audited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImageSource" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [registries]
+      operationId: deleteImageSource
+      description: "Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /image-sources/{sourceId}/state:
     parameters: [{ name: sourceId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
@@ -7108,6 +7184,13 @@ components:
         fields: { type: array, items: { type: string }, description: "Key names of a whole secret, never values; empty for one key" }
         createdBy: { type: string }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
+    AllowedSecretUpdate:
+      type: object
+      additionalProperties: false
+      required: [label]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 128 }
+        note: { type: string, maxLength: 1024 }
     AllowedSecretList:
       type: object
       required: [items]
@@ -7279,6 +7362,26 @@ components:
         status: { type: string, enum: [active, revoked] }
         reason: { type: string }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
+        version: { type: string, description: "latest, or the pinned version" }
+        eligiblePoolIds: { type: array, items: { $ref: "#/components/schemas/Id" }, description: Empty allows every eligible pool }
+    SecretGrantUpdate:
+      type: object
+      additionalProperties: false
+      required: [name, usage, eligiblePoolIds, reason]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        versionPolicy: { type: string, enum: [latest, pinned], default: latest }
+        pinnedVersion: { type: integer, minimum: 1 }
+        pinnedVersionId: { type: string, maxLength: 64 }
+        usage: { type: array, minItems: 1, items: { type: string, enum: [build, test] } }
+        eligiblePoolIds: { type: array, items: { $ref: "#/components/schemas/Id" }, description: Empty allows every eligible pool }
+        reason: { type: string, minLength: 3, maxLength: 1024 }
+    SecretGrantUpdated:
+      type: object
+      required: [grant, disabled]
+      properties:
+        grant: { $ref: "#/components/schemas/SecretGrant" }
+        disabled: { type: array, items: { $ref: "#/components/schemas/SecretGrantUse" }, description: Bindings disabled because the grant no longer covers them }
     SecretGrantUse:
       type: object
       required: [logicalId, bindingId, version]
@@ -7707,6 +7810,15 @@ components:
         name: { type: string, maxLength: 63 }
         upstream: { type: string, maxLength: 260, description: "Upstream registry host, as image references name it" }
         mirror: { type: string, maxLength: 260, description: "The mirror's host:port, as workers' BuildKit reaches it" }
+        repositoryPatterns: { type: array, minItems: 1, maxItems: 64, items: { type: string, maxLength: 255 } }
+        teamIds: { type: array, minItems: 1, items: { $ref: "#/components/schemas/Id" } }
+        pullProfileId: { $ref: "#/components/schemas/Id" }
+    ImageSourceUpdate:
+      type: object
+      additionalProperties: false
+      required: [name, repositoryPatterns, teamIds]
+      properties:
+        name: { type: string, maxLength: 63 }
         repositoryPatterns: { type: array, minItems: 1, maxItems: 64, items: { type: string, maxLength: 255 } }
         teamIds: { type: array, minItems: 1, items: { $ref: "#/components/schemas/Id" } }
         pullProfileId: { $ref: "#/components/schemas/Id" }

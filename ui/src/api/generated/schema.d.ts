@@ -2878,7 +2878,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** @description Changes the label and note. Grants already made keep their own names. */
+        put: operations["updateAllowedSecret"];
         post?: never;
         delete: operations["removeAllowedSecret"];
         options?: never;
@@ -2992,6 +2993,26 @@ export interface paths {
         get: operations["listSecretGrants"];
         put?: never;
         post: operations["createSecretGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/secret-grants/{grantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                grantId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064). */
+        put: operations["updateSecretGrant"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3400,6 +3421,26 @@ export interface paths {
         /** @description Approves pulls of upstream repositories through an authorizing mirror for the listed teams. One mirror serves one team unless shared mirrors are enabled (OD-14). */
         post: operations["createImageSource"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/image-sources/{sourceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sourceId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes. */
+        put: operations["updateImageSource"];
+        post?: never;
+        /** @description Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream. */
+        delete: operations["deleteImageSource"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6057,6 +6098,10 @@ export interface components {
             createdBy: string;
             createdAt: components["schemas"]["Timestamp"];
         };
+        AllowedSecretUpdate: {
+            label: string;
+            note?: string;
+        };
         AllowedSecretList: {
             items: components["schemas"]["AllowedSecret"][];
         };
@@ -6237,6 +6282,29 @@ export interface components {
             status: "active" | "revoked";
             reason: string;
             createdAt: components["schemas"]["Timestamp"];
+            /** @description latest, or the pinned version */
+            version?: string;
+            /** @description Empty allows every eligible pool */
+            eligiblePoolIds?: components["schemas"]["Id"][];
+        };
+        SecretGrantUpdate: {
+            name: string;
+            /**
+             * @default latest
+             * @enum {string}
+             */
+            versionPolicy: "latest" | "pinned";
+            pinnedVersion?: number;
+            pinnedVersionId?: string;
+            usage: ("build" | "test")[];
+            /** @description Empty allows every eligible pool */
+            eligiblePoolIds: components["schemas"]["Id"][];
+            reason: string;
+        };
+        SecretGrantUpdated: {
+            grant: components["schemas"]["SecretGrant"];
+            /** @description Bindings disabled because the grant no longer covers them */
+            disabled: components["schemas"]["SecretGrantUse"][];
         };
         SecretGrantUse: {
             logicalId: components["schemas"]["LogicalSecretId"];
@@ -6645,6 +6713,12 @@ export interface components {
             upstream: string;
             /** @description The mirror's host:port, as workers' BuildKit reaches it */
             mirror: string;
+            repositoryPatterns: string[];
+            teamIds: components["schemas"]["Id"][];
+            pullProfileId?: components["schemas"]["Id"];
+        };
+        ImageSourceUpdate: {
+            name: string;
             repositoryPatterns: string[];
             teamIds: components["schemas"]["Id"][];
             pullProfileId?: components["schemas"]["Id"];
@@ -12577,6 +12651,37 @@ export interface operations {
             };
         };
     };
+    updateAllowedSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                allowedSecretId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowedSecretUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowedSecret"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
     removeAllowedSecret: {
         parameters: {
             query?: never;
@@ -12864,6 +12969,38 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrant"];
                 };
             };
+        };
+    };
+    updateSecretGrant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                grantId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretGrantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited, with the bindings it disabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretGrantUpdated"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     revokeSecretGrant: {
@@ -13770,6 +13907,63 @@ export interface operations {
             };
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    updateImageSource: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                sourceId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageSourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageSource"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteImageSource: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                sourceId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     setImageSourceState: {

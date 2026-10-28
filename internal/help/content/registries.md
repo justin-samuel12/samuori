@@ -19,11 +19,15 @@ order: 230
    - **Sign images** and **Attach signed build provenance (SLSA)**;
    - **Accept only promotions** of images published elsewhere;
    - **Accept restricted images**, for images that passed only through an output exception.
-4. **Signing keys:** create the organization's signing key, held by Samuori or by an external KMS.
+4. **Signing keys:** create the organization's signing key, held by Samuori or by an external KMS. **Retire** stops
+   the active key from signing for good. Its public key stays listed, so images it signed still verify; keys are
+   never deleted. Destinations that sign cannot publish until you create a new key.
 
 **View or edit** and **Delete** work on registries and credentials. A registry's endpoint cannot change while its
 credentials hold a stored password, token or key, so a secret is never sent somewhere new: delete those credentials
 first. Anything still in use, by a destination for example, cannot be deleted; the message lists what uses it.
 
 **Approved image sources** lets builds pull private base images through Samuori's mirror, limited to the teams you
-choose; upstream credentials stay with the mirror.
+choose; upstream credentials stay with the mirror. **Edit** changes a source's name, repositories, team and pull
+credentials; the upstream and mirror are fixed. **Delete** is refused while a build of its team that has not finished
+plans to pull from it: disable the source first, and delete it when those builds are done.

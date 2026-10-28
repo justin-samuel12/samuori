@@ -117,7 +117,15 @@ flowchart LR
 - **Approved image sources** (`/image-sources`, administrators): an upstream registry host, the mirror's
   `host:port`, repository patterns (`payments/*`; a bare `*` is refused) and the teams allowed. They also record the
   pull profile whose credentials the mirror uses. Creation, disabling and enabling are audited. Developers see only
-  their teams' sources. A repository must also be on the `base-images` policy; developers ask for one with a
+  their teams' sources.
+  **Edit** (`PUT /image-sources/{id}`, administrators) changes the name, patterns, teams and pull profile with the
+  checks of creation (no bare `*`, one team per mirror under OD-14, pull profiles only); the upstream and mirror are
+  fixed because they name the mirror's deployment. New tokens follow the change at once and tokens already issued
+  expire within five minutes, as when disabling. **Delete** (`DELETE /image-sources/{id}`) is refused with 409 while
+  an unfinished build (queued to committing) of one of its teams has a plan naming its upstream, since that build may
+  still ask for mirror tokens; disable the source to stop new pulls first. Nothing else stores a source's ID: the
+  `base-images` policy names repositories, not sources, and is not changed. Both are audited (`image-source.update`
+  with before and after, `image-source.delete`). `TestUpdateAndDelete`, `TestSecretAndImageSourceEdits`. A repository must also be on the `base-images` policy; developers ask for one with a
   base-image request (`recipes-and-policies.md#base-image-requests`). Approving it does not create an image source,
   and a public registry other than docker.io needs an anonymous pull-through mirror on strict-egress workers
   (`install.sh --registry-mirror`, `egress.md#mirrors-for-other-registries`).

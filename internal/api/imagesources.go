@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"samuori.invalid/samuori/internal/api/apigen"
 	"samuori.invalid/samuori/internal/imagesources"
@@ -10,6 +11,7 @@ import (
 
 func (a *API) imageSourceError(w http.ResponseWriter, r *http.Request, err error) {
 	var inv *imagesources.Invalid
+	var inUse *imagesources.InUse
 	switch {
 	case errors.Is(err, imagesources.ErrForbidden):
 		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", "only organization administrators manage image sources")
@@ -17,6 +19,8 @@ func (a *API) imageSourceError(w http.ResponseWriter, r *http.Request, err error
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "not found")
 	case errors.Is(err, imagesources.ErrConflict):
 		apigen.WriteProblem(w, http.StatusConflict, "conflict", "that name is already used")
+	case errors.As(err, &inUse):
+		apigen.WriteProblem(w, http.StatusConflict, "image_source_in_use", "This image source is still in use by "+strings.Join(inUse.Uses, "; ")+". Disable it to stop new pulls, and delete it once those builds finish.")
 	case errors.As(err, &inv):
 		apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid", inv.Reason)
 	default:
@@ -69,6 +73,31 @@ func (a *API) CreateImageSource(w http.ResponseWriter, r *http.Request, _ apigen
 		return
 	}
 	writeJSON(w, http.StatusCreated, toImageSource(out))
+}
+
+func (a *API) UpdateImageSource(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.UpdateImageSourceParams) {
+	var in apigen.ImageSourceUpdate
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	change := imagesources.Source{Name: in.Name, Patterns: in.RepositoryPatterns, TeamIDs: in.TeamIds}
+	if in.PullProfileId != nil {
+		change.PullProfileID = *in.PullProfileId
+	}
+	out, err := a.imageSources.Update(r.Context(), principal(r), id, change, requestID(w))
+	if err != nil {
+		a.imageSourceError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toImageSource(out))
+}
+
+func (a *API) DeleteImageSource(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.DeleteImageSourceParams) {
+	if err := a.imageSources.Delete(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.imageSourceError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *API) SetImageSourceState(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.SetImageSourceStateParams) {

@@ -40,6 +40,12 @@ independently testable, not scope cuts. Update task status in the same PR that d
   administrators, audited, 409 for non-drafts). Runnable: API and UI; `TestCustomRecipeLifecycle`,
   `TestCustomRecipeAPI` and the policy-helper node test pass on SQLite. Not yet run: a browser check of the editors
   and PostgreSQL.
+- **Editable secrets and registries (2026-10-28, owner request, ADR 0064).** Administrators edit secret grants in
+  place (widening keeps bindings; narrowing disables the bindings that no longer fit, audited, with a warning before
+  saving), edit allowed secrets' label and note, rotate bindings, edit and delete image sources (409 while an
+  unfinished build plans to pull through one) and retire signing keys from the portal. Runnable: API and UI;
+  `TestUpdateGrant`, `TestUpdateAllowedSecret`, `TestUpdateAndDelete` and `TestSecretAndImageSourceEdits` pass on
+  SQLite. Not yet run: PostgreSQL, a browser check, and a grant edit against a live external store.
 - **Name and brand (2026-10-27, owner decision, ADR 0057).** The logo and palette come from `docs/brand/`; the UI
   loading indicators animate the mark.
 - **Deployment files (2026-10-28, owner request, ADR 0059).** Next to "Download image", the build page and the Images

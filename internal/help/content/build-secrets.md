@@ -26,4 +26,11 @@ Use **Ask for binding**, say why the build needs it, and an administrator grants
 - Required secrets without a key block the build before it starts, with the reason.
 - A secret mount only keeps the value out of the image. Anything your build **writes** using it can still end up in
   the image; Samuori's sensitive-content check looks for that. See [Validation results](help:validation).
-- If an administrator revokes a key, builds that use it stop receiving it at once.
+- If an administrator revokes a key, builds that use it stop receiving it at once. If an administrator narrows a
+  key, for example to builds only, secrets that no longer fit are unbound and show as needing a key again.
+
+## Stop using a key
+
+Choose another key for the secret, or remove the secret from the list if the build no longer needs it. Disabling a
+binding outright is reserved for administrators; use **Ask for binding** or contact one if a key must stop working
+for your project at once.

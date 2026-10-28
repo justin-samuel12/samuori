@@ -16,7 +16,9 @@ keys never reach workers, builds, the UI or the API.
 - Retired keys stay listed with their public keys, so existing signatures can still be verified. Promotion accepts
   a source signature from any of the organization's keys.
 - Every role can list keys and public keys (`GET /signing-keys`); public keys are not secret.
-- Creation and retirement are audited.
+- Creation and retirement are audited. The portal offers **Retire** on the active key, after a confirmation that
+  the key can never sign again and its signatures stay verifiable. Keys are never deleted. `TestSecretAndImageSourceEdits`
+  covers the API (administrator-only, a second retire is 404, the retired key keeps its public key).
 
 Signing goes through the `Signer` interface in `internal/signing`, which reports capabilities (key-based, keyless,
 attestation types).

@@ -40,6 +40,7 @@ export function SecretsPage() {
   const [allowed, setAllowed] = useState<AllowedSecret[]>([]);
   const [allowing, setAllowing] = useState(false);
   const [unallowing, setUnallowing] = useState<AllowedSecret>();
+  const [relabeling, setRelabeling] = useState<AllowedSecret>();
   const [stored, setStored] = useState<LocalSecret[]>([]);
   const [storing, setStoring] = useState(false);
   const [versioning, setVersioning] = useState<LocalSecret>();
@@ -320,13 +321,22 @@ export function SecretsPage() {
                 id: "actions",
                 name: "Actions",
                 render: (a) => (
-                  <Button
-                    variant="quiet"
-                    aria-label={`Remove ${a.label} from the allowed secrets`}
-                    onPress={() => setUnallowing(a)}
-                  >
-                    Remove
-                  </Button>
+                  <span className="inline-flex gap-1">
+                    <Button
+                      variant="quiet"
+                      aria-label={`Edit ${a.label}`}
+                      onPress={() => setRelabeling(a)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      aria-label={`Remove ${a.label} from the allowed secrets`}
+                      onPress={() => setUnallowing(a)}
+                    >
+                      Remove
+                    </Button>
+                  </span>
                 ),
               },
             ]}
@@ -410,6 +420,19 @@ export function SecretsPage() {
           }}
         />
       )}
+      {relabeling && (
+        <AllowedEditDialog
+          entry={relabeling}
+          onClose={() => setRelabeling(undefined)}
+          onDone={(a) => {
+            setRelabeling(undefined);
+            setMessage(
+              `Saved ${a.label}. Grants already made keep their own names.`,
+            );
+            void load();
+          }}
+        />
+      )}
       {unallowing && (
         <Dialog
           title={`Remove ${unallowing.label}?`}
@@ -480,7 +503,12 @@ function ProjectAccess({
   const [bindings, setBindings] = useState<Binding[]>([]);
   const [granting, setGranting] = useState(false);
   const [revoking, setRevoking] = useState<Grant>();
-  const [disabling, setDisabling] = useState<Binding>();
+  const [editingGrant, setEditingGrant] = useState<Grant>();
+  const [acting, setActing] = useState<{
+    binding: Binding;
+    action: "disable" | "rotate";
+  }>();
+  const [pools, setPools] = useState<{ id: string; name: string }[]>([]);
 
   const loadProjects = useCallback(async () => {
     const ps = await api.GET("/projects", {
@@ -489,6 +517,8 @@ function ProjectAccess({
     setProjects(
       (ps.data?.items ?? []).map((p) => ({ id: p.id, label: p.name })),
     );
+    const wp = await api.GET("/worker-pools");
+    setPools((wp.data?.items ?? []).map((p) => ({ id: p.id, name: p.name })));
   }, []);
   useLoader(loadProjects);
 
@@ -525,7 +555,9 @@ function ProjectAccess({
       <p className="samuori-muted mt-0 max-w-3xl">
         Grant keys to a project. Its developers and maintainers then choose from
         these keys for each secret their build uses; they never see values or
-        store paths. Revoking a key stops every build that uses it.
+        store paths. Revoking a key stops every build that uses it. Developers
+        cannot disable a binding themselves: they choose another key or remove
+        the secret from their spec, or ask you to disable it here.
       </p>
       <div className="max-w-md">
         <Select
@@ -584,7 +616,29 @@ function ProjectAccess({
                   </>
                 ),
               },
-              { id: "usage", name: "Usage", render: (g) => g.usage.join(", ") },
+              {
+                id: "usage",
+                name: "Usage",
+                render: (g) => (
+                  <>
+                    {g.usage.join(", ")}
+                    <div className="samuori-muted text-xs">
+                      {g.version && g.version !== "latest"
+                        ? `Version ${g.version}`
+                        : "Latest version"}
+                      {", "}
+                      {g.eligiblePoolIds?.length
+                        ? g.eligiblePoolIds
+                            .map(
+                              (id) =>
+                                pools.find((p) => p.id === id)?.name ?? id,
+                            )
+                            .join(", ")
+                        : "any eligible pool"}
+                    </div>
+                  </>
+                ),
+              },
               {
                 id: "used",
                 name: "Used as",
@@ -614,6 +668,13 @@ function ProjectAccess({
                         Refresh keys
                       </Button>
                     ) : null}
+                    <Button
+                      variant="quiet"
+                      aria-label={`Edit ${g.name}`}
+                      onPress={() => setEditingGrant(g)}
+                    >
+                      Edit
+                    </Button>
                     <Button
                       variant="quiet"
                       aria-label={`Revoke ${g.name}`}
@@ -661,13 +722,26 @@ function ProjectAccess({
                 id: "actions",
                 name: "Actions",
                 render: (b) => (
-                  <Button
-                    variant="quiet"
-                    onPress={() => setDisabling(b)}
-                    aria-label={`Disable binding ${b.logicalId}`}
-                  >
-                    Disable
-                  </Button>
+                  <span className="inline-flex gap-1">
+                    <Button
+                      variant="quiet"
+                      onPress={() =>
+                        setActing({ binding: b, action: "rotate" })
+                      }
+                      aria-label={`Rotate binding ${b.logicalId}`}
+                    >
+                      Rotate
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      onPress={() =>
+                        setActing({ binding: b, action: "disable" })
+                      }
+                      aria-label={`Disable binding ${b.logicalId}`}
+                    >
+                      Disable
+                    </Button>
+                  </span>
                 ),
               },
             ]}
@@ -697,13 +771,37 @@ function ProjectAccess({
               void load();
             }}
           />
-          <DisableDialog
-            binding={disabling}
-            onClose={() => setDisabling(undefined)}
+          {editingGrant && (
+            <GrantEditDialog
+              key={editingGrant.id}
+              project={project}
+              grant={editingGrant}
+              pools={pools}
+              bindings={bindings.filter((b) => b.grantId === editingGrant.id)}
+              onClose={() => setEditingGrant(undefined)}
+              onDone={(u) => {
+                setEditingGrant(undefined);
+                onMessage(
+                  u.disabled.length
+                    ? `Saved ${u.grant.name}. Disabled ${u.disabled.map((d) => d.logicalId).join(", ")}: the key no longer covers them.`
+                    : `Saved ${u.grant.name}. Its bindings follow the change.`,
+                );
+                void load();
+              }}
+            />
+          )}
+          <BindingActionDialog
+            key={acting ? `${acting.binding.id}-${acting.action}` : "none"}
+            binding={acting?.binding}
+            action={acting?.action ?? "disable"}
+            onClose={() => setActing(undefined)}
             onDone={() => {
-              setDisabling(undefined);
+              const a = acting?.action;
+              setActing(undefined);
               onMessage(
-                "Binding disabled. Running builds can no longer receive it.",
+                a === "rotate"
+                  ? "Binding rotated. Builds admitted before now can no longer receive it; new builds can."
+                  : "Binding disabled. Running builds can no longer receive it.",
               );
               void load();
             }}
@@ -1145,17 +1243,20 @@ function RevokeDialog({
   );
 }
 
-function DisableDialog({
+function BindingActionDialog({
   binding,
+  action,
   onClose,
   onDone,
 }: {
   binding?: Binding;
+  action: "disable" | "rotate";
   onClose: () => void;
   onDone: () => void;
 }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string>();
+  const rotate = action === "rotate";
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!binding) return;
@@ -1164,7 +1265,7 @@ function DisableDialog({
         path: { bindingId: binding.id },
         header: { "Idempotency-Key": crypto.randomUUID() },
       },
-      body: { action: "disable", reason },
+      body: { action, reason },
     });
     if (error) setError(describeError(error));
     else {
@@ -1174,27 +1275,245 @@ function DisableDialog({
   }
   return (
     <Dialog
-      title={`Disable ${binding?.logicalId ?? ""}`}
+      title={`${rotate ? "Rotate" : "Disable"} ${binding?.logicalId ?? ""}`}
       isOpen={!!binding}
       onOpenChange={(o) => !o && onClose()}
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <p>
-          Builds that need this secret will be refused, including builds that
-          are running now.
+          {rotate
+            ? "The binding gets a new version, for example after its value changed in the store. Builds admitted with the old version can no longer receive it, and caches keyed on it are not reused. New builds use it as before."
+            : "Builds that need this secret will be refused, including builds that are running now."}
         </p>
         <TextField
           label="Reason"
           value={reason}
           onChange={setReason}
           isRequired
+          minLength={5}
+          description="At least 5 characters; it is recorded in the audit log."
         />
         <div className="samuori-actions">
           <Button variant="secondary" onPress={onClose}>
             Cancel
           </Button>
-          <Button type="submit">Disable</Button>
+          <Button type="submit" isDisabled={reason.trim().length < 5}>
+            {rotate ? "Rotate" : "Disable"}
+          </Button>
+        </div>
+      </Form>
+    </Dialog>
+  );
+}
+
+// covers mirrors secrets.Covers on the server: an empty pool list allows every pool.
+function covers(
+  usage: string[],
+  pools: string[],
+  innerUsage: string[],
+  innerPools: string[],
+) {
+  if (!innerUsage.every((u) => usage.includes(u))) return false;
+  if (pools.length === 0) return true;
+  return innerPools.length > 0 && innerPools.every((p) => pools.includes(p));
+}
+
+function GrantEditDialog({
+  project,
+  grant,
+  pools,
+  bindings,
+  onClose,
+  onDone,
+}: {
+  project: string;
+  grant: Grant;
+  pools: { id: string; name: string }[];
+  bindings: Binding[];
+  onClose: () => void;
+  onDone: (u: Schemas["SecretGrantUpdated"]) => void;
+}) {
+  const [name, setName] = useState(grant.name);
+  const [build, setBuild] = useState(grant.usage.includes("build"));
+  const [test, setTest] = useState(grant.usage.includes("test"));
+  const [version, setVersion] = useState(grant.version ?? "latest");
+  const [chosen, setChosen] = useState<string[]>(grant.eligiblePoolIds ?? []);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string>();
+  const usage: ("build" | "test")[] = [];
+  if (build) usage.push("build");
+  if (test) usage.push("test");
+  const narrows = !covers(
+    usage,
+    chosen,
+    grant.usage,
+    grant.eligiblePoolIds ?? [],
+  );
+  const losing = bindings.filter(
+    (b) => !covers(usage, chosen, b.usage, b.eligiblePoolIds ?? []),
+  );
+  const v = version.trim();
+  const versionChanged = (v || "latest") !== (grant.version ?? "latest");
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const pinned =
+      v === "" || v === "latest"
+        ? { versionPolicy: "latest" as const }
+        : grant.providerType === "aws-secrets-manager"
+          ? { versionPolicy: "pinned" as const, pinnedVersionId: v }
+          : { versionPolicy: "pinned" as const, pinnedVersion: Number(v) };
+    const { data, error } = await api.PUT(
+      "/projects/{projectId}/secret-grants/{grantId}",
+      {
+        params: { path: { projectId: project, grantId: grant.id } },
+        body: { name, usage, eligiblePoolIds: chosen, reason, ...pinned },
+      },
+    );
+    if (error || !data) setError(describeError(error));
+    else onDone(data);
+  }
+  return (
+    <Dialog
+      title={`Edit ${grant.name}`}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <Form onSubmit={submit} className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <p className="samuori-muted m-0">
+          The key itself cannot change; to grant a different secret, grant it
+          and revoke this one.
+        </p>
+        <TextField
+          label="Name developers see"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
+        <Checkbox isSelected={build} onChange={setBuild}>
+          Builds may use it
+        </Checkbox>
+        <Checkbox isSelected={test} onChange={setTest}>
+          Runtime tests may use it
+        </Checkbox>
+        <TextField
+          label="Version"
+          value={version}
+          onChange={setVersion}
+          description="latest, or a version to pin."
+        />
+        {pools.length > 0 && (
+          <fieldset className="samuori-fieldset">
+            <legend>Worker pools</legend>
+            <p className="samuori-muted m-0 text-xs">
+              None selected allows every eligible pool.
+            </p>
+            {pools.map((p) => (
+              <Checkbox
+                key={p.id}
+                isSelected={chosen.includes(p.id)}
+                onChange={(on) =>
+                  setChosen((c) =>
+                    on ? [...c, p.id] : c.filter((x) => x !== p.id),
+                  )
+                }
+              >
+                {p.name}
+              </Checkbox>
+            ))}
+          </fieldset>
+        )}
+        {narrows && losing.length > 0 && (
+          <Alert tone="warning">
+            This narrows the grant. Saving disables{" "}
+            {losing.map((b) => b.logicalId).join(", ")} at once: builds that
+            need {losing.length === 1 ? "it" : "them"} are refused, including
+            running builds, until a developer binds another key.
+          </Alert>
+        )}
+        {narrows && losing.length === 0 && (
+          <Alert tone="info">
+            This narrows the grant. No current binding is affected.
+          </Alert>
+        )}
+        {versionChanged && bindings.length > 0 && (
+          <Alert tone="info">
+            Changing the version gives its bindings a new version: builds
+            admitted before now can no longer receive the value.
+          </Alert>
+        )}
+        <TextField
+          label="Reason for the change"
+          value={reason}
+          onChange={setReason}
+          isRequired
+          minLength={3}
+        />
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant={narrows && losing.length > 0 ? "danger" : "primary"}
+            isDisabled={
+              !name.trim() || usage.length === 0 || reason.trim().length < 3
+            }
+          >
+            Save
+          </Button>
+        </div>
+      </Form>
+    </Dialog>
+  );
+}
+
+function AllowedEditDialog({
+  entry,
+  onClose,
+  onDone,
+}: {
+  entry: AllowedSecret;
+  onClose: () => void;
+  onDone: (a: AllowedSecret) => void;
+}) {
+  const [label, setLabel] = useState(entry.label);
+  const [note, setNote] = useState(entry.note ?? "");
+  const [error, setError] = useState<string>();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const { data, error } = await api.PUT(
+      "/allowed-secrets/{allowedSecretId}",
+      {
+        params: { path: { allowedSecretId: entry.id } },
+        body: { label: label.trim(), note },
+      },
+    );
+    if (error || !data) setError(describeError(error));
+    else onDone(data);
+  }
+  return (
+    <Dialog
+      title={`Edit ${entry.label}`}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <Form onSubmit={submit} className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <p className="samuori-muted m-0">
+          The store and reference cannot change; remove the entry and allow the
+          other secret instead.
+        </p>
+        <TextField label="Label" value={label} onChange={setLabel} isRequired />
+        <TextField label="Note" value={note} onChange={setNote} />
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" isDisabled={!label.trim()}>
+            Save
+          </Button>
         </div>
       </Form>
     </Dialog>

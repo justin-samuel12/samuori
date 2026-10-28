@@ -20,6 +20,8 @@ func toSecretGrant(g secrets.Grant, withReference bool) apigen.SecretGrant {
 		fields := append([]string{}, g.Fields...)
 		out.Fields = &fields
 	}
+	version, pools := g.VersionPolicy, append([]string{}, g.PoolIDs...)
+	out.Version, out.EligiblePoolIds = &version, &pools
 	switch g.Usage {
 	case "both":
 		out.Usage = []apigen.SecretGrantUsage{apigen.SecretGrantUsageBuild, apigen.SecretGrantUsageTest}
@@ -82,25 +84,10 @@ func (a *API) CreateSecretGrant(w http.ResponseWriter, r *http.Request, projectI
 	if in.Name != nil {
 		req.Name = *in.Name
 	}
-	build, test := slices.Contains(in.Usage, apigen.SecretGrantCreateUsageBuild), slices.Contains(in.Usage, apigen.SecretGrantCreateUsageTest)
-	switch {
-	case build && test:
-		req.Usage = "both"
-	case test:
-		req.Usage = "test"
-	default:
-		req.Usage = "build"
-	}
-	if in.VersionPolicy != nil && *in.VersionPolicy == apigen.SecretGrantCreateVersionPolicyPinned {
-		switch {
-		case in.PinnedVersion != nil && in.PinnedVersionId == nil:
-			req.VersionPolicy = strconv.Itoa(*in.PinnedVersion)
-		case in.PinnedVersionId != nil && in.PinnedVersion == nil && *in.PinnedVersionId != "latest":
-			req.VersionPolicy = *in.PinnedVersionId
-		default:
-			apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid_secret", "a pinned version policy needs exactly one of pinnedVersion or pinnedVersionId")
-			return
-		}
+	req.Usage = grantUsage(slices.Contains(in.Usage, apigen.SecretGrantCreateUsageBuild), slices.Contains(in.Usage, apigen.SecretGrantCreateUsageTest))
+	var ok bool
+	if req.VersionPolicy, ok = grantVersion(w, in.VersionPolicy != nil && *in.VersionPolicy == apigen.SecretGrantCreateVersionPolicyPinned, in.PinnedVersion, in.PinnedVersionId); !ok {
+		return
 	}
 	if in.EligiblePoolIds != nil {
 		req.PoolIDs = *in.EligiblePoolIds
@@ -128,6 +115,54 @@ func (a *API) CreateSecretGrant(w http.ResponseWriter, r *http.Request, projectI
 		}
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "not found")
 	})
+}
+
+func grantUsage(build, test bool) string {
+	switch {
+	case build && test:
+		return "both"
+	case test:
+		return "test"
+	}
+	return "build"
+}
+
+// grantVersion turns a pinned version policy into the stored form, writing a problem when it is malformed.
+func grantVersion(w http.ResponseWriter, pinned bool, number *int, id *string) (string, bool) {
+	if !pinned {
+		return "", true
+	}
+	switch {
+	case number != nil && id == nil:
+		return strconv.Itoa(*number), true
+	case id != nil && number == nil && *id != "latest":
+		return *id, true
+	}
+	apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid_secret", "a pinned version policy needs exactly one of pinnedVersion or pinnedVersionId")
+	return "", false
+}
+
+func (a *API) UpdateSecretGrant(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, grantID apigen.Id, _ apigen.UpdateSecretGrantParams) {
+	var in apigen.SecretGrantUpdate
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	c := secrets.GrantChange{Name: in.Name, PoolIDs: in.EligiblePoolIds, Reason: in.Reason,
+		Usage: grantUsage(slices.Contains(in.Usage, apigen.SecretGrantUpdateUsageBuild), slices.Contains(in.Usage, apigen.SecretGrantUpdateUsageTest))}
+	var ok bool
+	if c.VersionPolicy, ok = grantVersion(w, in.VersionPolicy != nil && *in.VersionPolicy == apigen.SecretGrantUpdateVersionPolicyPinned, in.PinnedVersion, in.PinnedVersionId); !ok {
+		return
+	}
+	u, err := a.secrets.UpdateGrant(r.Context(), principal(r), projectID, grantID, c, requestID(w))
+	if err != nil {
+		a.secretsError(w, r, err)
+		return
+	}
+	out := apigen.SecretGrantUpdated{Grant: toSecretGrant(u.Grant, true), Disabled: []apigen.SecretGrantUse{}}
+	for _, d := range u.Disabled {
+		out.Disabled = append(out.Disabled, toGrantUse(d))
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (a *API) RevokeSecretGrant(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, grantID apigen.Id, params apigen.RevokeSecretGrantParams) {
@@ -243,4 +278,21 @@ func (a *API) RemoveAllowedSecret(w http.ResponseWriter, r *http.Request, id api
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) UpdateAllowedSecret(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.UpdateAllowedSecretParams) {
+	var in apigen.AllowedSecretUpdate
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	note := ""
+	if in.Note != nil {
+		note = *in.Note
+	}
+	x, err := a.secrets.UpdateAllowedSecret(r.Context(), principal(r), id, in.Label, note, requestID(w))
+	if err != nil {
+		a.secretsError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toAllowedSecret(x))
 }

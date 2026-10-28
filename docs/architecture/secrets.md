@@ -210,6 +210,17 @@ maintainers decide which key each spec secret ID uses.
   raw bindings stay with administrators.
 - **Revoke:** revoking a grant disables every binding made from it at once, so admission refuses it and running
   builds can no longer receive it.
+- **Edit** (ADR 0064, `PUT /projects/{id}/secret-grants/{grantId}`, administrators; Project access > **Edit**): the
+  name, usage, version policy and eligible pools change in place; the key does not. The checks of creation apply
+  and a reason is required. Bindings made from the grant follow the new scope. One the new usage, pools or key
+  names no longer cover is **disabled** at once with the reason `grant narrowed: ...` (audited `secret.unbind`);
+  the others stay active at their version, so a widening interrupts nobody. A changed version policy gives the
+  kept bindings a new version, because they would now deliver a different value than running builds were admitted
+  with. Direct bindings and other grants are never touched. Audited `secret.grant.update` with before and after;
+  the portal names the IDs a narrowing would disable before saving. `TestUpdateGrant`.
+- **Stopping use:** unbinding stays administrator-only (**Disable** under Project access). Developers and maintainers
+  stop using a key by binding the ID to another key or removing the secret from their spec. **Rotate** under
+  Project access gives a binding a new version, for example after its value changed in an external store.
 - Administrators can still bind directly (`POST /projects/{id}/secret-bindings`); developers cannot. "Ask for
   binding" remains for keys nobody granted yet.
 - In the portal: Security & Secrets > Secrets has the tabs Stored secrets, External stores and Project access. Each stored secret has a **New version** action: it stores the next version under the same name and type; grants on "latest" use it from the next build, pinned grants keep their version. **Delete** destroys every version of a stored secret and is audited (`secret.delete`). It is refused, with each use listed, while a project has an active grant or binding of it, or while Samuori uses it for its own credentials; see [Deleting secrets](#deleting-secrets).
@@ -247,8 +258,9 @@ store's default, `secret` unless set through the API), or an AWS secret
 or one JSON field, each with a label and a note. Adding an entry reads it once to prove it exists (a whole secret
 records its key names) and discards the values. Grants of external secrets must come from the list: by
 `allowedSecretId`, or by a reference the list covers. Removing an entry stops new grants; grants already made stay
-until revoked. A store is not deleted while entries name it. Every change is audited (`secret.allow`,
-`secret.allow.remove`). The older per-store **allowed prefixes** still apply where set but are no longer edited in
+until revoked. **Edit** (`PUT /allowed-secrets/{id}`) changes only the label and note; grants already made keep
+their own names, and the store and reference cannot change. A store is not deleted while entries name it. Every
+change is audited (`secret.allow`, `secret.allow.update` with before and after, `secret.allow.remove`). The older per-store **allowed prefixes** still apply where set but are no longer edited in
 the portal. Migration 00058, `TestAllowedSecrets`.
 
 ## External providers (WP27)

@@ -21,6 +21,10 @@ func (Unimplemented) RemoveAllowedSecret(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "RemoveAllowedSecret")
 }
 
+func (Unimplemented) UpdateAllowedSecret(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateAllowedSecretParams) {
+	NotImplemented(w, r, "UpdateAllowedSecret")
+}
+
 func (Unimplemented) ListApprovals(w http.ResponseWriter, r *http.Request, _ ListApprovalsParams) {
 	NotImplemented(w, r, "ListApprovals")
 }
@@ -353,6 +357,14 @@ func (Unimplemented) ListImageSources(w http.ResponseWriter, r *http.Request) {
 
 func (Unimplemented) CreateImageSource(w http.ResponseWriter, r *http.Request, _ CreateImageSourceParams) {
 	NotImplemented(w, r, "CreateImageSource")
+}
+
+func (Unimplemented) DeleteImageSource(w http.ResponseWriter, r *http.Request, _ Id, _ DeleteImageSourceParams) {
+	NotImplemented(w, r, "DeleteImageSource")
+}
+
+func (Unimplemented) UpdateImageSource(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateImageSourceParams) {
+	NotImplemented(w, r, "UpdateImageSource")
 }
 
 func (Unimplemented) GetImageSourceMirrorConfig(w http.ResponseWriter, r *http.Request, _ Id) {
@@ -695,6 +707,10 @@ func (Unimplemented) ListSecretGrants(w http.ResponseWriter, r *http.Request, _ 
 
 func (Unimplemented) CreateSecretGrant(w http.ResponseWriter, r *http.Request, _ ProjectId, _ CreateSecretGrantParams) {
 	NotImplemented(w, r, "CreateSecretGrant")
+}
+
+func (Unimplemented) UpdateSecretGrant(w http.ResponseWriter, r *http.Request, _ ProjectId, _ Id, _ UpdateSecretGrantParams) {
+	NotImplemented(w, r, "UpdateSecretGrant")
 }
 
 func (Unimplemented) RefreshSecretGrantKeys(w http.ResponseWriter, r *http.Request, _ ProjectId, _ Id, _ RefreshSecretGrantKeysParams) {

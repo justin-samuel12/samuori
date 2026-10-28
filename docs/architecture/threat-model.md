@@ -244,7 +244,7 @@ Test IDs are defined in the security test catalog.
 | TM-48 | I | Proxy bypass or non-allowlisted destinations | No direct route; proxy allowlists by ecosystem preset; tools ignoring proxy settings fail closed | SEC-NET-01, SEC-NET-06 |
 | TM-49 | I | DNS exfiltration | No DNS from sandboxes; names resolved only at the proxy | SEC-NET-04 |
 | TM-60 | T | Tampered base image | Engine pulls only via the approved mirror, by digest; administrator-added runtimes must be pinned and allowed by the base-image policy | SEC-NET-07, SEC-REG-01, SEC-SPC-08 |
-| TM-65 | I | Mirror serves one project's private image to another, including from cache | Mirror enforces controller-issued, build-scoped token scopes on every endpoint, including cached content; fails closed when authorization is unavailable; isolated mirrors until the tests pass in CI (ADR 0030, OD-14) | SEC-REG-04, SEC-REG-07, SEC-REG-08 |
+| TM-65 | I | Mirror serves one project's private image to another, including from cache | Mirror enforces controller-issued, build-scoped token scopes on every endpoint, including cached content; fails closed when authorization is unavailable; isolated mirrors until the tests pass in CI (ADR 0030, OD-14) | SEC-REG-04, SEC-REG-07, SEC-REG-08, SEC-REG-11 |
 | TM-66 | I | Upstream registry credentials exposed to workers or steps | Upstream credentials held only by the mirror | SEC-REG-05 |
 
 ### TB13 — Worker to runtime-test sandbox
@@ -264,7 +264,7 @@ Test IDs are defined in the security test catalog.
 
 | ID | STRIDE | Threat | Mitigation | Tests |
 |---|---|---|---|---|
-| TM-54 | E | Missing, unauthorized or cross-project secret binding used | Admission checks project permission, binding status, usage and pool eligibility; required-but-missing blocks before scheduling | SEC-SCR-01, SEC-SCR-02, SEC-SCR-04 |
+| TM-54 | E | Missing, unauthorized or cross-project secret binding used | Admission checks project permission, binding status, usage and pool eligibility; required-but-missing blocks before scheduling | SEC-SCR-01, SEC-SCR-02, SEC-SCR-04, SEC-SCR-11 |
 | TM-55 | I | Secret values in records, plans, audit, API responses, previews or diagnostics | Logical IDs and binding versions only; redaction | SEC-SCR-06 |
 | TM-52 | I | Broad secret access | Per-job, just-in-time release with a job-scoped credential; never persisted on workers | SEC-SEC-04, SEC-SCR-05, SEC-SCR-07 |
 | TM-53 | I | Secrets in DB, logs, diagnostics or previews | References only; redaction; local provider encrypts with a key outside the DB | SEC-SEC-05 |

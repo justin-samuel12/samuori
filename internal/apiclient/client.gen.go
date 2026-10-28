@@ -3425,6 +3425,42 @@ func (e SecretGrantCreateVersionPolicy) Valid() bool {
 	}
 }
 
+// Defines values for SecretGrantUpdateUsage.
+const (
+	SecretGrantUpdateUsageBuild SecretGrantUpdateUsage = "build"
+	SecretGrantUpdateUsageTest  SecretGrantUpdateUsage = "test"
+)
+
+// Valid indicates whether the value is a known member of the SecretGrantUpdateUsage enum.
+func (e SecretGrantUpdateUsage) Valid() bool {
+	switch e {
+	case SecretGrantUpdateUsageBuild:
+		return true
+	case SecretGrantUpdateUsageTest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecretGrantUpdateVersionPolicy.
+const (
+	SecretGrantUpdateVersionPolicyLatest SecretGrantUpdateVersionPolicy = "latest"
+	SecretGrantUpdateVersionPolicyPinned SecretGrantUpdateVersionPolicy = "pinned"
+)
+
+// Valid indicates whether the value is a known member of the SecretGrantUpdateVersionPolicy enum.
+func (e SecretGrantUpdateVersionPolicy) Valid() bool {
+	switch e {
+	case SecretGrantUpdateVersionPolicyLatest:
+		return true
+	case SecretGrantUpdateVersionPolicyPinned:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SecretGrantUseEncoding.
 const (
 	SecretGrantUseEncodingBase64 SecretGrantUseEncoding = "base64"
@@ -4390,6 +4426,12 @@ type AllowedSecretCreate struct {
 // AllowedSecretList defines model for AllowedSecretList.
 type AllowedSecretList struct {
 	Items []AllowedSecret `json:"items"`
+}
+
+// AllowedSecretUpdate defines model for AllowedSecretUpdate.
+type AllowedSecretUpdate struct {
+	Label string  `json:"label"`
+	Note  *string `json:"note,omitempty"`
 }
 
 // ApiToken defines model for ApiToken.
@@ -6301,6 +6343,16 @@ type ImageSourceCreate struct {
 // ImageSourceList defines model for ImageSourceList.
 type ImageSourceList struct {
 	Items []ImageSource `json:"items"`
+}
+
+// ImageSourceUpdate defines model for ImageSourceUpdate.
+type ImageSourceUpdate struct {
+	Name string `json:"name"`
+
+	// PullProfileId ULID
+	PullProfileId      *Id      `json:"pullProfileId,omitempty"`
+	RepositoryPatterns []string `json:"repositoryPatterns"`
+	TeamIds            []Id     `json:"teamIds"`
 }
 
 // ImageSummary defines model for ImageSummary.
@@ -8280,6 +8332,9 @@ type SecretBindingRequest struct {
 type SecretGrant struct {
 	CreatedAt Timestamp `json:"createdAt"`
 
+	// EligiblePoolIds Empty allows every eligible pool
+	EligiblePoolIds *[]Id `json:"eligiblePoolIds,omitempty"`
+
 	// Fields Key names of a key set, never values; empty for a single key
 	Fields *[]string `json:"fields,omitempty"`
 
@@ -8297,6 +8352,9 @@ type SecretGrant struct {
 	Reason            string                  `json:"reason"`
 	Status            SecretGrantStatus       `json:"status"`
 	Usage             []SecretGrantUsage      `json:"usage"`
+
+	// Version latest, or the pinned version
+	Version *string `json:"version,omitempty"`
 }
 
 // SecretGrantProviderType defines model for SecretGrant.ProviderType.
@@ -8362,6 +8420,31 @@ type SecretGrantList struct {
 // SecretGrantRevoke defines model for SecretGrantRevoke.
 type SecretGrantRevoke struct {
 	Reason string `json:"reason"`
+}
+
+// SecretGrantUpdate defines model for SecretGrantUpdate.
+type SecretGrantUpdate struct {
+	// EligiblePoolIds Empty allows every eligible pool
+	EligiblePoolIds []Id                            `json:"eligiblePoolIds"`
+	Name            string                          `json:"name"`
+	PinnedVersion   *int                            `json:"pinnedVersion,omitempty"`
+	PinnedVersionId *string                         `json:"pinnedVersionId,omitempty"`
+	Reason          string                          `json:"reason"`
+	Usage           []SecretGrantUpdateUsage        `json:"usage"`
+	VersionPolicy   *SecretGrantUpdateVersionPolicy `json:"versionPolicy,omitempty"`
+}
+
+// SecretGrantUpdateUsage defines model for SecretGrantUpdate.Usage.
+type SecretGrantUpdateUsage string
+
+// SecretGrantUpdateVersionPolicy defines model for SecretGrantUpdate.VersionPolicy.
+type SecretGrantUpdateVersionPolicy string
+
+// SecretGrantUpdated defines model for SecretGrantUpdated.
+type SecretGrantUpdated struct {
+	// Disabled Bindings disabled because the grant no longer covers them
+	Disabled []SecretGrantUse `json:"disabled"`
+	Grant    SecretGrant      `json:"grant"`
 }
 
 // SecretGrantUse defines model for SecretGrantUse.
@@ -9286,6 +9369,12 @@ type RemoveAllowedSecretParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// UpdateAllowedSecretParams defines parameters for UpdateAllowedSecret.
+type UpdateAllowedSecretParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListApprovalsParams defines parameters for ListApprovals.
 type ListApprovalsParams struct {
 	Cursor *Cursor                   `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -9634,6 +9723,18 @@ type SetIdentitySettingsParams struct {
 
 // CreateImageSourceParams defines parameters for CreateImageSource.
 type CreateImageSourceParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// DeleteImageSourceParams defines parameters for DeleteImageSource.
+type DeleteImageSourceParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdateImageSourceParams defines parameters for UpdateImageSource.
+type UpdateImageSourceParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10003,6 +10104,12 @@ type CreateSecretGrantParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken     *CsrfToken     `json:"X-CSRF-Token,omitempty"`
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateSecretGrantParams defines parameters for UpdateSecretGrant.
+type UpdateSecretGrantParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
 // RefreshSecretGrantKeysParams defines parameters for RefreshSecretGrantKeys.
@@ -10537,6 +10644,9 @@ type RunWorkerSelfTestParams struct {
 // AllowSecretJSONRequestBody defines body for AllowSecret for application/json ContentType.
 type AllowSecretJSONRequestBody = AllowedSecretCreate
 
+// UpdateAllowedSecretJSONRequestBody defines body for UpdateAllowedSecret for application/json ContentType.
+type UpdateAllowedSecretJSONRequestBody = AllowedSecretUpdate
+
 // DecideApprovalJSONRequestBody defines body for DecideApproval for application/json ContentType.
 type DecideApprovalJSONRequestBody = ApprovalDecision
 
@@ -10636,6 +10746,9 @@ type SetIdentitySettingsJSONRequestBody = IdentitySettingsUpdate
 // CreateImageSourceJSONRequestBody defines body for CreateImageSource for application/json ContentType.
 type CreateImageSourceJSONRequestBody = ImageSourceCreate
 
+// UpdateImageSourceJSONRequestBody defines body for UpdateImageSource for application/json ContentType.
+type UpdateImageSourceJSONRequestBody = ImageSourceUpdate
+
 // SetImageSourceStateJSONRequestBody defines body for SetImageSourceState for application/json ContentType.
 type SetImageSourceStateJSONRequestBody = EnabledState
 
@@ -10734,6 +10847,9 @@ type BindSecretGrantJSONRequestBody = SecretGrantBind
 
 // CreateSecretGrantJSONRequestBody defines body for CreateSecretGrant for application/json ContentType.
 type CreateSecretGrantJSONRequestBody = SecretGrantCreate
+
+// UpdateSecretGrantJSONRequestBody defines body for UpdateSecretGrant for application/json ContentType.
+type UpdateSecretGrantJSONRequestBody = SecretGrantUpdate
 
 // RevokeSecretGrantJSONRequestBody defines body for RevokeSecretGrant for application/json ContentType.
 type RevokeSecretGrantJSONRequestBody = SecretGrantRevoke
@@ -11066,6 +11182,18 @@ type ClientInterface interface {
 
 	// RemoveAllowedSecret performs a DELETE /allowed-secrets/{allowedSecretId} (the `RemoveAllowedSecret` operationId) request.
 	RemoveAllowedSecret(ctx context.Context, allowedSecretId Id, params *RemoveAllowedSecretParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAllowedSecretWithBody performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the label and note. Grants already made keep their own names.
+	UpdateAllowedSecretWithBody(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAllowedSecret performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the label and note. Grants already made keep their own names.
+	UpdateAllowedSecret(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, body UpdateAllowedSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListApprovals performs a GET /approvals (the `ListApprovals` operationId) request.
 	ListApprovals(ctx context.Context, params *ListApprovalsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11636,6 +11764,23 @@ type ClientInterface interface {
 	// Approves pulls of upstream repositories through an authorizing mirror for the listed teams. One mirror serves one team unless shared mirrors are enabled (OD-14).
 	CreateImageSource(ctx context.Context, params *CreateImageSourceParams, body CreateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteImageSource performs a DELETE /image-sources/{sourceId} (the `DeleteImageSource` operationId) request.
+	//
+	// Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream.
+	DeleteImageSource(ctx context.Context, sourceId Id, params *DeleteImageSourceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateImageSourceWithBody performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+	UpdateImageSourceWithBody(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateImageSource performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+	UpdateImageSource(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, body UpdateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetImageSourceMirrorConfig performs a GET /image-sources/{sourceId}/mirror-config (the `GetImageSourceMirrorConfig` operationId) request.
 	//
 	// A CNCF Distribution configuration for the source's mirror and the certificates it must trust. The upstream password is never included.
@@ -12190,6 +12335,18 @@ type ClientInterface interface {
 	// CreateSecretGrant performs a POST /projects/{projectId}/secret-grants (the `CreateSecretGrant` operationId) request.
 	// Takes a body of the `application/json` content type.
 	CreateSecretGrant(ctx context.Context, projectId ProjectId, params *CreateSecretGrantParams, body CreateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSecretGrantWithBody performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+	UpdateSecretGrantWithBody(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSecretGrant performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+	UpdateSecretGrant(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, body UpdateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RefreshSecretGrantKeys performs a POST /projects/{projectId}/secret-grants/{grantId}/refresh (the `RefreshSecretGrantKeys` operationId) request.
 	//
@@ -12983,6 +13140,38 @@ func (c *Client) AllowSecret(ctx context.Context, params *AllowSecretParams, bod
 // RemoveAllowedSecret performs a DELETE /allowed-secrets/{allowedSecretId} (the `RemoveAllowedSecret` operationId) request.
 func (c *Client) RemoveAllowedSecret(ctx context.Context, allowedSecretId Id, params *RemoveAllowedSecretParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveAllowedSecretRequest(c.Server, allowedSecretId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAllowedSecretWithBody performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the label and note. Grants already made keep their own names.
+func (c *Client) UpdateAllowedSecretWithBody(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAllowedSecretRequestWithBody(c.Server, allowedSecretId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAllowedSecret performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the label and note. Grants already made keep their own names.
+func (c *Client) UpdateAllowedSecret(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, body UpdateAllowedSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAllowedSecretRequest(c.Server, allowedSecretId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14732,6 +14921,53 @@ func (c *Client) CreateImageSource(ctx context.Context, params *CreateImageSourc
 	return c.Client.Do(req)
 }
 
+// DeleteImageSource performs a DELETE /image-sources/{sourceId} (the `DeleteImageSource` operationId) request.
+//
+// Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream.
+func (c *Client) DeleteImageSource(ctx context.Context, sourceId Id, params *DeleteImageSourceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteImageSourceRequest(c.Server, sourceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateImageSourceWithBody performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+func (c *Client) UpdateImageSourceWithBody(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateImageSourceRequestWithBody(c.Server, sourceId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateImageSource performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+func (c *Client) UpdateImageSource(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, body UpdateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateImageSourceRequest(c.Server, sourceId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetImageSourceMirrorConfig performs a GET /image-sources/{sourceId}/mirror-config (the `GetImageSourceMirrorConfig` operationId) request.
 //
 // A CNCF Distribution configuration for the source's mirror and the certificates it must trust. The upstream password is never included.
@@ -16467,6 +16703,38 @@ func (c *Client) CreateSecretGrantWithBody(ctx context.Context, projectId Projec
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateSecretGrant(ctx context.Context, projectId ProjectId, params *CreateSecretGrantParams, body CreateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateSecretGrantRequest(c.Server, projectId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateSecretGrantWithBody performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+func (c *Client) UpdateSecretGrantWithBody(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSecretGrantRequestWithBody(c.Server, projectId, grantId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateSecretGrant performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+func (c *Client) UpdateSecretGrant(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, body UpdateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSecretGrantRequest(c.Server, projectId, grantId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18966,6 +19234,68 @@ func NewRemoveAllowedSecretRequest(server string, allowedSecretId Id, params *Re
 	if err != nil {
 		return nil, err
 	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateAllowedSecretRequest calls the generic UpdateAllowedSecret builder with application/json body
+func NewUpdateAllowedSecretRequest(server string, allowedSecretId Id, params *UpdateAllowedSecretParams, body UpdateAllowedSecretJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAllowedSecretRequestWithBody(server, allowedSecretId, params, "application/json", bodyReader)
+}
+
+// NewUpdateAllowedSecretRequestWithBody constructs an http.Request for the UpdateAllowedSecret method, with any body, and a specified content type
+func NewUpdateAllowedSecretRequestWithBody(server string, allowedSecretId Id, params *UpdateAllowedSecretParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "allowedSecretId", allowedSecretId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/allowed-secrets/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -23213,6 +23543,117 @@ func NewCreateImageSourceRequestWithBody(server string, params *CreateImageSourc
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteImageSourceRequest constructs an http.Request for the DeleteImageSource method
+func NewDeleteImageSourceRequest(server string, sourceId Id, params *DeleteImageSourceParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "sourceId", sourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/image-sources/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateImageSourceRequest calls the generic UpdateImageSource builder with application/json body
+func NewUpdateImageSourceRequest(server string, sourceId Id, params *UpdateImageSourceParams, body UpdateImageSourceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateImageSourceRequestWithBody(server, sourceId, params, "application/json", bodyReader)
+}
+
+// NewUpdateImageSourceRequestWithBody constructs an http.Request for the UpdateImageSource method, with any body, and a specified content type
+func NewUpdateImageSourceRequestWithBody(server string, sourceId Id, params *UpdateImageSourceParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "sourceId", sourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/image-sources/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -27643,6 +28084,75 @@ func NewCreateSecretGrantRequestWithBody(server string, projectId ProjectId, par
 		}
 
 		req.Header.Set("Idempotency-Key", headerParam1)
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateSecretGrantRequest calls the generic UpdateSecretGrant builder with application/json body
+func NewUpdateSecretGrantRequest(server string, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, body UpdateSecretGrantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSecretGrantRequestWithBody(server, projectId, grantId, params, "application/json", bodyReader)
+}
+
+// NewUpdateSecretGrantRequestWithBody constructs an http.Request for the UpdateSecretGrant method, with any body, and a specified content type
+func NewUpdateSecretGrantRequestWithBody(server string, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "grantId", grantId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/secret-grants/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
 
 	}
 
@@ -33570,6 +34080,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	RemoveAllowedSecretWithResponse(ctx context.Context, allowedSecretId Id, params *RemoveAllowedSecretParams, reqEditors ...RequestEditorFn) (*RemoveAllowedSecretResponse, error)
 
+	// UpdateAllowedSecretWithBodyWithResponse performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the label and note. Grants already made keep their own names.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateAllowedSecretWithBodyWithResponse(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAllowedSecretResponse, error)
+
+	// UpdateAllowedSecretWithResponse performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the label and note. Grants already made keep their own names.
+	UpdateAllowedSecretWithResponse(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, body UpdateAllowedSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAllowedSecretResponse, error)
+
 	// ListApprovalsWithResponse performs a GET /approvals (the `ListApprovals` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -34307,6 +34831,27 @@ type ClientWithResponsesInterface interface {
 	// Approves pulls of upstream repositories through an authorizing mirror for the listed teams. One mirror serves one team unless shared mirrors are enabled (OD-14).
 	CreateImageSourceWithResponse(ctx context.Context, params *CreateImageSourceParams, body CreateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateImageSourceResponse, error)
 
+	// DeleteImageSourceWithResponse performs a DELETE /image-sources/{sourceId} (the `DeleteImageSource` operationId) request.
+	//
+	// Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteImageSourceWithResponse(ctx context.Context, sourceId Id, params *DeleteImageSourceParams, reqEditors ...RequestEditorFn) (*DeleteImageSourceResponse, error)
+
+	// UpdateImageSourceWithBodyWithResponse performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateImageSourceWithBodyWithResponse(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateImageSourceResponse, error)
+
+	// UpdateImageSourceWithResponse performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+	UpdateImageSourceWithResponse(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, body UpdateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateImageSourceResponse, error)
+
 	// GetImageSourceMirrorConfigWithResponse performs a GET /image-sources/{sourceId}/mirror-config (the `GetImageSourceMirrorConfig` operationId) request.
 	//
 	// A CNCF Distribution configuration for the source's mirror and the certificates it must trust. The upstream password is never included.
@@ -35033,6 +35578,20 @@ type ClientWithResponsesInterface interface {
 	// CreateSecretGrantWithResponse performs a POST /projects/{projectId}/secret-grants (the `CreateSecretGrant` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateSecretGrantWithResponse(ctx context.Context, projectId ProjectId, params *CreateSecretGrantParams, body CreateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecretGrantResponse, error)
+
+	// UpdateSecretGrantWithBodyWithResponse performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateSecretGrantWithBodyWithResponse(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSecretGrantResponse, error)
+
+	// UpdateSecretGrantWithResponse performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+	UpdateSecretGrantWithResponse(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, body UpdateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSecretGrantResponse, error)
 
 	// RefreshSecretGrantKeysWithResponse performs a POST /projects/{projectId}/secret-grants/{grantId}/refresh (the `RefreshSecretGrantKeys` operationId) request.
 	//
@@ -36130,6 +36689,61 @@ func (r RemoveAllowedSecretResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RemoveAllowedSecretResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateAllowedSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AllowedSecret
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateAllowedSecretResponse) GetJSON200() *AllowedSecret {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateAllowedSecretResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateAllowedSecretResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateAllowedSecretResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAllowedSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAllowedSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateAllowedSecretResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -40143,6 +40757,116 @@ func (r CreateImageSourceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateImageSourceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteImageSourceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteImageSourceResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteImageSourceResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteImageSourceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteImageSourceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteImageSourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteImageSourceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateImageSourceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ImageSource
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateImageSourceResponse) GetJSON200() *ImageSource {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateImageSourceResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateImageSourceResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateImageSourceResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateImageSourceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateImageSourceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateImageSourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateImageSourceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -44432,6 +45156,61 @@ func (r CreateSecretGrantResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateSecretGrantResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateSecretGrantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SecretGrantUpdated
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateSecretGrantResponse) GetJSON200() *SecretGrantUpdated {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateSecretGrantResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateSecretGrantResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateSecretGrantResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSecretGrantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSecretGrantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateSecretGrantResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -50106,6 +50885,32 @@ func (c *ClientWithResponses) RemoveAllowedSecretWithResponse(ctx context.Contex
 	return ParseRemoveAllowedSecretResponse(rsp)
 }
 
+// UpdateAllowedSecretWithBodyWithResponse performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the label and note. Grants already made keep their own names.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateAllowedSecretWithBodyWithResponse(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAllowedSecretResponse, error) {
+	rsp, err := c.UpdateAllowedSecretWithBody(ctx, allowedSecretId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAllowedSecretResponse(rsp)
+}
+
+// UpdateAllowedSecretWithResponse performs a PUT /allowed-secrets/{allowedSecretId} (the `UpdateAllowedSecret` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the label and note. Grants already made keep their own names.
+func (c *ClientWithResponses) UpdateAllowedSecretWithResponse(ctx context.Context, allowedSecretId Id, params *UpdateAllowedSecretParams, body UpdateAllowedSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAllowedSecretResponse, error) {
+	rsp, err := c.UpdateAllowedSecret(ctx, allowedSecretId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAllowedSecretResponse(rsp)
+}
+
 // ListApprovalsWithResponse performs a GET /approvals (the `ListApprovals` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -51543,6 +52348,45 @@ func (c *ClientWithResponses) CreateImageSourceWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseCreateImageSourceResponse(rsp)
+}
+
+// DeleteImageSourceWithResponse performs a DELETE /image-sources/{sourceId} (the `DeleteImageSource` operationId) request.
+//
+// Deletes the source. Refused while an unfinished build of one of its teams has a plan naming its upstream.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteImageSourceWithResponse(ctx context.Context, sourceId Id, params *DeleteImageSourceParams, reqEditors ...RequestEditorFn) (*DeleteImageSourceResponse, error) {
+	rsp, err := c.DeleteImageSource(ctx, sourceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteImageSourceResponse(rsp)
+}
+
+// UpdateImageSourceWithBodyWithResponse performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateImageSourceWithBodyWithResponse(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateImageSourceResponse, error) {
+	rsp, err := c.UpdateImageSourceWithBody(ctx, sourceId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateImageSourceResponse(rsp)
+}
+
+// UpdateImageSourceWithResponse performs a PUT /image-sources/{sourceId} (the `UpdateImageSource` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the name, repository patterns, teams and pull profile with the same checks as creation. The upstream and mirror cannot change. New mirror tokens follow the change at once; issued tokens expire within five minutes.
+func (c *ClientWithResponses) UpdateImageSourceWithResponse(ctx context.Context, sourceId Id, params *UpdateImageSourceParams, body UpdateImageSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateImageSourceResponse, error) {
+	rsp, err := c.UpdateImageSource(ctx, sourceId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateImageSourceResponse(rsp)
 }
 
 // GetImageSourceMirrorConfigWithResponse performs a GET /image-sources/{sourceId}/mirror-config (the `GetImageSourceMirrorConfig` operationId) request.
@@ -52984,6 +53828,32 @@ func (c *ClientWithResponses) CreateSecretGrantWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseCreateSecretGrantResponse(rsp)
+}
+
+// UpdateSecretGrantWithBodyWithResponse performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateSecretGrantWithBodyWithResponse(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSecretGrantResponse, error) {
+	rsp, err := c.UpdateSecretGrantWithBody(ctx, projectId, grantId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSecretGrantResponse(rsp)
+}
+
+// UpdateSecretGrantWithResponse performs a PUT /projects/{projectId}/secret-grants/{grantId} (the `UpdateSecretGrant` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the grant's name, usage, version policy and eligible pools; the key itself cannot change. Bindings made from the grant follow it. Bindings the new usage, pools or key names no longer cover are disabled with the reason; the rest stay active, with a new version only when the version policy changed (ADR 0064).
+func (c *ClientWithResponses) UpdateSecretGrantWithResponse(ctx context.Context, projectId ProjectId, grantId Id, params *UpdateSecretGrantParams, body UpdateSecretGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSecretGrantResponse, error) {
+	rsp, err := c.UpdateSecretGrant(ctx, projectId, grantId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSecretGrantResponse(rsp)
 }
 
 // RefreshSecretGrantKeysWithResponse performs a POST /projects/{projectId}/secret-grants/{grantId}/refresh (the `RefreshSecretGrantKeys` operationId) request.
@@ -55012,6 +55882,46 @@ func ParseRemoveAllowedSecretResponse(rsp *http.Response) (*RemoveAllowedSecretR
 	response := &RemoveAllowedSecretResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAllowedSecretResponse parses an HTTP response from a UpdateAllowedSecretWithResponse call
+func ParseUpdateAllowedSecretResponse(rsp *http.Response) (*UpdateAllowedSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAllowedSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AllowedSecret
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
 	}
 
 	return response, nil
@@ -57757,6 +58667,89 @@ func ParseCreateImageSourceResponse(rsp *http.Response) (*CreateImageSourceRespo
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteImageSourceResponse parses an HTTP response from a DeleteImageSourceWithResponse call
+func ParseDeleteImageSourceResponse(rsp *http.Response) (*DeleteImageSourceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteImageSourceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateImageSourceResponse parses an HTTP response from a UpdateImageSourceWithResponse call
+func ParseUpdateImageSourceResponse(rsp *http.Response) (*UpdateImageSourceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateImageSourceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ImageSource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Problem
@@ -60796,6 +61789,46 @@ func ParseCreateSecretGrantResponse(rsp *http.Response) (*CreateSecretGrantRespo
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSecretGrantResponse parses an HTTP response from a UpdateSecretGrantWithResponse call
+func ParseUpdateSecretGrantResponse(rsp *http.Response) (*UpdateSecretGrantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSecretGrantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecretGrantUpdated
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 
