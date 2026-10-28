@@ -1,0 +1,36 @@
+id: python-service
+version: 1.0.0
+displayName: "Python application"
+description: "Installs dependencies into a virtual environment in a build stage and copies it into a slim runtime image."
+languages: [python]
+applicationTypes: [http-service, worker, cli-task]
+egressPresets: [pypi]
+platforms: [linux/amd64, linux/arm64]
+runtimes:
+  - version: "3.12"
+    buildImage: docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+    runImage: docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+  - version: "3.13"
+    buildImage: docker.io/library/python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641
+    runImage: docker.io/library/python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641
+defaults:
+  install: "pip install -r requirements.txt"
+stages:
+  - name: build
+    runtime: build
+    steps:
+      - workdir: /app
+      - run: {argv: [python, -m, venv, /opt/venv]}
+      - env: {name: PATH, value: "/opt/venv/bin:$PATH"}
+      - copySource: {from: ., to: .}
+      - run: {command: install, network: egress}
+      - run: {command: build}
+  - runtime: run
+    steps:
+      - workdir: /app
+      - copyFromStage: {stage: build, from: /opt/venv, to: /opt/venv, owner: "10001:10001"}
+      - copyFromStage: {stage: build, from: /app, to: /app, owner: "10001:10001"}
+      - env: {name: PATH, value: "/opt/venv/bin:$PATH"}
+      - user: "10001"
+      - exposeAppPort: true
+      - start: true

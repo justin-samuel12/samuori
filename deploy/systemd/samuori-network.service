@@ -1,0 +1,12 @@
+[Unit]
+Description=Samuori local address for the egress proxy and registry mirror
+Before=samuori-egress-firewall.service samuori-mirror.service samuori-mirror-ghcr.service samuori-worker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'ip link show samuori0 >/dev/null 2>&1 || ip link add samuori0 type dummy; ip addr replace @BRIDGE@/32 dev samuori0; ip link set samuori0 up'
+ExecStop=/usr/sbin/ip link delete samuori0
+
+[Install]
+WantedBy=multi-user.target

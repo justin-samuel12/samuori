@@ -1,0 +1,27 @@
+[Unit]
+Description=Samuori build worker (rootless-dedicated-vm)
+Requires=samuori-egress-firewall.service
+After=samuori-server.service docker.service samuori-egress-firewall.service samuori-mirror.service samuori-mirror-ghcr.service
+ConditionPathExists=|/var/lib/samuori-worker/worker.crt
+ConditionPathExists=|/var/lib/samuori-local/enrollment-token
+ConditionPathExists=|/var/lib/samuori-worker/enrollment-token
+
+[Service]
+User=samuori-worker
+Group=samuori-worker
+SupplementaryGroups=samuori-builds
+ExecStartPre=+/usr/local/sbin/samuori-local-enroll
+ExecStart=/usr/local/bin/samuori-worker --controller @CONTROLLER@ --server-name @SERVERNAME@ --ca-pin-file /var/lib/samuori-worker/ca-pin \
+  --enrollment-token-file /var/lib/samuori-worker/enrollment-token --state-dir /var/lib/samuori-worker --name @WORKERNAME@ \
+  --isolation-provider rootless-dedicated-vm --provider-dir /var/lib/samuori-worker/environments \
+  --build-user samuori-build --build-group samuori-builds --daemon-dir /var/lib/samuori-worker/daemons \
+  --egress-listen @BRIDGE@:3128 --mirrors @MIRRORS@ --insecure-mirrors=true \
+  --cgroup-limits systemd --dedicated-host=true
+Restart=on-failure
+RestartSec=5
+RestartPreventExitStatus=3
+KillMode=mixed
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

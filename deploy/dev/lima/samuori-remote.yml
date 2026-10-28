@@ -1,0 +1,18 @@
+# Clean Ubuntu VM for a remote worker (install.sh --worker-only) enrolling into the samuori-clean controller.
+vmType: vz
+cpus: 4
+memory: 6GiB
+disk: 30GiB
+images:
+  - location: https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+mounts: []
+# The shared network that reaches the samuori-clean controller.
+networks:
+  - lima: user-v2
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPortRange: [1, 65535]
+    ignore: true

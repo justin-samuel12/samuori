@@ -1,0 +1,539 @@
+// Worker execution protocol. Design: docs/architecture/worker-protocol.md.
+syntax = "proto3";
+
+package samuori.worker.v1;
+
+option go_package = "samuori.invalid/samuori/internal/workerproto/workerv1;workerv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Enrollment runs over TLS that verifies the pinned Samuori CA; the worker has no client certificate yet.
+service EnrollmentService {
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+}
+
+// All WorkerService calls require the worker's mTLS identity.
+service WorkerService {
+  rpc Connect(stream WorkerMessage) returns (stream ControllerMessage);
+  rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
+  rpc GetPlan(GetPlanRequest) returns (GetPlanResponse);
+  rpc ReleaseSecret(ReleaseSecretRequest) returns (ReleaseSecretResponse);
+  // Issues a short-lived token for an authorizing registry mirror, scoped to the attempt's allowed repositories.
+  rpc IssueMirrorToken(MirrorTokenRequest) returns (MirrorTokenResponse);
+  rpc ReportAttempt(AttemptReport) returns (AttemptReportAck);
+  rpc ReportSelfTest(SelfTestReport) returns (SelfTestAck);
+  rpc GrantArtifactUpload(ArtifactUploadRequest) returns (ArtifactUploadGrant);
+  // Streams the attempt's source: the canonical snapshot manifest first, then each file's content.
+  rpc GetSource(GetSourceRequest) returns (stream SourceChunk);
+  // GetCache streams the build cache for the lease's plan scope, which the controller alone chooses
+  // (docs/architecture/build-cache.md); NOT_FOUND when the scope has none.
+  rpc GetCache(GetCacheRequest) returns (stream CacheChunk);
+  // GetRelease streams the signed release a self-update rollout asks this worker to apply (ADR 0044): the checksums
+  // and signature first, then the archive. Refused unless the worker is the rollout's current target.
+  rpc GetRelease(GetReleaseRequest) returns (stream ReleaseChunk);
+  // ReportUpdate tells the controller how applying a release ended on this host.
+  rpc ReportUpdate(UpdateReport) returns (UpdateReportAck);
+  // ReportRemoval confirms that the worker handed the wipe of its host to samuori-wipe (ADR 0045).
+  rpc ReportRemoval(RemovalReport) returns (RemovalAck);
+  // Protocol 1.4, Kubernetes conversions (ADR 0048). Each call is bound to the conversion lease like build calls.
+  rpc GetConversionJob(GetConversionJobRequest) returns (GetConversionJobResponse);
+  // Streams the conversion input: the canonical manifest first, then each file's content.
+  rpc GetConversionInput(GetConversionInputRequest) returns (stream SourceChunk);
+  rpc ReportConversion(ConversionReport) returns (ConversionReportAck);
+  // Protocol 1.7: build output while the attempt runs, for builds without secrets; the final masked log still
+  // arrives as the attempt's log artifact.
+  rpc AppendLog(LogChunk) returns (LogAck);
+}
+
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+message EnrollRequest {
+  string enrollment_token = 1;
+  bytes csr_der = 2;
+  Capabilities capabilities = 3;
+  ProtocolVersion protocol = 4;
+  string worker_version = 5;
+  string worker_name = 6;
+  // The identity this worker held before, if any; re-enrolling into the same pool revokes it (ADR 0026).
+  string previous_worker_id = 7;
+}
+
+message EnrollResponse {
+  string worker_id = 1;
+  bytes certificate_der = 2;
+  TrustBundle trust_bundle = 3;
+  google.protobuf.Timestamp certificate_expires_at = 4;
+}
+
+message TrustBundle {
+  repeated TrustAnchor anchors = 1;
+  uint64 bundle_version = 2;
+}
+
+message TrustAnchor {
+  bytes ca_certificate_der = 1;
+  google.protobuf.Timestamp not_before = 2;
+  google.protobuf.Timestamp not_after = 3;
+}
+
+message RenewCertificateRequest {
+  bytes csr_der = 1;
+  uint64 acknowledged_bundle_version = 2;
+}
+
+message RenewCertificateResponse {
+  bytes certificate_der = 1;
+  google.protobuf.Timestamp certificate_expires_at = 2;
+  TrustBundle trust_bundle = 3;
+}
+
+message Capabilities {
+  string os = 1;
+  repeated string architectures = 2;
+  repeated string engines = 3;
+  repeated string isolation_profiles = 4;
+  uint32 free_daemon_slots = 5;
+  bool nested_virtualization = 6;
+  bool strict_egress = 7;
+  // Digest of the worker's security-relevant configuration; a self-test verifies only the digest it ran against.
+  string config_digest = 8;
+  // Optional build and conversion providers installed on the worker, by name and version (ADR 0047, ADR 0048).
+  map<string, string> providers = 9;
+}
+
+message WorkerMessage {
+  oneof kind {
+    Hello hello = 1;
+    Heartbeat heartbeat = 2;
+    AssignmentAck assignment_ack = 3;
+    AssignmentRejection assignment_rejection = 4;
+  }
+}
+
+message Hello {
+  ProtocolVersion protocol = 1;
+  string worker_version = 2;
+  Capabilities capabilities = 3;
+  repeated LeaseRef active_leases = 4;
+  uint64 trust_bundle_version = 5;
+  repeated LeaseRef active_conversion_leases = 6;
+}
+
+message Heartbeat {
+  repeated LeaseRef active_leases = 1;
+  uint32 free_daemon_slots = 2;
+  // The trust-bundle version the worker holds; acknowledging a version lets a planned CA rotation proceed.
+  uint64 trust_bundle_version = 3;
+  // Protocol 1.3: free bytes on the filesystem holding the update staging directory, and the host's architecture,
+  // for the checks before a rollout (ADR 0045).
+  uint64 update_free_bytes = 4;
+  string host_arch = 5;
+  // Protocol 1.4: conversion leases are renewed separately from build leases.
+  repeated LeaseRef active_conversion_leases = 6;
+  // The host's disk, memory and CPUs for the capacity view; older workers leave it unset.
+  HostCapacity capacity = 7;
+}
+
+message HostCapacity {
+  uint32 cpus = 1;
+  uint64 memory_total_bytes = 2;
+  uint64 memory_available_bytes = 3;
+  repeated HostVolume volumes = 4;
+}
+
+message HostVolume {
+  string label = 1;
+  string path = 2;
+  uint64 total_bytes = 3;
+  uint64 free_bytes = 4;
+}
+
+message ControllerMessage {
+  oneof kind {
+    HelloAck hello_ack = 1;
+    Assignment assignment = 2;
+    Cancel cancel = 3;
+    LeaseRenewal lease_renewal = 4;
+    Drain drain = 5;
+    TrustBundle trust_bundle = 6;
+    SelfTestRequest self_test = 7;
+    UpdateRequest update = 8;
+    RemoveRequest remove = 9;
+    ConversionAssignment conversion = 10;
+  }
+}
+
+// ConversionAssignment carries identifiers and the job digest only; the job never holds credentials (ADR 0048).
+message ConversionAssignment {
+  LeaseRef lease = 1;
+  string conversion_id = 2;
+  string job_digest = 3;
+  string isolation_profile = 4;
+  ResourceLimits limits = 5;
+  google.protobuf.Timestamp lease_expires_at = 6;
+}
+
+message GetConversionJobRequest {
+  LeaseRef lease = 1;
+}
+
+message GetConversionJobResponse {
+  string job_digest = 1;
+  bytes job_json = 2;
+}
+
+message GetConversionInputRequest {
+  LeaseRef lease = 1;
+}
+
+enum ConversionState {
+  CONVERSION_STATE_UNSPECIFIED = 0;
+  CONVERSION_STATE_RUNNING = 1;
+  CONVERSION_STATE_COMPLETED = 2;
+  CONVERSION_STATE_FAILED = 3;
+}
+
+message ConversionFile {
+  string path = 1;
+  bytes content = 2;
+}
+
+// ConversionReport carries the tool's untrusted output; the controller validates all of it before storing a revision.
+message ConversionReport {
+  LeaseRef lease = 1;
+  ConversionState state = 2;
+  string failure_class = 3;
+  string detail = 4;
+  repeated ConversionFile files = 5;
+  bytes tool_stdout = 6;
+  bytes tool_stderr = 7;
+  int32 exit_code = 8;
+  bool timed_out = 9;
+  CleanupOutcome cleanup = 10;
+  // The SHA-256 of the tool the worker verified and ran.
+  string tool_digest = 11;
+}
+
+message ConversionReportAck {
+  bool accepted = 1;
+  string rejection = 2;
+}
+
+// RemoveRequest asks a drained worker (protocol 1.2 or later) to wipe Samuori from its host (ADR 0045).
+message RemoveRequest {
+  string reason = 1;
+}
+
+message RemovalReport {
+  // staged is true when the wipe request was written for samuori-wipe; detail says why not otherwise.
+  bool staged = 1;
+  string detail = 2;
+}
+
+message RemovalAck {}
+
+// UpdateRequest asks a drained worker (protocol 1.1 or later) to fetch and apply a signed release (ADR 0044).
+message UpdateRequest {
+  string version = 1;
+  // Protocol 1.3: reinstall the release kept before the last update instead of fetching version. Sent only to
+  // workers that negotiated 1.3, because older workers would read it as an update to version.
+  bool rollback = 2;
+}
+
+message GetReleaseRequest {
+  string version = 1;
+  string arch = 2;
+}
+
+message ReleaseChunk {
+  oneof kind {
+    bytes checksums = 1;
+    bytes signature = 2;
+    bytes data = 3;
+  }
+}
+
+message UpdateReport {
+  string version = 1;
+  // succeeded or failed, as the host's samuori-self-update recorded it.
+  string outcome = 2;
+  string detail = 3;
+}
+
+message UpdateReportAck {}
+
+// SelfTestRequest asks the worker to run the pool self-test checks in its own isolation environments.
+message SelfTestRequest {
+  string self_test_id = 1;
+  string profile = 2;
+}
+
+message SelfTestReport {
+  string self_test_id = 1;
+  repeated CheckReport checks = 2;
+}
+
+message SelfTestAck {
+  bool accepted = 1;
+  string rejection = 2;
+}
+
+message HelloAck {
+  ProtocolVersion negotiated = 1;
+  google.protobuf.Duration heartbeat_interval = 2;
+  repeated LeaseRef abandoned_leases = 3;
+  // The current trust bundle, refreshed on every connection (ADR 0026).
+  TrustBundle trust_bundle = 4;
+  // Lets the worker diagnose clock skew.
+  google.protobuf.Timestamp controller_time = 5;
+}
+
+// Identifies one attempt's lease; every lease-bound call carries it and is rejected unless the generation is current.
+message LeaseRef {
+  string attempt_id = 1;
+  uint64 fencing_generation = 2;
+}
+
+// Assignments carry identifiers and digests only: never secret values, provider references or plan content.
+message Assignment {
+  LeaseRef lease = 1;
+  string build_run_id = 2;
+  string plan_digest = 3;
+  string isolation_profile = 4;
+  bool secret_bearing = 5;
+  ResourceLimits limits = 6;
+  google.protobuf.Timestamp lease_expires_at = 7;
+  // W3C traceparent of the controller span that sent the assignment; empty when tracing is off.
+  string trace_parent = 8;
+}
+
+message ResourceLimits {
+  uint32 vcpus = 1;
+  uint64 memory_bytes = 2;
+  uint64 disk_bytes = 3;
+  google.protobuf.Duration wall_clock = 4;
+}
+
+message AssignmentAck {
+  LeaseRef lease = 1;
+}
+
+message AssignmentRejection {
+  LeaseRef lease = 1;
+  RejectionReason reason = 2;
+  string detail = 3;
+}
+
+enum RejectionReason {
+  REJECTION_REASON_UNSPECIFIED = 0;
+  REJECTION_REASON_DAEMON_OCCUPIED = 1;
+  REJECTION_REASON_PROFILE_UNVERIFIED = 2;
+  REJECTION_REASON_INCOMPATIBLE = 3;
+  REJECTION_REASON_DRAINING = 4;
+}
+
+message Cancel {
+  LeaseRef lease = 1;
+  string reason = 2;
+}
+
+message LeaseRenewal {
+  LeaseRef lease = 1;
+  google.protobuf.Timestamp lease_expires_at = 2;
+}
+
+message Drain {
+  string reason = 1;
+}
+
+message GetPlanRequest {
+  LeaseRef lease = 1;
+}
+
+message GetPlanResponse {
+  string plan_digest = 1;
+  bytes plan_json = 2;
+}
+
+message ReleaseSecretRequest {
+  LeaseRef lease = 1;
+  string logical_id = 2;
+}
+
+// The only message that carries secret material; released per BuildKit request after lease and policy checks.
+message ReleaseSecretResponse {
+  oneof result {
+    SecretValue secret = 1;
+    SecretDenied denied = 2;
+  }
+}
+
+message MirrorTokenRequest {
+  LeaseRef lease = 1;
+  string mirror = 2;
+  repeated string scopes = 3;
+}
+
+// The token is for BuildKit's registry client only; build steps never see it.
+message MirrorTokenResponse {
+  oneof result {
+    MirrorToken token = 1;
+    MirrorTokenDenied denied = 2;
+  }
+}
+
+message MirrorToken {
+  string token = 1;
+  int64 expires_in_seconds = 2;
+  google.protobuf.Timestamp issued_at = 3;
+}
+
+message MirrorTokenDenied {
+  string reason = 1;
+}
+
+message SecretValue {
+  string logical_id = 1;
+  bytes value = 2;
+}
+
+message SecretDenied {
+  string logical_id = 1;
+  DenialReason reason = 2;
+}
+
+enum DenialReason {
+  DENIAL_REASON_UNSPECIFIED = 0;
+  DENIAL_REASON_NOT_IN_PLAN = 1;
+  DENIAL_REASON_OPTIONAL_UNBOUND = 2;
+  DENIAL_REASON_LEASE_INVALID = 3;
+  DENIAL_REASON_BINDING_DISABLED = 4;
+  DENIAL_REASON_POLICY = 5;
+}
+
+message AttemptReport {
+  LeaseRef lease = 1;
+  AttemptState state = 2;
+  string failure_class = 3;
+  string detail = 4;
+  string artifact_digest = 5;
+  CleanupOutcome cleanup = 6;
+  google.protobuf.Timestamp at = 7;
+  // Validation results only the build environment can produce (canary, runtime test); sent with COMPLETED.
+  repeated CheckReport checks = 8;
+  // Protocol 1.5: destinations the worker's egress proxy denied, sent with COMPLETED and FAILED. At most 50.
+  repeated EgressDenial egress_denied = 9;
+  // Proxy decisions beyond its per-attempt limit, which egress_denied cannot include.
+  uint32 egress_unrecorded = 10;
+}
+
+message EgressDenial {
+  string host = 1;
+  uint32 port = 2;
+  uint64 count = 3;
+  string reason = 4;
+}
+
+// CheckReport never carries file contents or secret values.
+message CheckReport {
+  string check_id = 1;
+  string category = 2;
+  string outcome = 3;
+  string reason = 4;
+  repeated FindingReport findings = 5;
+}
+
+message FindingReport {
+  string rule = 1;
+  string class = 2;
+  string path = 3;
+  string layer_digest = 4;
+  uint64 size_bytes = 5;
+  string logical_secret_id = 6;
+}
+
+enum AttemptState {
+  ATTEMPT_STATE_UNSPECIFIED = 0;
+  ATTEMPT_STATE_PREPARING = 1;
+  ATTEMPT_STATE_BUILDING = 2;
+  ATTEMPT_STATE_COMMITTING = 3;
+  ATTEMPT_STATE_COMPLETED = 4;
+  ATTEMPT_STATE_FAILED = 5;
+}
+
+enum CleanupOutcome {
+  CLEANUP_OUTCOME_UNSPECIFIED = 0;
+  CLEANUP_OUTCOME_PENDING = 1;
+  CLEANUP_OUTCOME_DESTROYED = 2;
+  CLEANUP_OUTCOME_FAILED_QUARANTINED = 3;
+}
+
+message AttemptReportAck {
+  bool accepted = 1;
+  string rejection = 2;
+}
+
+message ArtifactUploadRequest {
+  LeaseRef lease = 1;
+  string kind = 2;
+  string digest = 3;
+  uint64 size_bytes = 4;
+}
+
+message GetSourceRequest {
+  LeaseRef lease = 1;
+}
+
+message GetCacheRequest {
+  LeaseRef lease = 1;
+}
+
+message CacheChunk {
+  oneof kind {
+    CacheStart start = 1;
+    bytes data = 2;
+  }
+}
+
+message CacheStart {
+  string digest = 1;
+  uint64 size_bytes = 2;
+}
+
+message SourceChunk {
+  oneof kind {
+    bytes manifest_json = 1;
+    SourceFileStart file = 2;
+    bytes data = 3;
+  }
+}
+
+message SourceFileStart {
+  string path = 1;
+  string digest = 2;
+  uint64 size = 3;
+  bool executable = 4;
+}
+
+// A short-lived, object-scoped upload grant for internal storage; never registry credentials.
+message ArtifactUploadGrant {
+  string upload_url = 1;
+  map<string, string> headers = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message LogChunk {
+  LeaseRef lease = 1;
+  // Bytes of live output already sent for this attempt; a chunk at an offset the controller already holds is ignored.
+  uint64 offset = 2;
+  bytes data = 3;
+}
+
+message LogAck {
+  // Stop sending: the build uses secrets, the live log is full, or the lease is no longer current.
+  bool stop = 1;
+}

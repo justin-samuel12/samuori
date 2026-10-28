@@ -1,0 +1,9 @@
+[Unit]
+Description=Forget removed Samuori controllers in this host's NATS member (ADR 0045)
+
+[Path]
+PathExists=/var/lib/samuori-update/nats-forget
+Unit=samuori-nats-forget.service
+
+[Install]
+WantedBy=multi-user.target

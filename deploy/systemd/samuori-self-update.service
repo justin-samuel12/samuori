@@ -1,0 +1,7 @@
+[Unit]
+Description=Apply a signed Samuori release (docs/operators/upgrades.md#self-update)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/samuori-self-update
+TimeoutStartSec=900

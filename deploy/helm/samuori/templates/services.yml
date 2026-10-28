@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "samuori.fullname" . }}-api
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+  {{- with .Values.api.service.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.api.service.type }}
+  selector: {{- include "samuori.selector" . | nindent 4 }}
+  ports:
+    - name: https
+      port: {{ .Values.api.service.port }}
+      targetPort: api
+      {{- with .Values.api.service.nodePort }}
+      nodePort: {{ . }}
+      {{- end }}
+---
+# Workers hold mutual TLS to a controller; the load balancer passes TCP through and never terminates TLS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "samuori.fullname" . }}-workers
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+  {{- with .Values.worker.service.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.worker.service.type }}
+  selector: {{- include "samuori.selector" . | nindent 4 }}
+  {{- with .Values.worker.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: workers
+      port: {{ .Values.worker.service.port }}
+      targetPort: workers
+      protocol: TCP
+      {{- with .Values.worker.service.nodePort }}
+      nodePort: {{ . }}
+      {{- end }}

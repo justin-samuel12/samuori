@@ -1,0 +1,21 @@
+# Clean Ubuntu VM for all-in-one acceptance (WP23): nothing is preinstalled; deploy/systemd/install.sh does it all.
+vmType: vz
+cpus: 4
+memory: 6GiB
+disk: 30GiB
+images:
+  - location: https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+mounts: []
+# A shared network so samuori-remote can reach this controller's worker endpoint.
+networks:
+  - lima: user-v2
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPort: 8080
+    hostIP: 127.0.0.1
+    hostPort: 18480
+  - guestPortRange: [1, 65535]
+    ignore: true

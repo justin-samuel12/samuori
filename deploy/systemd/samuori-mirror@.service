@@ -1,0 +1,18 @@
+[Unit]
+Description=Samuori %i pull-through mirror (install.sh --registry-mirror)
+Requires=samuori-network.service
+After=samuori-network.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=samuori-registry
+ExecStart=/usr/local/bin/registry serve /etc/samuori/mirror-%i.yml
+Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/samuori-registry/mirror-%i
+
+[Install]
+WantedBy=multi-user.target

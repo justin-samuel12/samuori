@@ -1,0 +1,26 @@
+# Clean Ubuntu VM for the Compose all-in-one acceptance; only Docker Engine and Compose, the operator's prerequisites,
+# are added.
+vmType: vz
+cpus: 4
+memory: 6GiB
+disk: 30GiB
+images:
+  - location: https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+mounts: []
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPort: 8080
+    hostIP: 127.0.0.1
+    hostPort: 18481
+  - guestPortRange: [1, 65535]
+    ignore: true
+provision:
+  - mode: system
+    script: |
+      #!/bin/sh
+      set -eu
+      apt-get update -qq
+      DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 >/dev/null

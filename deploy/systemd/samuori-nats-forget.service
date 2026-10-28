@@ -1,0 +1,7 @@
+[Unit]
+Description=Forget removed Samuori controllers in this host's NATS member (docs/operators/high-availability.md#remove-a-controller)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/samuori-server cluster forget
+TimeoutStartSec=120

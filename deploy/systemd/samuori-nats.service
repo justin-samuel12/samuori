@@ -1,0 +1,17 @@
+[Unit]
+Description=NATS JetStream member for Samuori controllers
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=nats
+ExecStart=/usr/local/bin/nats-server -c /etc/samuori/nats/nats.conf
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/nats
+
+[Install]
+WantedBy=multi-user.target

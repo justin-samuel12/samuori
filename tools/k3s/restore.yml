@@ -1,0 +1,26 @@
+# Restore rehearsal: a fresh PostgreSQL and a Job that restores the latest archive into it with samuori-server restore.
+apiVersion: v1
+kind: Service
+metadata: { name: restore-db, namespace: samuori }
+spec:
+  selector: { app: restore-db }
+  ports: [{ port: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: restore-db, namespace: samuori }
+spec:
+  serviceName: restore-db
+  replicas: 1
+  selector: { matchLabels: { app: restore-db } }
+  template:
+    metadata: { labels: { app: restore-db } }
+    spec:
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+          env:
+            - { name: POSTGRES_DB, value: samuori }
+            - { name: POSTGRES_USER, value: samuori }
+            - { name: POSTGRES_PASSWORD, value: restore-only }
+          readinessProbe: { exec: { command: [pg_isready, -U, samuori] }, periodSeconds: 3 }

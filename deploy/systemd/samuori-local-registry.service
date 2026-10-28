@@ -1,0 +1,16 @@
+[Unit]
+Description=Samuori local OCI registry for publication
+After=network-online.target
+
+[Service]
+User=samuori-registry
+ExecStart=/usr/local/bin/registry serve /etc/samuori/local-registry.yml
+Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/samuori-registry/local
+
+[Install]
+WantedBy=multi-user.target

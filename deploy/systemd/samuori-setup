@@ -1,0 +1,5 @@
+#!/bin/sh
+# First-node setup (ADR 0045): sudo ./samuori-setup, or sudo ./samuori-setup --answers answers.yml.
+set -eu
+here=$(cd "$(dirname "$0")" && pwd)
+exec "$here/samuori-server" setup --release "$here" "$@"

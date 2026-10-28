@@ -1,0 +1,18 @@
+[Unit]
+Description=Samuori ghcr.io pull-through mirror (Railpack images)
+Requires=samuori-network.service
+After=samuori-network.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=samuori-registry
+ExecStart=/usr/local/bin/registry serve /etc/samuori/mirror-ghcr.yml
+Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/samuori-registry/mirror-ghcr
+
+[Install]
+WantedBy=multi-user.target

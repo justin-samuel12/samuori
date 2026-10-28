@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "samuori.fullname" . }}
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: false
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "samuori.fullname" . }}
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "samuori.selector" . | nindent 6 }}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "samuori.fullname" . }}
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "samuori.selector" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports:
+        - { port: api }
+        - { port: workers }
+        {{- if .Values.metrics.enabled }}
+        - { port: metrics }
+        {{- end }}
+  egress: {{- toYaml .Values.networkPolicy.egress | nindent 4 }}
+{{- end }}

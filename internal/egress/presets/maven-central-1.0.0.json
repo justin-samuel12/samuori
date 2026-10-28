@@ -1,0 +1,9 @@
+{
+  "id": "maven-central",
+  "version": "1.0.0",
+  "displayName": "Maven Central",
+  "destinations": [
+    "repo.maven.apache.org:443",
+    "repo1.maven.org:443"
+  ]
+}

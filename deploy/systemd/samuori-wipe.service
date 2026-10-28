@@ -1,0 +1,7 @@
+[Unit]
+Description=Remove Samuori from this host (ADR 0045)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/samuori-uninstall --from-samuori
+TimeoutStartSec=300

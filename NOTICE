@@ -1,0 +1,12 @@
+Samuori
+Copyright 2026 Justin Samuel <jsamuel12@gmail.com>
+
+Created, architected and maintained by Justin Samuel.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components included in Samuori releases, with their licenses and notices, are listed in
+THIRD_PARTY_NOTICES.txt, which is published with every release.
+
+The Samuori logo's wordmark is outlined from the DejaVu Sans Bold font; its notice is in
+docs/brand/DejaVu-font-notice.txt and ships with the UI.

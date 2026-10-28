@@ -1,0 +1,99 @@
+# Every reference to a secret names an existing Kubernetes Secret; the chart never holds secret values.
+image:
+  # Build the image from deploy/compose/Dockerfile and push it to a registry you control.
+  repository: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+replicas: 2
+externalUrl: ""
+
+tls:
+  secretName: ""
+
+database:
+  dsnSecret: { name: "", key: dsn }
+  migrationDsnSecret: { name: "", key: dsn }
+
+clusterKeySecret: { name: "", key: cluster.key }
+
+messaging:
+  urls: []
+  replicas: 3
+  credentialsSecret: { name: "", key: samuori.creds }
+  caSecret: { name: "", key: ca.crt }
+  # A kubernetes.io/tls Secret with the controllers' client certificate, for NATS clusters that verify clients.
+  clientCertSecret: ""
+
+storage:
+  s3:
+    bucket: ""
+    region: ""
+    prefix: ""
+    endpoint: ""
+    pathStyle: false
+    authMethod: workload-identity
+    roleArn: ""
+    externalId: ""
+  oci:
+    repository: ""
+    credentialsSecret: { name: "", key: credentials }
+    # Only for a registry on loopback beside the controller.
+    plainHttp: false
+    allowPrivateNetwork: false
+
+worker:
+  hostnames: []
+  service:
+    type: LoadBalancer
+    port: 8444
+    nodePort: null
+    annotations: {}
+    loadBalancerSourceRanges: []
+
+api:
+  service:
+    type: ClusterIP
+    port: 8443
+    nodePort: null
+    annotations: {}
+
+backup:
+  enabled: false
+  recipientsSecret: { name: "", key: recipients.txt }
+  interval: 24h
+  keep: 7
+  persistentVolumeClaim: ""
+
+metrics:
+  enabled: false
+  port: 9464
+  tokenSecret: { name: "", key: token }
+
+serviceAccount:
+  annotations: {}
+
+# Kubernetes user namespaces let the discovery sandbox create its own namespaces; without them it falls back to
+# seccomp only (docs/architecture/discovery.md).
+hostUsers: true
+
+resources:
+  requests: { cpu: 250m, memory: 512Mi }
+  limits: { memory: 2Gi }
+
+podDisruptionBudget:
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  # Egress the controllers need: database, NATS, storage, identity providers, registries and notification targets.
+  egress: [{}]
+
+# Containers and volumes added to every controller pod, for example a storage sidecar.
+extraContainers: []
+extraVolumes: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

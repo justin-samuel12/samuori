@@ -1,0 +1,81 @@
+{{- include "samuori.require" (list .Values.image.repository "image.repository") }}
+{{- include "samuori.require" (list .Values.image.digest "image.digest") }}
+{{- include "samuori.require" (list .Values.tls.secretName "tls.secretName") }}
+{{- include "samuori.require" (list .Values.externalUrl "externalUrl") }}
+{{- include "samuori.require" (list .Values.database.dsnSecret.name "database.dsnSecret.name") }}
+{{- include "samuori.require" (list .Values.clusterKeySecret.name "clusterKeySecret.name") }}
+{{- include "samuori.require" (list .Values.messaging.urls "messaging.urls") }}
+{{- include "samuori.require" (list .Values.worker.hostnames "worker.hostnames") }}
+{{- if and (not .Values.storage.s3.bucket) (not .Values.storage.oci.repository) }}{{ fail "storage.s3.bucket or storage.oci.repository is required: clustered controllers share blob storage" }}{{ end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "samuori.fullname" . }}
+  labels: {{- include "samuori.labels" . | nindent 4 }}
+data:
+  server.yml: |
+    role: controller
+    listen: 0.0.0.0:8443
+    externalUrl: {{ .Values.externalUrl | quote }}
+    dataDir: /var/lib/samuori
+    log:
+      format: json
+    tls:
+      certFile: /etc/samuori/tls/tls.crt
+      keyFile: /etc/samuori/tls/tls.key
+    ui:
+      dir: /usr/local/share/samuori/ui
+    worker:
+      listen: 0.0.0.0:8444
+      hostnames: {{ toJson .Values.worker.hostnames }}
+    cluster:
+      enabled: "true"
+      keyFile: /run/samuori/secrets/cluster/{{ .Values.clusterKeySecret.key }}
+    messaging:
+      url: {{ join "," .Values.messaging.urls | quote }}
+      replicas: {{ .Values.messaging.replicas | quote }}
+      {{- if .Values.messaging.credentialsSecret.name }}
+      credentialsFile: /run/samuori/secrets/nats/{{ .Values.messaging.credentialsSecret.key }}
+      {{- end }}
+      {{- if .Values.messaging.caSecret.name }}
+      caFile: /etc/samuori/nats-ca/{{ .Values.messaging.caSecret.key }}
+      {{- end }}
+      {{- if .Values.messaging.clientCertSecret }}
+      certFile: /etc/samuori/nats-client/tls.crt
+      keyFile: /run/samuori/secrets/nats-client/tls.key
+      {{- end }}
+    storage:
+      {{- with .Values.storage.s3 }}
+      {{- if .bucket }}
+      s3:
+        bucket: {{ .bucket | quote }}
+        region: {{ .region | quote }}
+        prefix: {{ .prefix | quote }}
+        endpoint: {{ .endpoint | quote }}
+        pathStyle: {{ .pathStyle | quote }}
+        authMethod: {{ .authMethod | quote }}
+        roleArn: {{ .roleArn | quote }}
+        externalId: {{ .externalId | quote }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.storage.oci.repository }}
+      oci:
+        repository: {{ .Values.storage.oci.repository | quote }}
+        plainHttp: {{ .Values.storage.oci.plainHttp | quote }}
+        allowPrivateNetwork: {{ .Values.storage.oci.allowPrivateNetwork | quote }}
+        {{- if .Values.storage.oci.credentialsSecret.name }}
+        credentialsFile: /run/samuori/secrets/oci/{{ .Values.storage.oci.credentialsSecret.key }}
+        {{- end }}
+      {{- end }}
+    {{- if .Values.backup.enabled }}
+    backup:
+      dir: /var/backups/samuori
+      recipientsFile: /etc/samuori/backup/{{ .Values.backup.recipientsSecret.key }}
+      interval: {{ .Values.backup.interval | quote }}
+      keep: {{ .Values.backup.keep | quote }}
+    {{- end }}
+    {{- if .Values.metrics.enabled }}
+    observability:
+      metricsListen: 0.0.0.0:{{ .Values.metrics.port }}
+      metricsTokenFile: /run/samuori/secrets/metrics/{{ .Values.metrics.tokenSecret.key }}
+    {{- end }}

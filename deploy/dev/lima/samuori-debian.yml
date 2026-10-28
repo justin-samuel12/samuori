@@ -1,0 +1,18 @@
+# Clean Debian 13 VM for all-in-one acceptance on a second distribution: nothing is preinstalled; install.sh does it.
+vmType: vz
+cpus: 4
+memory: 6GiB
+disk: 30GiB
+images:
+  - location: https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-arm64.qcow2
+    arch: aarch64
+mounts: []
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPort: 8080
+    hostIP: 127.0.0.1
+    hostPort: 18482
+  - guestPortRange: [1, 65535]
+    ignore: true

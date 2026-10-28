@@ -1,0 +1,10 @@
+Samuori controllers ({{ .Values.replicas }} replicas) are starting in cluster mode.
+
+- API and UI: {{ .Values.externalUrl }} (service {{ include "samuori.fullname" . }}-api, TLS from {{ .Values.tls.secretName }}).
+- Worker endpoint: service {{ include "samuori.fullname" . }}-workers, port {{ .Values.worker.service.port }} (TCP passthrough).
+  Point each worker at it: samuori-worker --controller {{ index .Values.worker.hostnames 0 }}:{{ .Values.worker.service.port }}
+- Workers run on dedicated Linux VMs, never in this cluster: build isolation needs a host of its own.
+{{- if .Values.hostUsers }}
+- hostUsers is true: the discovery sandbox may fall back to seccomp only. Set hostUsers: false where Kubernetes
+  user namespaces are available.
+{{- end }}

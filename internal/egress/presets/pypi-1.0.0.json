@@ -1,0 +1,9 @@
+{
+  "id": "pypi",
+  "version": "1.0.0",
+  "displayName": "Python Package Index",
+  "destinations": [
+    "pypi.org:443",
+    "files.pythonhosted.org:443"
+  ]
+}

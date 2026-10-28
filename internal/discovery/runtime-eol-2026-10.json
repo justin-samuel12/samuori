@@ -1,0 +1,36 @@
+{
+  "asOf": "2026-10-26",
+  "runtimes": [
+    {
+      "name": "Node.js",
+      "images": ["node"],
+      "parts": 1,
+      "source": "Node.js release schedule (nodejs.org/en/about/previous-releases)",
+      "endOfLife": {
+        "12": "2022-04-30", "14": "2023-04-30", "16": "2023-09-11", "17": "2022-06-01", "18": "2025-04-30",
+        "19": "2023-06-01", "20": "2026-04-30", "21": "2024-06-01", "22": "2027-04-30", "23": "2025-06-01",
+        "24": "2028-04-30", "25": "2026-06-01"
+      }
+    },
+    {
+      "name": "Python",
+      "images": ["python"],
+      "parts": 2,
+      "source": "Python developer's guide, status of Python versions",
+      "endOfLife": {
+        "3.6": "2021-12-23", "3.7": "2023-06-27", "3.8": "2024-10-07", "3.9": "2025-10-31", "3.10": "2026-10-31",
+        "3.11": "2027-10-31", "3.12": "2028-10-31", "3.13": "2029-10-31"
+      }
+    },
+    {
+      "name": ".NET",
+      "images": ["mcr.microsoft.com/dotnet/sdk", "mcr.microsoft.com/dotnet/aspnet", "mcr.microsoft.com/dotnet/runtime", "mcr.microsoft.com/dotnet/runtime-deps"],
+      "parts": 2,
+      "source": ".NET support policy (dotnet.microsoft.com/platform/support/policy/dotnet-core)",
+      "endOfLife": {
+        "3.1": "2022-12-13", "5.0": "2022-05-10", "6.0": "2024-11-12", "7.0": "2024-05-14", "8.0": "2026-11-10",
+        "9.0": "2026-11-10"
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+#!/bin/sh
+# Joins this host to a Samuori cluster with a code from the portal's Servers page (ADR 0045):
+#   sudo ./samuori-join controller samuoric_... [--host HOST] [--release-signers FILE]
+#   sudo ./samuori-join worker samuoriwj_... [--confirm-dedicated-vm] [--release-signers FILE]
+# Codes are single use, expire within the hour and grant nothing until accepted or assigned
+# (docs/operators/high-availability.md#join).
+set -eu
+here=$(cd "$(dirname "$0")" && pwd)
+usage() {
+	echo "usage: sudo ./samuori-join controller <code> [--host HOST] [--release-signers FILE]" >&2
+	echo "       sudo ./samuori-join worker <code> [--confirm-dedicated-vm] [--release-signers FILE]" >&2
+	exit 2
+}
+fail() { echo "samuori-join: $*" >&2; exit 1; }
+[ $# -ge 2 ] || usage
+role=$1 code=$2
+shift 2
+host='' confirm=no signers=''
+[ ! -f "$here/allowed_signers" ] || signers=$here/allowed_signers
+while [ $# -gt 0 ]; do
+	case $1 in
+	--host) [ $# -ge 2 ] || usage; host=$2; shift 2 ;;
+	--release-signers) [ $# -ge 2 ] || usage; signers=$2; shift 2 ;;
+	--confirm-dedicated-vm) confirm=yes; shift ;;
+	*) usage ;;
+	esac
+done
+[ -z "$signers" ] || [ -f "$signers" ] || fail "release signers file $signers does not exist"
+set -- --release "$here"
+[ -z "$signers" ] || set -- "$@" --release-signers "$signers"
+
+case $role in
+controller)
+	case $code in samuoric_*) ;; samuoriwj_*) fail "that is a worker join code; run: sudo ./samuori-join worker <code>" ;;
+	*) fail "that is not a controller join code (samuoric_...); create one under Administration > Servers > Add a controller" ;; esac
+	[ "$confirm" = no ] || fail "--confirm-dedicated-vm is for workers"
+	if [ -z "$host" ]; then
+		# Same rule as samuori-setup: the hostname, qualified by the search domain when it resolves to this host.
+		host=$("$here/samuori-server" default-hostname 2>/dev/null || hostname -f 2>/dev/null || hostname)
+		case $host in '' | localhost | localhost.*) fail "this host has no DNS name; pass --host <name other controllers and workers use for it>" ;; esac
+		case $host in *.*) ;; *) echo "samuori-join: using the short host name $host; pass --host if other hosts reach it by another name" >&2 ;; esac
+	fi
+	[ "$(id -u)" = 0 ] || fail "run as root: sudo ./samuori-join controller <code>"
+	[ -n "$signers" ] || echo "samuori-join: no allowed_signers next to this script; updates from the portal stay off until it is installed" >&2
+	exec "$here/install.sh" "$@" --role controller --host "$host" join --code "$code"
+	;;
+worker)
+	case $code in samuoriwj_*) ;; samuoric_*) fail "that is a controller join code; run: sudo ./samuori-join controller <code>" ;;
+	*) fail "that is not a worker join code (samuoriwj_...); create one under Administration > Servers > Add a worker" ;; esac
+	[ -z "$host" ] || fail "--host is for controllers; a worker is named after this host's name"
+	[ "$(id -u)" = 0 ] || fail "run as root: sudo ./samuori-join worker <code>"
+	[ -x "$here/samuori-worker" ] || fail "run this from the release folder: samuori-worker is missing next to it"
+	if [ "$confirm" = no ]; then
+		[ -t 0 ] || fail "builds of uploaded source need a VM that runs nothing else; confirm with --confirm-dedicated-vm"
+		printf 'This VM will run nothing but Samuori builds. Continue? [y/N] ' >&2
+		read -r answer
+		case $answer in y | Y | yes) ;; *) fail "not confirmed" ;; esac
+	fi
+	# The pinned controller certificate is checked before anything is installed.
+	decoded=$(printf '%s\n' "$code" | "$here/samuori-worker" join-code) || exit 1
+	controllers=$(printf '%s\n' "$decoded" | sed -n 1p)
+	pin=$(printf '%s\n' "$decoded" | sed -n 2p)
+	token=$(printf '%s\n' "$decoded" | sed -n 3p)
+	SAMUORI_JOINING=1 "$here/install.sh" "$@" --confirm-dedicated-vm --worker-only --controller "$controllers"
+	printf '%s\n' "$token" | /usr/local/sbin/samuori-enroll-worker "$pin"
+	echo "Next: under Administration > Servers, assign $(hostname -s) to a pool. Until then it gets no builds, secrets or self-test." >&2
+	;;
+*) usage ;;
+esac

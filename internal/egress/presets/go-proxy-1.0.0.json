@@ -1,0 +1,9 @@
+{
+  "id": "go-proxy",
+  "version": "1.0.0",
+  "displayName": "Go module proxy and checksum database",
+  "destinations": [
+    "proxy.golang.org:443",
+    "sum.golang.org:443"
+  ]
+}

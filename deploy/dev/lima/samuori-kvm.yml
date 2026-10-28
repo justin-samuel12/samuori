@@ -1,0 +1,25 @@
+# Nested-virtualization VM (Apple M3 or later, macOS 15 or later) that exposes /dev/kvm, for the vm-per-job
+# provider and its acceptance tests. Nested KVM is not bare-metal validation, and on Apple silicon its guests stall
+# (ADR 0038). No host mounts: copy sources in.
+vmType: vz
+nestedVirtualization: true
+cpus: 6
+memory: 16GiB
+disk: 80GiB
+images:
+  - location: https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+mounts: []
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPortRange: [1, 65535]
+    ignore: true
+provision:
+  - mode: system
+    script: |
+      #!/bin/sh
+      set -eu
+      apt-get update -qq
+      DEBIAN_FRONTEND=noninteractive apt-get install -y -qq make git curl ca-certificates gcc libc6-dev >/dev/null

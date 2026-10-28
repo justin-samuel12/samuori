@@ -1,0 +1,7 @@
+[Unit]
+Description=Bring this host's NATS member's routes to the cluster's members (docs/operators/high-availability.md#nats-routes)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/samuori-server cluster routes
+TimeoutStartSec=120

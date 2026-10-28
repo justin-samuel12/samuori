@@ -1,0 +1,41 @@
+-- +goose Up
+CREATE TABLE image_sources (
+    id                  TEXT PRIMARY KEY,
+    org_id              TEXT NOT NULL REFERENCES organizations (id),
+    name                TEXT NOT NULL,
+    upstream            TEXT NOT NULL,
+    mirror              TEXT NOT NULL,
+    repository_patterns TEXT NOT NULL,
+    team_ids            TEXT NOT NULL,
+    pull_profile_id     TEXT REFERENCES registry_profiles (id),
+    status              TEXT NOT NULL CHECK (status IN ('active', 'disabled')),
+    created_by          TEXT NOT NULL,
+    created_at          TIMESTAMPTZ NOT NULL,
+    updated_at          TIMESTAMPTZ NOT NULL,
+    UNIQUE (org_id, name)
+);
+
+CREATE TABLE mirror_token_keys (
+    id          TEXT PRIMARY KEY,
+    org_id      TEXT NOT NULL REFERENCES organizations (id),
+    certificate TEXT NOT NULL,
+    secret_id   TEXT NOT NULL,
+    state       TEXT NOT NULL CHECK (state IN ('active', 'retired')),
+    created_by  TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL,
+    retired_at  TIMESTAMPTZ
+);
+
+-- +goose StatementBegin
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'samuori_app') THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE ON image_sources, mirror_token_keys TO samuori_app;
+    END IF;
+END;
+$$;
+-- +goose StatementEnd
+
+-- +goose Down
+DROP TABLE mirror_token_keys;
+DROP TABLE image_sources;

@@ -1,0 +1,9 @@
+{
+  "id": "crates-io",
+  "version": "1.0.0",
+  "displayName": "crates.io",
+  "destinations": [
+    "index.crates.io:443",
+    "static.crates.io:443"
+  ]
+}

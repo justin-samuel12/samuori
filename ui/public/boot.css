@@ -1,0 +1,135 @@
+/* Shown before the portal's scripts run; the app replaces #root. Only .samuori-boot* is styled here: this file stays
+   loaded and its unlayered rules would override the app's theme. The help text appears only if loading stalls.
+   Colours mirror src/design/tokens.css; the mark is the "assemble" spinner (src/components/Spinner.tsx). */
+.samuori-boot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  text-align: center;
+  background: #f4f7fa;
+  color: #102c4d;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.samuori-boot-mark {
+  line-height: 0;
+}
+
+.samuori-boot-mark svg {
+  overflow: visible;
+}
+
+.samuori-boot-mark path {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: samuori-boot-assemble 2.4s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+}
+
+.samuori-boot-n {
+  fill: #102c4d;
+}
+
+.samuori-boot-t {
+  fill: #20baa9;
+}
+
+.samuori-boot-mark path:nth-of-type(2) {
+  animation-delay: 0.12s;
+}
+.samuori-boot-mark path:nth-of-type(3) {
+  animation-delay: 0.24s;
+}
+.samuori-boot-mark path:nth-of-type(4) {
+  animation-delay: 0.36s;
+}
+.samuori-boot-mark path:nth-of-type(5) {
+  animation-delay: 0.48s;
+}
+.samuori-boot-mark path:nth-of-type(6) {
+  animation-delay: 0.6s;
+}
+
+.samuori-boot-label {
+  font-size: 0.8125rem;
+  color: #486079;
+}
+
+.samuori-boot-help {
+  position: absolute;
+  top: calc(50% + 4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(32rem, calc(100% - 32px));
+  margin: 0;
+  font-size: 0.875rem;
+  color: #486079;
+  opacity: 0;
+  animation: samuori-boot-show 0.3s ease 8s forwards;
+}
+
+.samuori-boot-help a {
+  color: #225dab;
+}
+
+@keyframes samuori-boot-assemble {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  18%,
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes samuori-boot-show {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .samuori-boot-mark path {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .samuori-boot {
+    background: #091521;
+    color: #ecf3fa;
+  }
+
+  .samuori-boot-n {
+    fill: #385e83;
+  }
+
+  .samuori-boot-label,
+  .samuori-boot-help {
+    color: #b2c3d4;
+  }
+
+  .samuori-boot-help a {
+    color: #89baff;
+  }
+}

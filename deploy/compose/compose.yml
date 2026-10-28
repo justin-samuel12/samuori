@@ -1,0 +1,46 @@
+# Controller services for an all-in-one host (docs/operators/all-in-one.md#compose), started by
+# ./install.sh --server-in-compose. The worker, egress firewall and registry mirror run on the host (ADR 0032).
+name: samuori
+services:
+  samuori-server:
+    build: .
+    image: samuori-server:local
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp]
+    # Host networking keeps the plain-HTTP listener and the worker endpoint on loopback, as in the native install.
+    network_mode: host
+    environment:
+      SAMUORI_LOCAL_WORKER_DIR: /var/lib/samuori-local
+    volumes:
+      - samuori-data:/var/lib/samuori
+      - /var/lib/samuori-local:/var/lib/samuori-local
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/samuori-server", "healthcheck"]
+      interval: 15s
+      timeout: 6s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      registry:
+        condition: service_healthy
+  registry:
+    image: docker.io/library/registry:3.1.2@sha256:ddf754342cfc8acc51a56d5d0ab6af06826461864460636d8bd5c546dab2a7b8
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - registry-data:/var/lib/registry
+    ports:
+      - 127.0.0.1:5001:5000
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5000/v2/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+volumes:
+  samuori-data:
+  registry-data:

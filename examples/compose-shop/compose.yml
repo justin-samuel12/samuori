@@ -1,0 +1,52 @@
+name: shop
+
+services:
+  web:
+    image: registry.example.invalid/shop/web:1.4.0
+    ports:
+      - "8080:80"
+    environment:
+      API_URL: http://api:3000
+    depends_on:
+      - api
+    labels:
+      kompose.service.type: nodeport
+
+  api:
+    build: ./api
+    image: registry.example.invalid/shop/api:1.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: shop
+      DATABASE_PASSWORD: example-not-a-real-password
+      LOG_LEVEL: info
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: example-not-a-real-password
+      POSTGRES_DB: shop
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    cap_add:
+      - SYS_NICE
+    privileged: true
+
+volumes:
+  db-data: {}

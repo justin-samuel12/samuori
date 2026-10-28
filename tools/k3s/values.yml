@@ -1,0 +1,42 @@
+image:
+  repository: registry.local/samuori/samuori-server
+  pullPolicy: Never
+replicas: 2
+externalUrl: https://127.0.0.1:18490
+tls: { secretName: rehearsal-api-tls }
+database:
+  dsnSecret: { name: rehearsal-database }
+  migrationDsnSecret: { name: rehearsal-database }
+clusterKeySecret: { name: rehearsal-cluster-key }
+messaging:
+  urls: [tls://nats-0.nats:4222, tls://nats-1.nats:4222, tls://nats-2.nats:4222]
+  credentialsSecret: { name: "" }
+  caSecret: { name: rehearsal-nats-ca }
+  clientCertSecret: rehearsal-nats-client
+storage:
+  oci: { repository: 127.0.0.1:5000/samuori/blobs, plainHttp: true, allowPrivateNetwork: true }
+worker:
+  hostnames: [host.lima.internal]
+  service: { type: NodePort, nodePort: 30444 }
+api:
+  service: { type: NodePort, nodePort: 30443 }
+backup:
+  enabled: true
+  recipientsSecret: { name: rehearsal-backup }
+  interval: 24h
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { memory: 1Gi }
+# A registry beside each controller on loopback, both on one host directory: the shared blob storage of this
+# single-node rehearsal.
+extraContainers:
+  - name: blobs
+    image: docker.io/library/registry:3.1.2@sha256:ddf754342cfc8acc51a56d5d0ab6af06826461864460636d8bd5c546dab2a7b8
+    env:
+      - { name: REGISTRY_HTTP_ADDR, value: "127.0.0.1:5000" }
+      - { name: REGISTRY_STORAGE_DELETE_ENABLED, value: "true" }
+    securityContext: { runAsUser: 0, runAsNonRoot: false, allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+    volumeMounts: [{ name: shared-blobs, mountPath: /var/lib/registry }]
+extraVolumes:
+  - name: shared-blobs
+    hostPath: { path: /var/lib/samuori-rehearsal-blobs, type: DirectoryOrCreate }

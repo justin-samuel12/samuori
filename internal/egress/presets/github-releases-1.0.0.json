@@ -1,0 +1,11 @@
+{
+  "id": "github-releases",
+  "version": "1.0.0",
+  "displayName": "GitHub release downloads",
+  "destinations": [
+    "github.com:443",
+    "objects.githubusercontent.com:443",
+    "release-assets.githubusercontent.com:443"
+  ],
+  "note": "Packages that download prebuilt binaries when they install, such as sharp before 0.33, fetch them from GitHub releases."
+}

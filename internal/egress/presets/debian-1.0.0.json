@@ -1,0 +1,9 @@
+{
+  "id": "debian",
+  "version": "1.0.0",
+  "displayName": "Debian package archive",
+  "destinations": [
+    "deb.debian.org:80",
+    "deb.debian.org:443"
+  ]
+}

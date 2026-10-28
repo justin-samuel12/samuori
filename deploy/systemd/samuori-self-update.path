@@ -1,0 +1,9 @@
+[Unit]
+Description=Apply a signed Samuori release staged by the controller or worker
+
+[Path]
+PathExists=/var/lib/samuori-update/request
+Unit=samuori-self-update.service
+
+[Install]
+WantedBy=multi-user.target

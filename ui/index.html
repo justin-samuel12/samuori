@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Samuori</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/boot.css" />
+    <meta
+      name="theme-color"
+      content="#f4f7fa"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#091521"
+      media="(prefers-color-scheme: dark)"
+    />
+  </head>
+  <body>
+    <div id="root">
+      <div class="samuori-boot" role="status">
+        <span class="samuori-boot-mark" aria-hidden="true">
+          <svg viewBox="0 0 400 420" width="64" height="67" focusable="false">
+            <g transform="translate(23 16) scale(.8)">
+              <path
+                class="samuori-boot-n"
+                d="M81 81 L207 7 Q223 -3 239 7 L324 55 L157 152 Q143 161 143 178 L143 191 L98 165 Q78 153 78 132 L78 105 Q78 90 81 81 Z"
+              />
+              <path
+                class="samuori-boot-t"
+                d="M263 101 L323 66 Q338 58 352 66 L421 107 Q438 117 438 137 L438 202 Z"
+              />
+              <path
+                class="samuori-boot-n"
+                d="M240 121 Q256 112 271 121 L420 208 Q438 218 438 238 L438 325 Q438 344 421 354 L375 381 L375 307 Q375 284 356 273 L205 186 Q190 177 190 164 Q190 151 204 143 Z"
+              />
+              <path
+                class="samuori-boot-t"
+                d="M303 252 L350 279 Q363 287 363 305 L363 371 Q363 389 346 399 L239 461 Q223 470 207 461 L115 408 L279 313 Q303 299 303 278 Z"
+              />
+              <path
+                class="samuori-boot-n"
+                d="M4 244 L194 354 L119 397 Q105 405 91 397 L22 357 Q4 347 4 328 Z"
+              />
+              <path
+                class="samuori-boot-t"
+                d="M65 92 L22 117 Q4 128 4 147 L4 209 Q4 228 22 239 L181 331 Q196 340 211 331 L242 313 Q260 302 260 283 Q260 268 245 259 L88 168 Q65 155 65 132 Z"
+              />
+            </g>
+          </svg>
+        </span>
+        <span class="samuori-boot-label">Loading Samuori…</span>
+        <p class="samuori-boot-help">
+          If the page stays like this, its scripts did not load.
+          <a href="">Reload</a>. If that does not help, a load balancer may be
+          sending some requests to a server that is not running Samuori, or the
+          server is restarting.
+        </p>
+        <noscript><p>The portal needs JavaScript.</p></noscript>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

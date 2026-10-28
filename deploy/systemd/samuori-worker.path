@@ -1,0 +1,9 @@
+[Unit]
+Description=Start the Samuori worker when the controller offers it an enrollment
+
+[Path]
+PathExists=/var/lib/samuori-local/enrollment-token
+Unit=samuori-worker.service
+
+[Install]
+WantedBy=multi-user.target

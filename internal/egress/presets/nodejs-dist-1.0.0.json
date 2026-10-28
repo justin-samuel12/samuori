@@ -1,0 +1,8 @@
+{
+  "id": "nodejs-dist",
+  "version": "1.0.0",
+  "displayName": "Node.js release downloads",
+  "destinations": [
+    "nodejs.org:443"
+  ]
+}

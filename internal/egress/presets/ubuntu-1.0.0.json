@@ -1,0 +1,10 @@
+{
+  "id": "ubuntu",
+  "version": "1.0.0",
+  "displayName": "Ubuntu package archive",
+  "destinations": [
+    "archive.ubuntu.com:80",
+    "security.ubuntu.com:80",
+    "ports.ubuntu.com:80"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "yarn",
+  "version": "1.0.0",
+  "displayName": "Yarn registry",
+  "destinations": [
+    "registry.yarnpkg.com:443",
+    "repo.yarnpkg.com:443"
+  ]
+}

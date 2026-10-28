@@ -1,0 +1,18 @@
+image:
+  repository: registry.example/samuori/samuori-server
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000001
+externalUrl: https://samuori.example
+tls:
+  secretName: samuori-tls
+database:
+  dsnSecret: { name: samuori-database }
+  migrationDsnSecret: { name: samuori-database-owner }
+clusterKeySecret: { name: samuori-cluster-key }
+messaging:
+  urls: [tls://nats-0.nats:4222, tls://nats-1.nats:4222, tls://nats-2.nats:4222]
+  credentialsSecret: { name: samuori-nats }
+  caSecret: { name: samuori-nats-ca }
+storage:
+  s3: { bucket: samuori-blobs, region: eu-west-1 }
+worker:
+  hostnames: [workers.samuori.example]

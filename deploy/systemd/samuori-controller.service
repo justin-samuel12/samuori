@@ -1,0 +1,24 @@
+[Unit]
+Description=Samuori controller (cluster member)
+After=network-online.target samuori-nats.service
+Wants=network-online.target
+
+[Service]
+User=samuori
+Group=samuori
+EnvironmentFile=/etc/samuori/env
+ExecStartPre=/usr/local/bin/samuori-server preflight --config /etc/samuori/server.yml
+ExecStart=/usr/local/bin/samuori-server --config /etc/samuori/server.yml
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/samuori /var/lib/samuori-update -/var/lib/samuori-local
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

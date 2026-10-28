@@ -1,0 +1,9 @@
+[Unit]
+Description=Bring this host's NATS member's routes to the cluster's members (OD-27)
+
+[Path]
+PathExists=/var/lib/samuori-update/nats-routes
+Unit=samuori-nats-routes.service
+
+[Install]
+WantedBy=multi-user.target

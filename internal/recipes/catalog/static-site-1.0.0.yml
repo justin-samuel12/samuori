@@ -1,0 +1,31 @@
+id: static-site
+version: 1.0.0
+displayName: "Static website"
+description: "Builds front-end assets with Node.js and serves the output folder with an unprivileged web server on port 8080."
+languages: [javascript, typescript, nodejs, html]
+applicationTypes: [static-site]
+egressPresets: [npm]
+platforms: [linux/amd64, linux/arm64]
+runtimes:
+  - version: "22"
+    buildImage: docker.io/library/node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+    runImage: docker.io/nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+  - version: "24"
+    buildImage: docker.io/library/node:24-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+    runImage: docker.io/nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+defaults:
+  install: "npm ci"
+  build: "npm run build"
+stages:
+  - name: build
+    runtime: build
+    steps:
+      - workdir: /app
+      - copySource: {from: ., to: .}
+      - run: {command: install, network: egress}
+      - run: {command: build}
+  - runtime: run
+    steps:
+      - copyFromStage: {stage: build, from: /app/dist, to: /usr/share/nginx/html, owner: "10001:10001"}
+      - user: "10001"
+      - expose: "8080"

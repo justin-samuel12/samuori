@@ -1,0 +1,14 @@
+[Unit]
+Description=Samuori build-user egress firewall (docs/architecture/egress.md)
+Requires=samuori-network.service
+After=samuori-network.service nftables.service
+Before=samuori-worker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c '/usr/local/bin/samuori-worker egress-rules --build-user samuori-build --allow @EGRESSALLOW@ | /usr/sbin/nft -f -'
+ExecStop=/usr/sbin/nft delete table inet samuori_egress
+
+[Install]
+WantedBy=multi-user.target

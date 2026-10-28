@@ -1,0 +1,9 @@
+{
+  "id": "alpine",
+  "version": "1.0.0",
+  "displayName": "Alpine package archive",
+  "destinations": [
+    "dl-cdn.alpinelinux.org:80",
+    "dl-cdn.alpinelinux.org:443"
+  ]
+}

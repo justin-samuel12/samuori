@@ -1,0 +1,21 @@
+[Unit]
+Description=Samuori controller (all-in-one)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=samuori
+Group=samuori
+ExecStart=/usr/local/bin/samuori-server --config /etc/samuori/server.yml
+Restart=on-failure
+TimeoutStopSec=45
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/samuori /var/lib/samuori-local /var/lib/samuori-update
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

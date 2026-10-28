@@ -1,0 +1,22 @@
+# Single-node k3s VM for the Kubernetes HA rehearsal (tools/k3s). The API and worker NodePorts are
+# forwarded to the host, where a remote worker VM reaches them.
+vmType: vz
+cpus: 4
+memory: 8GiB
+disk: 40GiB
+images:
+  - location: https://cloud-images.ubuntu.com/releases/26.04/release/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+mounts: []
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPort: 30443
+    hostIP: 127.0.0.1
+    hostPort: 18490
+  - guestPort: 30444
+    hostIP: 0.0.0.0
+    hostPort: 18493
+  - guestPortRange: [1, 65535]
+    ignore: true

@@ -1,0 +1,13 @@
+[
+  {"name": "github.com/cyphar/filepath-securejoin", "license": "BSD-3-Clause AND MPL-2.0",
+   "packages": ["github.com/cyphar/filepath-securejoin", "github.com/cyphar/filepath-securejoin/internal/consts"],
+   "reason": "Per-file licensing (COPYING.md). The linked packages carry SPDX BSD-3-Clause headers; the MPL-2.0 code is in pathrs-lite, which is not linked."},
+  {"name": "github.com/opencontainers/go-digest", "license": "Apache-2.0 AND CC-BY-SA-4.0",
+   "reason": "Code is Apache-2.0; CC-BY-SA-4.0 (LICENSE.docs) covers documentation only, which is not shipped."},
+  {"name": "modernc.org/libc", "license": "BSD-3-Clause AND NOASSERTION",
+   "reason": "LICENSE-3RD-PARTY.md lists Go (BSD-3-Clause), musl, go-netdb and nixpkgs (MIT); all permissive. The notices file carries it."},
+  {"name": "modernc.org/memory", "license": "BSD-3-Clause AND NOASSERTION",
+   "reason": "LICENSE-GO and LICENSE-MMAP-GO are BSD-3-Clause; LICENSE-LOGO is an attribution link for a logo that is not shipped."},
+  {"name": "modernc.org/sqlite", "license": "BSD-3-Clause AND MIT AND NOASSERTION",
+   "reason": "LICENSE-3RD-PARTY.md section 1 lists only MIT, BSD-3-Clause and public-domain (SQLite) components as linked; sqlite-vec (MIT) is linked only through modernc.org/sqlite/vec."}
+]

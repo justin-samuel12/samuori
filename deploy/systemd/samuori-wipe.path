@@ -1,0 +1,9 @@
+[Unit]
+Description=Remove Samuori from this host when a controller asks (ADR 0045)
+
+[Path]
+PathExists=/var/lib/samuori-update/wipe
+Unit=samuori-wipe.service
+
+[Install]
+WantedBy=multi-user.target

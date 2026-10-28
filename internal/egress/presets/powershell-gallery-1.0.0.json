@@ -1,0 +1,9 @@
+{
+  "id": "powershell-gallery",
+  "version": "1.0.0",
+  "displayName": "PowerShell Gallery",
+  "destinations": [
+    "www.powershellgallery.com:443"
+  ],
+  "note": "Package downloads may redirect to CDN hosts that are not listed; denied hosts appear on the run page."
+}

@@ -1,0 +1,85 @@
+# Dependencies for the HA rehearsal: PostgreSQL and a three-node NATS cluster with JetStream and client TLS.
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: samuori }
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres, namespace: samuori }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+          env:
+            - { name: POSTGRES_DB, value: samuori }
+            - { name: POSTGRES_USER, value: samuori }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: rehearsal-postgres, key: password } }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe: { exec: { command: [pg_isready, -U, samuori] }, periodSeconds: 3 }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql }]
+      volumes: [{ name: data, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nats, namespace: samuori }
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: { app: nats }
+  ports: [{ name: client, port: 4222 }, { name: cluster, port: 6222 }]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: nats, namespace: samuori }
+data:
+  nats.conf: |
+    port: 4222
+    server_name: $POD_NAME
+    jetstream { store_dir: /data }
+    tls {
+      cert_file: /etc/nats/tls/tls.crt
+      key_file: /etc/nats/tls/tls.key
+      ca_file: /etc/nats/tls/ca.crt
+      verify: true
+    }
+    cluster {
+      name: samuori
+      port: 6222
+      routes: [nats://nats-0.nats:6222, nats://nats-1.nats:6222, nats://nats-2.nats:6222]
+    }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: nats, namespace: samuori }
+spec:
+  serviceName: nats
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector: { matchLabels: { app: nats } }
+  template:
+    metadata: { labels: { app: nats } }
+    spec:
+      containers:
+        - name: nats
+          image: docker.io/library/nats:2.15.1@sha256:76e4b7a718f0b9e1a07442fe62b12973678a93c1ec2d494355f470dd59402490
+          args: [-c, /etc/nats/nats.conf]
+          env: [{ name: POD_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }]
+          ports: [{ containerPort: 4222 }, { containerPort: 6222 }]
+          volumeMounts:
+            - { name: config, mountPath: /etc/nats/nats.conf, subPath: nats.conf }
+            - { name: tls, mountPath: /etc/nats/tls }
+            - { name: data, mountPath: /data }
+      volumes:
+        - { name: config, configMap: { name: nats } }
+        - { name: tls, secret: { secretName: rehearsal-nats-server } }
+        - { name: data, emptyDir: {} }

@@ -1,0 +1,271 @@
+{
+  "note": "Recorded by TestRealMove2Kube with the official release binary and no network; sandbox paths restored in stderr. Regenerate: docs/spikes/move2kube.md.",
+  "command": [
+    "move2kube",
+    "transform",
+    "--source",
+    "/in",
+    "--output",
+    "/out/m2k",
+    "--name",
+    "shop",
+    "--qa-skip",
+    "--qa-cache-out",
+    "/out/m2k/.m2k-qa",
+    "--config-out",
+    "/out/m2k/.m2k-qa",
+    "--disable-local-execution",
+    "--ignore-env",
+    "--config",
+    "/work/files/samuori-move2kube.yml"
+  ],
+  "sha256": "sha256:021fe01b4170c5a0692827d1e1dee7d95b66abdcece6e753ca309a3b42b43f4a",
+  "version": "v0.3.15",
+  "name": "shop",
+  "input": {
+    "kind": "compose",
+    "snapshotId": "s",
+    "composePath": "compose.yml"
+  },
+  "format": "manifests",
+  "answers": {
+    "move2kube.services.\"api\".\"3000\".servicetype": "Ingress",
+    "move2kube.services.\"api\".\"3000\".urlpath": "/api",
+    "move2kube.services.\"db\".\"8080\".servicetype": "ClusterIP",
+    "move2kube.services.\"db\".port": "5432",
+    "move2kube.services.\"web\".\"8080\".servicetype": "ClusterIP",
+    "move2kube.services.[].enable": "[\"api\",\"db\",\"web\"]",
+    "move2kube.storage.type.\"db\"..options": "PVC",
+    "move2kube.target.\"default\".ingress.host": "shop.example.com",
+    "move2kube.target.imageregistry.namespace": "shop",
+    "move2kube.target.imageregistry.url": "registry.example.invalid"
+  },
+  "asked": [
+    {
+      "id": "move2kube.services.[].enable",
+      "text": "Select all services that are needed:",
+      "kind": "MultiSelect",
+      "hints": [
+        "The services unselected here will be ignored."
+      ],
+      "options": [
+        "api",
+        "db",
+        "web"
+      ],
+      "default": "[\"api\",\"db\",\"web\"]",
+      "answer": "[\"api\",\"db\",\"web\"]"
+    },
+    {
+      "id": "move2kube.services.\"db\".port",
+      "text": "Select the port to be exposed for the '\"db\"' service :",
+      "kind": "Select",
+      "hints": [
+        "Select 'Other' if you want to expose the service using a different port."
+      ],
+      "options": [
+        "8080",
+        "Other (specify custom option)"
+      ],
+      "default": "8080",
+      "answer": "8080"
+    },
+    {
+      "id": "move2kube.storage.type.\"db\"..options",
+      "text": "Select the storage type to create",
+      "kind": "Select",
+      "hints": [
+        "By default, no storage type will be created. Data source will be ignored"
+      ],
+      "options": [
+        "PVC",
+        "HostPath",
+        "Ignore the data source"
+      ],
+      "default": "Ignore the data source",
+      "answer": "Ignore the data source"
+    },
+    {
+      "id": "move2kube.services.web.deployment",
+      "text": "For the service web, which type of deployment is required?",
+      "kind": "Select",
+      "options": [
+        "Deployment",
+        "StatefulSet",
+        "ArgoRollout"
+      ],
+      "default": "Deployment",
+      "answer": "Deployment"
+    },
+    {
+      "id": "move2kube.services.db.deployment",
+      "text": "For the service db, which type of deployment is required?",
+      "kind": "Select",
+      "options": [
+        "Deployment",
+        "StatefulSet",
+        "ArgoRollout"
+      ],
+      "default": "Deployment",
+      "answer": "Deployment"
+    },
+    {
+      "id": "move2kube.services.api.deployment",
+      "text": "For the service api, which type of deployment is required?",
+      "kind": "Select",
+      "options": [
+        "Deployment",
+        "StatefulSet",
+        "ArgoRollout"
+      ],
+      "default": "Deployment",
+      "answer": "Deployment"
+    },
+    {
+      "id": "move2kube.services.\"db\".\"8080\".servicetype",
+      "text": "What kind of service/ingress should be created for the service db's 8080 port?",
+      "kind": "Select",
+      "hints": [
+        "Choose Ingress if you want a ingress/route resource to be created"
+      ],
+      "options": [
+        "Ingress",
+        "LoadBalancer",
+        "NodePort",
+        "ClusterIP",
+        "Don't create service"
+      ],
+      "default": "Ingress",
+      "answer": "Ingress"
+    },
+    {
+      "id": "move2kube.services.\"db\".\"8080\".urlpath",
+      "text": "Specify the ingress path to expose the service db's 8080 port on?",
+      "kind": "Input",
+      "hints": [
+        "Leave out leading / to use first part as subdomain"
+      ],
+      "default": "/db",
+      "answer": "/db"
+    },
+    {
+      "id": "move2kube.services.\"api\".\"3000\".servicetype",
+      "text": "What kind of service/ingress should be created for the service api's 3000 port?",
+      "kind": "Select",
+      "hints": [
+        "Choose Ingress if you want a ingress/route resource to be created"
+      ],
+      "options": [
+        "Ingress",
+        "LoadBalancer",
+        "NodePort",
+        "ClusterIP",
+        "Don't create service"
+      ],
+      "default": "Ingress",
+      "answer": "Ingress"
+    },
+    {
+      "id": "move2kube.services.\"api\".\"3000\".urlpath",
+      "text": "Specify the ingress path to expose the service api's 3000 port on?",
+      "kind": "Input",
+      "hints": [
+        "Leave out leading / to use first part as subdomain"
+      ],
+      "default": "/api",
+      "answer": "/api"
+    },
+    {
+      "id": "move2kube.services.\"web\".\"8080\".servicetype",
+      "text": "What kind of service/ingress should be created for the service web's 8080 port?",
+      "kind": "Select",
+      "hints": [
+        "Choose Ingress if you want a ingress/route resource to be created"
+      ],
+      "options": [
+        "Ingress",
+        "LoadBalancer",
+        "NodePort",
+        "ClusterIP",
+        "Don't create service"
+      ],
+      "default": "Ingress",
+      "answer": "Ingress"
+    },
+    {
+      "id": "move2kube.services.\"web\".\"8080\".urlpath",
+      "text": "Specify the ingress path to expose the service web's 8080 port on?",
+      "kind": "Input",
+      "hints": [
+        "Leave out leading / to use first part as subdomain"
+      ],
+      "default": "/web",
+      "answer": "/web"
+    },
+    {
+      "id": "move2kube.target.imageregistry.url",
+      "text": "Enter the URL of the image registry where the new images should be pushed : ",
+      "kind": "Select",
+      "hints": [
+        "You can always change it later by changing the yamls."
+      ],
+      "options": [
+        "Other (specify custom option)",
+        "quay.io"
+      ],
+      "default": "quay.io",
+      "answer": "quay.io"
+    },
+    {
+      "id": "move2kube.target.imageregistry.namespace",
+      "text": "Enter the namespace where the new images should be pushed : ",
+      "kind": "Input",
+      "hints": [
+        "Ex : shop"
+      ],
+      "default": "shop",
+      "answer": "shop"
+    },
+    {
+      "id": "move2kube.target.\"default\".ingress.ingressclassname",
+      "text": "Provide the Ingress class name for ingress",
+      "kind": "Input",
+      "hints": [
+        "Leave empty to use the cluster default"
+      ]
+    },
+    {
+      "id": "move2kube.target.\"default\".ingress.host",
+      "text": "Provide the ingress host domain",
+      "kind": "Input",
+      "hints": [
+        "Ingress host domain is part of service URL"
+      ],
+      "default": "shop.com",
+      "answer": "shop.com"
+    },
+    {
+      "id": "move2kube.target.\"default\".ingress.tls",
+      "text": "Provide the TLS secret for ingress",
+      "kind": "Input",
+      "hints": [
+        "Leave empty to use http"
+      ]
+    }
+  ],
+  "config": "move2kube:\n  minreplicas: \"1\"\n  services:\n    api:\n      \"3000\":\n        servicetype: Ingress\n        urlpath: /api\n      enable: true\n    db:\n      \"8080\":\n        servicetype: ClusterIP\n      enable: true\n      port: \"5432\"\n    web:\n      \"8080\":\n        servicetype: ClusterIP\n      enable: true\n  spawncontainers: false\n  storage:\n    type:\n      db:\n        options: PVC\n  target:\n    default:\n      clustertype: Kubernetes\n      ingress:\n        host: shop.example.com\n    imageregistry:\n      namespace: shop\n      url: registry.example.invalid\n  transformers:\n    types:\n      - ClusterSelector\n      - ComposeAnalyser\n      - DockerfileDetector\n      - DockerfileParser\n      - DotNetCore-Dockerfile\n      - EarAnalyser\n      - EarRouter\n      - Golang-Dockerfile\n      - Gradle\n      - Jar\n      - Jboss\n      - Kubernetes\n      - Liberty\n      - Maven\n      - Nodejs-Dockerfile\n      - PHP-Dockerfile\n      - Parameterizer\n      - Python-Dockerfile\n      - Ruby-Dockerfile\n      - Rust-Dockerfile\n      - Tomcat\n      - WarAnalyser\n      - WarRouter\n      - ZuulAnalyser\n  transformerselector: \"\"\n",
+  "exitCode": 0,
+  "stderr": "time=\"2026-10-24T12:59:08-05:00\" level=info msg=\"No plan file found.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Using the default QA mappings file\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Configuration loading done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Start planning\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Planning started on the base directory: '/in'\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[ComposeAnalyser] Planning\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Identified 3 named services and 0 to-be-named services\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[ComposeAnalyser] Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[DockerfileDetector] Planning\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Identified 1 named services and 0 to-be-named services\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[DockerfileDetector] Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[Base Directory] Identified 4 named services and 0 to-be-named services\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Planning finished on the base directory: '/in'\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Planning started on its sub directories\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Planning finished on its sub directories\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[Directory Walk] Identified 4 named services and 0 to-be-named services\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"[Named Services] Identified 3 named services\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Planning done. Number of services identified: 3\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Starting transformation\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Found multiple transformation options for the service 'api'. Selecting the first valid option.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Using the transformation option 'ComposeAnalyser' for the service 'api'.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Using the transformation option 'ComposeAnalyser' for the service 'db'.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Using the transformation option 'ComposeAnalyser' for the service 'web'.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Iteration 1\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Iteration 2 - 3 artifacts to process\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer 'ComposeAnalyser' processing 3 artifacts\"\ntime=\"2026-10-24T12:59:08-05:00\" level=error msg=\"path /in points to a unknown path. Removing the path\"\ntime=\"2026-10-24T12:59:08-05:00\" level=error msg=\"failed to process all the paths for the object of type *[]transformer.PathMapping and value \u0026[{Type:Source SrcPath:/in DestPath:source TemplateConfig:\u003cnil\u003e}] . Error: \\\"failed to process the paths for the object of type *[]transformer.PathMapping and value \u0026[{Type:Source SrcPath:/in DestPath:source TemplateConfig:\u003cnil\u003e}] . Error: \\\\\\\"failed to convert /in Error: \\\\\\\\\\\\\\\"path /in points to a unknown path. Removing the path\\\\\\\\\\\\\\\"\\\\\\\"\\\"\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer 'ZuulAnalyser' processing 1 artifacts\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer ZuulAnalyser Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer ComposeAnalyser Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Created 1 pathMappings and 2 artifacts. Total Path Mappings : 1. Total Artifacts : 3.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Iteration 3 - 2 artifacts to process\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer 'ClusterSelector' processing 1 artifacts\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer ClusterSelector Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer 'Kubernetes' processing 1 artifacts\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer Kubernetes Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Created 1 pathMappings and 1 artifacts. Total Path Mappings : 2. Total Artifacts : 5.\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Iteration 4 - 1 artifacts to process\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer 'Parameterizer' processing 1 artifacts\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformer Parameterizer Done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformation done\"\ntime=\"2026-10-24T12:59:08-05:00\" level=info msg=\"Transformed target artifacts can be found at [/out/m2k/shop].\"\n",
+  "files": {
+    ".m2k-qa/m2kqacache.yaml": "apiVersion: move2kube.konveyor.io/v1alpha1\nkind: QACache\nspec:\n  solutions:\n    - id: move2kube.transformerselector\n      type: Input\n      description: Specify a Kubernetes style selector to select only the transformers that you want to run.\n      hints:\n        - Leave empty to select everything. This is the default.\n      default: \"\"\n      answer: \"\"\n    - id: move2kube.transformers.types\n      type: MultiSelect\n      description: 'Select all transformer types that you are interested in:'\n      hints:\n        - Services that don't support any of the transformer types you are interested in will be ignored.\n      options:\n        - ArgoCD\n        - Buildconfig\n        - CNBContainerizer\n        - CloudFoundry\n        - ClusterSelector\n        - ComposeAnalyser\n        - ComposeGenerator\n        - ContainerImagesPushScriptGenerator\n        - DockerfileDetector\n        - DockerfileImageBuildScript\n        - DockerfileParser\n        - DotNetCore-Dockerfile\n        - EarAnalyser\n        - EarRouter\n        - Golang-Dockerfile\n        - Gradle\n        - Jar\n        - Jboss\n        - Knative\n        - Kubernetes\n        - KubernetesVersionChanger\n        - Liberty\n        - Maven\n        - Nodejs-Dockerfile\n        - OperatorTransformer\n        - OperatorsFromTCA\n        - PHP-Dockerfile\n        - Parameterizer\n        - Python-Dockerfile\n        - ReadMeGenerator\n        - Ruby-Dockerfile\n        - Rust-Dockerfile\n        - Tekton\n        - Tomcat\n        - WarAnalyser\n        - WarRouter\n        - WinConsoleApp-Dockerfile\n        - WinSLWebApp-Dockerfile\n        - WinWebApp-Dockerfile\n        - ZuulAnalyser\n      default:\n        - Parameterizer\n        - Python-Dockerfile\n        - CNBContainerizer\n        - Ruby-Dockerfile\n        - OperatorTransformer\n        - DockerfileImageBuildScript\n        - Jboss\n        - Rust-Dockerfile\n        - Tekton\n        - ArgoCD\n        - WarAnalyser\n        - Kubernetes\n        - ReadMeGenerator\n        - ComposeGenerator\n        - Golang-Dockerfile\n        - CloudFoundry\n        - ClusterSelector\n        - Gradle\n        - WarRouter\n        - EarAnalyser\n        - Buildconfig\n        - WinWebApp-Dockerfile\n        - Nodejs-Dockerfile\n        - KubernetesVersionChanger\n        - DockerfileParser\n        - OperatorsFromTCA\n        - DotNetCore-Dockerfile\n        - PHP-Dockerfile\n        - DockerfileDetector\n        - ZuulAnalyser\n        - ComposeAnalyser\n        - Tomcat\n        - Maven\n        - EarRouter\n        - Liberty\n        - ContainerImagesPushScriptGenerator\n        - Jar\n        - Knative\n      answer:\n        - ClusterSelector\n        - ComposeAnalyser\n        - DockerfileDetector\n        - DockerfileParser\n        - DotNetCore-Dockerfile\n        - EarAnalyser\n        - EarRouter\n        - Golang-Dockerfile\n        - Gradle\n        - Jar\n        - Jboss\n        - Kubernetes\n        - Liberty\n        - Maven\n        - Nodejs-Dockerfile\n        - PHP-Dockerfile\n        - Parameterizer\n        - Python-Dockerfile\n        - Ruby-Dockerfile\n        - Rust-Dockerfile\n        - Tomcat\n        - WarAnalyser\n        - WarRouter\n        - ZuulAnalyser\n    - id: move2kube.services.[].enable\n      type: MultiSelect\n      description: 'Select all services that are needed:'\n      hints:\n        - The services unselected here will be ignored.\n      options:\n        - api\n        - db\n        - web\n      default:\n        - api\n        - db\n        - web\n      answer:\n        - api\n        - db\n        - web\n    - id: move2kube.services.\"db\".port\n      type: Select\n      description: 'Select the port to be exposed for the ''\"db\"'' service :'\n      hints:\n        - Select 'Other' if you want to expose the service using a different port.\n      options:\n        - \"8080\"\n        - Other (specify custom option)\n      default: \"8080\"\n      answer: \"5432\"\n    - id: move2kube.storage.type.\"db\"..options\n      type: Select\n      description: Select the storage type to create\n      hints:\n        - By default, no storage type will be created. Data source will be ignored\n      options:\n        - PVC\n        - HostPath\n        - Ignore the data source\n      default: Ignore the data source\n      answer: PVC\n    - id: move2kube.target.\"default\".clustertype\n      type: Select\n      description: 'Choose the cluster type:'\n      hints:\n        - Choose the cluster type you would like to target\n      options:\n        - GCP-GKE\n        - IBM-IKS\n        - IBM-Openshift\n        - Kubernetes\n        - Openshift\n        - AWS-EKS\n        - Azure-AKS\n      default: Kubernetes\n      answer: Kubernetes\n    - id: move2kube.services.web.deployment\n      type: Select\n      description: For the service web, which type of deployment is required?\n      options:\n        - Deployment\n        - StatefulSet\n        - ArgoRollout\n      default: Deployment\n      answer: Deployment\n    - id: move2kube.services.db.deployment\n      type: Select\n      description: For the service db, which type of deployment is required?\n      options:\n        - Deployment\n        - StatefulSet\n        - ArgoRollout\n      default: Deployment\n      answer: Deployment\n    - id: move2kube.services.api.deployment\n      type: Select\n      description: For the service api, which type of deployment is required?\n      options:\n        - Deployment\n        - StatefulSet\n        - ArgoRollout\n      default: Deployment\n      answer: Deployment\n    - id: move2kube.services.\"web\".\"8080\".servicetype\n      type: Select\n      description: What kind of service/ingress should be created for the service web's 8080 port?\n      hints:\n        - Choose Ingress if you want a ingress/route resource to be created\n      options:\n        - Ingress\n        - LoadBalancer\n        - NodePort\n        - ClusterIP\n        - Don't create service\n      default: Ingress\n      answer: ClusterIP\n    - id: move2kube.services.\"db\".\"5432\".servicetype\n      type: Select\n      description: What kind of service/ingress should be created for the service db's 5432 port?\n      hints:\n        - Choose Ingress if you want a ingress/route resource to be created\n      options:\n        - Ingress\n        - LoadBalancer\n        - NodePort\n        - ClusterIP\n        - Don't create service\n      default: Ingress\n      answer: Ingress\n    - id: move2kube.services.\"db\".\"5432\".urlpath\n      type: Input\n      description: Specify the ingress path to expose the service db's 5432 port on?\n      hints:\n        - Leave out leading / to use first part as subdomain\n      default: /db\n      answer: /db\n    - id: move2kube.services.\"api\".\"3000\".servicetype\n      type: Select\n      description: What kind of service/ingress should be created for the service api's 3000 port?\n      hints:\n        - Choose Ingress if you want a ingress/route resource to be created\n      options:\n        - Ingress\n        - LoadBalancer\n        - NodePort\n        - ClusterIP\n        - Don't create service\n      default: Ingress\n      answer: Ingress\n    - id: move2kube.services.\"api\".\"3000\".urlpath\n      type: Input\n      description: Specify the ingress path to expose the service api's 3000 port on?\n      hints:\n        - Leave out leading / to use first part as subdomain\n      default: /api\n      answer: /api\n    - id: move2kube.minreplicas\n      type: Input\n      description: Provide the minimum number of replicas each service should have\n      hints:\n        - If the value is 0 pods won't be started by default\n      default: \"2\"\n      answer: \"1\"\n    - id: move2kube.target.imageregistry.url\n      type: Select\n      description: 'Enter the URL of the image registry where the new images should be pushed : '\n      hints:\n        - You can always change it later by changing the yamls.\n      options:\n        - Other (specify custom option)\n        - quay.io\n      default: quay.io\n      answer: registry.example.invalid\n    - id: move2kube.target.imageregistry.namespace\n      type: Input\n      description: 'Enter the namespace where the new images should be pushed : '\n      hints:\n        - 'Ex : shop'\n      default: shop\n      answer: shop\n    - id: move2kube.target.imageregistry.\"registry.example.invalid\".logintype\n      type: Select\n      description: '[registry.example.invalid] What type of container registry login do you want to use?'\n      options:\n        - use an existing pull secret\n        - no authentication\n        - username and password\n      default: no authentication\n      answer: no authentication\n    - id: move2kube.target.\"default\".ingress.ingressclassname\n      type: Input\n      description: Provide the Ingress class name for ingress\n      hints:\n        - Leave empty to use the cluster default\n      default: \"\"\n      answer: \"\"\n    - id: move2kube.target.\"default\".ingress.host\n      type: Input\n      description: Provide the ingress host domain\n      hints:\n        - Ingress host domain is part of service URL\n      default: shop.com\n      answer: shop.example.com\n    - id: move2kube.target.\"default\".ingress.tls\n      type: Input\n      description: Provide the TLS secret for ingress\n      hints:\n        - Leave empty to use http\n      default: \"\"\n      answer: \"\"\n",
+    "shop/deploy/yamls/api-deployment.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: api\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      move2kube.konveyor.io/service: api\n  strategy: {}\n  template:\n    metadata:\n      creationTimestamp: null\n      labels:\n        move2kube.konveyor.io/service: api\n      name: api\n    spec:\n      containers:\n        - env:\n            - name: DATABASE_PASSWORD\n              value: example-not-a-real-password\n            - name: LOG_LEVEL\n              value: info\n            - name: DATABASE_HOST\n              value: db\n            - name: DATABASE_USER\n              value: shop\n          image: registry.example.invalid/shop/api:1.4.0\n          imagePullPolicy: Always\n          livenessProbe:\n            exec:\n              command:\n                - wget\n                - -qO-\n                - http://localhost:3000/healthz\n            failureThreshold: 3\n            periodSeconds: 10\n            timeoutSeconds: 3\n          name: api\n          ports:\n            - containerPort: 3000\n              protocol: TCP\n          resources:\n            limits:\n              cpu: 500m\n              memory: \"268435456\"\n      restartPolicy: Always\n      securityContext: {}\nstatus: {}\n",
+    "shop/deploy/yamls/api-service.yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: api\n  name: api\nspec:\n  ports:\n    - name: port-3000\n      port: 3000\n      targetPort: 3000\n  selector:\n    move2kube.konveyor.io/service: api\n  type: ClusterIP\nstatus:\n  loadBalancer: {}\n",
+    "shop/deploy/yamls/db-deployment.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: db\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      move2kube.konveyor.io/service: db\n  strategy: {}\n  template:\n    metadata:\n      creationTimestamp: null\n      labels:\n        move2kube.konveyor.io/service: db\n      name: db\n    spec:\n      containers:\n        - env:\n            - name: POSTGRES_DB\n              value: shop\n            - name: POSTGRES_USER\n              value: shop\n            - name: POSTGRES_PASSWORD\n              value: example-not-a-real-password\n          image: postgres:17\n          imagePullPolicy: Always\n          name: db\n          ports:\n            - containerPort: 5432\n              protocol: TCP\n          resources: {}\n          securityContext:\n            capabilities:\n              add:\n                - SYS_NICE\n            privileged: false\n          volumeMounts:\n            - mountPath: /var/lib/postgresql/data\n              name: vol15560012003991943610\n            - mountPath: /backups\n              name: vol-db-16008309810840390692\n      restartPolicy: Always\n      securityContext: {}\n      volumes:\n        - name: vol15560012003991943610\n          persistentVolumeClaim:\n            claimName: vol15560012003991943610\n        - name: vol-db-16008309810840390692\n          persistentVolumeClaim:\n            claimName: vol-db-16008309810840390692\nstatus: {}\n",
+    "shop/deploy/yamls/db-service.yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: db\n  name: db\nspec:\n  ports:\n    - name: port-5432\n      port: 5432\n      targetPort: 5432\n  selector:\n    move2kube.konveyor.io/service: db\n  type: ClusterIP\nstatus:\n  loadBalancer: {}\n",
+    "shop/deploy/yamls/shop-ingress.yaml": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: shop\n  name: shop\nspec:\n  rules:\n    - host: shop.example.com\n      http:\n        paths:\n          - backend:\n              service:\n                name: db\n                port:\n                  name: port-5432\n            path: /db\n            pathType: Prefix\n          - backend:\n              service:\n                name: api\n                port:\n                  name: port-3000\n            path: /api\n            pathType: Prefix\nstatus:\n  loadBalancer: {}\n",
+    "shop/deploy/yamls/vol-db-16008309810840390692-persistentvolumeclaim.yaml": "apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  creationTimestamp: null\n  name: vol-db-16008309810840390692\nspec:\n  accessModes:\n    - ReadWriteMany\n  resources: {}\nstatus: {}\n",
+    "shop/deploy/yamls/vol15560012003991943610-persistentvolumeclaim.yaml": "apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  creationTimestamp: null\n  name: vol15560012003991943610\nspec:\n  accessModes:\n    - ReadWriteMany\n  resources: {}\nstatus: {}\n",
+    "shop/deploy/yamls/web-deployment.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  annotations:\n    kompose.service.type: nodeport\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: web\n  name: web\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      move2kube.konveyor.io/service: web\n  strategy: {}\n  template:\n    metadata:\n      annotations:\n        kompose.service.type: nodeport\n      creationTimestamp: null\n      labels:\n        move2kube.konveyor.io/service: web\n      name: web\n    spec:\n      containers:\n        - env:\n            - name: API_URL\n              value: http://api:3000\n          image: registry.example.invalid/shop/web:1.4.0\n          imagePullPolicy: Always\n          name: web\n          ports:\n            - containerPort: 80\n              protocol: TCP\n          resources: {}\n      restartPolicy: Always\n      securityContext: {}\nstatus: {}\n",
+    "shop/deploy/yamls/web-service.yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  annotations:\n    kompose.service.type: nodeport\n  creationTimestamp: null\n  labels:\n    move2kube.konveyor.io/service: web\n  name: web\nspec:\n  ports:\n    - name: port-8080\n      port: 8080\n      targetPort: 80\n  selector:\n    move2kube.konveyor.io/service: web\n  type: ClusterIP\nstatus:\n  loadBalancer: {}\n"
+  }
+}

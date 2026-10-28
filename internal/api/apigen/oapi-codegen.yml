@@ -1,0 +1,6 @@
+package: apigen
+generate:
+  std-http-server: true
+  models: true
+  embedded-spec: true
+output: internal/api/apigen/api.gen.go

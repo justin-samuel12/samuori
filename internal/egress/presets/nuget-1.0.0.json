@@ -1,0 +1,8 @@
+{
+  "id": "nuget",
+  "version": "1.0.0",
+  "displayName": "NuGet Gallery",
+  "destinations": [
+    "api.nuget.org:443"
+  ]
+}
