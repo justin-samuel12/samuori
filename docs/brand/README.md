@@ -14,3 +14,7 @@ for dark ones.
 Keep the aspect ratio and clear space of at least a tenth of the icon's width. Never crop, recolour, invert or redraw
 the files. The wordmark's letters are outlined from DejaVu Sans Bold; keep `DejaVu-font-notice.txt` with any copy you
 distribute.
+
+The web UI's browser icons are `ui/public/favicon.ico`, `favicon.svg`, `favicon-32.png` and `apple-touch-icon.png`,
+all made from the flat icon. Safari keeps its own long-lived icon cache, so when they change, raise the `?v=` number
+on their links in `ui/index.html`.
