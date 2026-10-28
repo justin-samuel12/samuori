@@ -4,7 +4,6 @@ import { Dialog } from "../components/Dialog";
 import { loadedServerVersion } from "../api/client";
 
 export const creator = "Justin Samuel";
-export const creatorEmail = "jsamuel12@gmail.com";
 
 export function AboutDialog({
   isOpen,
@@ -33,8 +32,7 @@ export function AboutDialog({
           </div>
         </div>
         <p>
-          Created, architected and maintained by <strong>{creator}</strong> (
-          <a href={`mailto:${creatorEmail}`}>{creatorEmail}</a>).
+          Conceived by <strong>{creator}</strong>.
         </p>
         <p>
           Licensed under the{" "}
@@ -47,15 +45,7 @@ export function AboutDialog({
           </a>
           . The third-party components Samuori includes, and their licenses, are
           listed in <code>THIRD_PARTY_NOTICES.txt</code>, published with every
-          release. The wordmark is outlined from DejaVu Sans Bold (
-          <a
-            href="/licenses/DejaVu-font-notice.txt"
-            target="_blank"
-            rel="noreferrer"
-          >
-            font notice
-          </a>
-          ).
+          release.
         </p>
         <div className="samuori-actions">
           <Button onPress={() => onOpenChange(false)}>Close</Button>
