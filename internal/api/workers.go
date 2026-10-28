@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"samuori.invalid/samuori/internal/api/apigen"
@@ -124,6 +125,28 @@ func (a *API) CreateEnrollmentToken(w http.ResponseWriter, r *http.Request, para
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusCreated, out)
+}
+
+func (a *API) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request) {
+	list, err := a.workers.ListTokens(r.Context(), principal(r), 100)
+	if err != nil {
+		a.workersError(w, r, err)
+		return
+	}
+	out := apigen.EnrollmentTokenList{Items: []apigen.EnrollmentToken{}}
+	for _, t := range list {
+		out.Items = append(out.Items, apigen.EnrollmentToken{Id: t.ID, PoolId: opt(t.PoolID), CreatedBy: t.CreatedBy, CreatedAt: t.CreatedAt, ExpiresAt: t.ExpiresAt,
+			UsedAt: t.UsedAt, WorkerId: opt(t.WorkerID), WorkerName: opt(t.WorkerName), RevokedAt: t.RevokedAt, RevokedBy: opt(t.RevokedBy)})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (a *API) RevokeEnrollmentToken(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.RevokeEnrollmentTokenParams) {
+	if err := a.workers.RevokeToken(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.workersError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // WorkerJoin is this controller's worker endpoint, from which worker join codes name the endpoints a remote worker
@@ -399,7 +422,12 @@ func selfTestOperation(t workers.SelfTest, reqID string) apigen.Operation {
 }
 
 func (a *API) workersError(w http.ResponseWriter, r *http.Request, err error) {
+	var inUse *workers.InUse
 	switch {
+	case errors.As(err, &inUse):
+		apigen.WriteProblem(w, http.StatusConflict, "in_use", "It cannot be deleted while it is used by "+strings.Join(inUse.Uses, "; ")+".")
+	case errors.Is(err, workers.ErrTokenSpent):
+		apigen.WriteProblem(w, http.StatusConflict, "token_spent", err.Error())
 	case errors.Is(err, workers.ErrNotFound):
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "not found")
 	case errors.Is(err, workers.ErrForbidden):

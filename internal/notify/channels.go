@@ -212,6 +212,62 @@ func (s *Service) SetEnabled(ctx context.Context, actor authz.Principal, id stri
 	})
 }
 
+// InUse refuses deleting a channel that rules still route events to; Rules describes each of them.
+type InUse struct{ Rules []string }
+
+func (e *InUse) Error() string { return "still used by " + strings.Join(e.Rules, "; ") }
+
+// DeleteChannel removes a channel and its delivery log. It is refused while any rule routes events to it; the
+// controller-only secret it held is left for the administrator to delete on the secrets page
+// (docs/architecture/notifications.md#deleting-a-channel).
+func (s *Service) DeleteChannel(ctx context.Context, actor authz.Principal, id, requestID string) error {
+	if !actor.IsOrgAdmin() {
+		return ErrForbidden
+	}
+	return s.db.InTx(ctx, func(tx *sql.Tx) error {
+		c, err := scanChannel(tx.QueryRowContext(ctx, s.db.Rebind(`SELECT `+channelCols+` FROM notification_channels WHERE id = ? AND org_id = ?`), id, actor.OrgID))
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		rows, err := tx.QueryContext(ctx, s.db.Rebind(`SELECT id, events FROM notification_rules WHERE channel_id = ? ORDER BY created_at`), id)
+		if err != nil {
+			return err
+		}
+		var uses []string
+		for rows.Next() {
+			var ruleID, raw string
+			if err := rows.Scan(&ruleID, &raw); err != nil {
+				rows.Close()
+				return err
+			}
+			var events []string
+			_ = json.Unmarshal([]byte(raw), &events)
+			uses = append(uses, "rule …"+ids6(ruleID)+" ("+strings.Join(events, ", ")+")")
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if len(uses) > 0 {
+			return &InUse{Rules: uses}
+		}
+		res, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM notification_deliveries WHERE channel_id = ?`), id)
+		if err != nil {
+			return err
+		}
+		removed, _ := res.RowsAffected()
+		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM notification_channels WHERE id = ? AND org_id = ?`), id, actor.OrgID); err != nil {
+			return err
+		}
+		return audit.Append(ctx, s.db, tx, audit.Event{Actor: actor, Action: "notification-channel.delete", ResourceType: "notification-channel", ResourceID: id, Outcome: "succeeded",
+			Reason: fmt.Sprintf("%s %s and %d deliveries", c.Kind, c.Name, removed), RequestID: requestID})
+	})
+}
+
 // Rule routes event types, optionally for one team or project, to a channel.
 type Rule struct {
 	ID, ChannelID     string

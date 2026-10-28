@@ -75,7 +75,12 @@ first and otherwise uses any allowed location. Pools can be renamed or moved (`P
 enabled pool's isolation profile or trust domain keeps it approved by the editing administrator, recorded as an
 approval decision and audited, and its workers need a new self-test for a new profile. `PUT
 /worker-pools/{id}/approval` disables or re-enables a pool. A pool that ever had workers cannot be deleted, so
-worker history is kept. The run records the isolation profile of the pool that took it, and
+worker history is kept; `DELETE /worker-pools/{id}` then answers 409 with the number of workers, and the UI offers to
+disable the pool instead. Administrators add and delete locations under Nodes & workers → Locations
+(`POST /locations`, `DELETE /locations/{name}`). Deleting a location is refused (409) while a pool, a project's
+location restriction or a federation route uses it, and the refusal names each use; a route's location is deleted
+with the route (`docs/operators/federation.md`). Locations have no rename: add a new location and move pools and
+projects to it. The run records the isolation profile of the pool that took it, and
 the assignment carries that profile; the plan's `isolationProfile` is fixed when the plan is resolved, before a pool
 is chosen. An attempt's failure class and detail (masked by the worker) are shown on the build page.
 
@@ -89,6 +94,10 @@ engine/OS/architecture requests are rejected at admission (before `queued`) with
 1. An authorized admin creates a short-lived, single-use enrollment token. It names no pool: the worker enrols
    unassigned and is assigned afterwards (ADR 0045). Only the all-in-one local worker's token, issued by the
    controller itself, names the `local` pool. Raw tokens are shown once; never emailed, logged or reusable.
+   `GET /enrollment-tokens` lists recent tokens without values (issued by, used by which worker, revoked, expired).
+   An administrator may revoke an unused token before it expires (`DELETE /enrollment-tokens/{id}`, audited as
+   `enrollment_token.revoke`); enrollment checks revocation in the transaction that consumes the token, so a revoked
+   token never enrolls a worker. A used token cannot be revoked (409); revoke the worker it enrolled instead.
 2. The worker pins the controller's trust material (fingerprint supplied out of band with the token).
 3. The worker initiates an outbound TLS connection and proves possession of its private key via CSR.
 4. The controller issues a unique, rotating, revocable mTLS identity (internal CA by default; OpenBao PKI optional,

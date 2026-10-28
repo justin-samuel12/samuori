@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
@@ -7,7 +13,9 @@ import { Checkbox, Select, TextField } from "../../components/Field";
 import { Alert, Loading, PageHeader } from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
+import { useCan } from "../../session/session";
 import {
+  EnrollmentTokens,
   issueWorkerToken,
   WorkerJoinNotice,
   type WorkerToken,
@@ -15,6 +23,7 @@ import {
 
 type Pool = Schemas["WorkerPool"];
 type Worker = Schemas["Worker"];
+type Location = Schemas["Location"];
 
 const reasonText: Record<string, string> = {
   unassigned: "not assigned to a pool",
@@ -44,12 +53,16 @@ const profiles = [
 ];
 
 export function WorkersPage() {
+  const can = useCan();
   const [pools, setPools] = useState<Pool[]>();
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [locationCount, setLocationCount] = useState(1);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [creating, setCreating] = useState(false);
   const [approving, setApproving] = useState<Pool>();
   const [editing, setEditing] = useState<Pool>();
+  const [deletingPool, setDeletingPool] = useState<Pool>();
+  const [deletingLocation, setDeletingLocation] = useState<Location>();
+  const [addingLocation, setAddingLocation] = useState(false);
   const [acting, setActing] = useState<Worker>();
   const [assigning, setAssigning] = useState<Worker>();
   const [token, setToken] = useState<WorkerToken>();
@@ -62,7 +75,7 @@ export function WorkersPage() {
     ]);
     setPools(p.data?.items ?? []);
     setWorkers(w.data?.items ?? []);
-    setLocationCount(l.data?.items.length ?? 1);
+    setLocations(l.data?.items ?? []);
   }, []);
   useLoader(load);
   useEffect(() => {
@@ -96,7 +109,7 @@ export function WorkersPage() {
   }
 
   if (!pools) return <Loading />;
-  const multiLocation = locationCount > 1;
+  const multiLocation = locations.length > 1;
   const unassigned = workers.filter(
     (w) => !w.poolId && w.enrollmentState === "enrolled" && !w.removal,
   );
@@ -118,6 +131,9 @@ export function WorkersPage() {
       {error && <Alert>{error}</Alert>}
       {token && (
         <WorkerJoinNotice token={token} onDone={() => setToken(undefined)} />
+      )}
+      {can("listEnrollmentTokens") && (
+        <EnrollmentTokens key={token?.id ?? "enrollment-tokens"} />
       )}
       <section className="samuori-section" aria-labelledby="pools-h">
         <h2 id="pools-h">Pools</h2>
@@ -186,6 +202,15 @@ export function WorkersPage() {
                   >
                     Test all workers
                   </Button>
+                  {can("deleteWorkerPool") && (
+                    <Button
+                      variant="quiet"
+                      onPress={() => setDeletingPool(p)}
+                      aria-label={`Delete ${p.name}`}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               ),
             },
@@ -202,6 +227,69 @@ export function WorkersPage() {
           connects, after its configuration changes and every 20 hours. Only the
           rootless-dedicated-vm provider can run them in this release;
           vm-per-job needs a provider validated on a KVM host.
+        </p>
+      </section>
+      <section className="samuori-section" aria-labelledby="locations-h">
+        <div className="samuori-section-head">
+          <h2 id="locations-h">Locations</h2>
+          {can("createLocation") && (
+            <div className="samuori-actions">
+              <Button
+                variant="secondary"
+                onPress={() => setAddingLocation(true)}
+              >
+                Add location
+              </Button>
+            </div>
+          )}
+        </div>
+        <Table
+          label="Locations"
+          rows={locations.map((l) => ({ ...l, id: l.name }))}
+          dependencies={[pools]}
+          empty="No locations yet. A pool's location is added when the pool is created."
+          columns={[
+            {
+              id: "name",
+              name: "Location",
+              isRowHeader: true,
+              render: (l) => l.name,
+            },
+            {
+              id: "description",
+              name: "Description",
+              render: (l) => l.description,
+            },
+            {
+              id: "pools",
+              name: "Pools",
+              render: (l) =>
+                pools
+                  .filter((p) => p.location === l.name)
+                  .map((p) => p.name)
+                  .join(", ") || "None",
+            },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (l) =>
+                can("deleteLocation") && (
+                  <Button
+                    variant="quiet"
+                    onPress={() => setDeletingLocation(l)}
+                    aria-label={`Delete location ${l.name}`}
+                  >
+                    Delete
+                  </Button>
+                ),
+            },
+          ]}
+        />
+        <p className="samuori-muted">
+          Projects may be restricted to locations for data residency. A location
+          that a pool, a project or a federation route still uses cannot be
+          deleted. Locations cannot be renamed; add a new one and move pools and
+          projects to it.
         </p>
       </section>
       <section className="samuori-section" aria-labelledby="workers-h">
@@ -352,6 +440,68 @@ export function WorkersPage() {
           void load();
         }}
       />
+      {addingLocation && (
+        <LocationDialog
+          onClose={() => setAddingLocation(false)}
+          onDone={() => {
+            setAddingLocation(false);
+            void load();
+          }}
+        />
+      )}
+      <ConfirmDelete
+        title={deletingPool ? `Delete pool ${deletingPool.name}` : ""}
+        isOpen={!!deletingPool}
+        onClose={() => setDeletingPool(undefined)}
+        onConfirm={async () => {
+          if (!deletingPool) return undefined;
+          const { error } = await api.DELETE("/worker-pools/{poolId}", {
+            params: { path: { poolId: deletingPool.id } },
+          });
+          if (!error) {
+            setDeletingPool(undefined);
+            void load();
+          }
+          return error ? describeError(error) : undefined;
+        }}
+        refusedHint={
+          deletingPool?.profileApproved ? (
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setApproving(deletingPool);
+                setDeletingPool(undefined);
+              }}
+            >
+              Disable the pool instead
+            </Button>
+          ) : null
+        }
+      >
+        Only a pool that never had workers can be deleted. A pool that had
+        workers is kept with their history; disable it instead.
+      </ConfirmDelete>
+      <ConfirmDelete
+        title={
+          deletingLocation ? `Delete location ${deletingLocation.name}` : ""
+        }
+        isOpen={!!deletingLocation}
+        onClose={() => setDeletingLocation(undefined)}
+        onConfirm={async () => {
+          if (!deletingLocation) return undefined;
+          const { error } = await api.DELETE("/locations/{locationName}", {
+            params: { path: { locationName: deletingLocation.name } },
+          });
+          if (!error) {
+            setDeletingLocation(undefined);
+            void load();
+          }
+          return error ? describeError(error) : undefined;
+        }}
+      >
+        The location is removed. It is refused while a pool, a project&apos;s
+        location restriction or a federation route uses it.
+      </ConfirmDelete>
       <ApprovalDialog
         pool={approving}
         onClose={() => setApproving(undefined)}
@@ -474,6 +624,100 @@ function PoolDialog({
             Cancel
           </Button>
           <Button type="submit">{pool ? "Save" : "Create pool"}</Button>
+        </div>
+      </Form>
+    </Dialog>
+  );
+}
+
+// ConfirmDelete asks before deleting; when the server refuses, it shows the reason and refusedHint.
+function ConfirmDelete({
+  title,
+  isOpen,
+  onClose,
+  onConfirm,
+  refusedHint,
+  children,
+}: {
+  title: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<string | undefined>;
+  refusedHint?: ReactNode;
+  children: ReactNode;
+}) {
+  const [error, setError] = useState<string>();
+  const close = () => {
+    setError(undefined);
+    onClose();
+  };
+  return (
+    <Dialog
+      title={title}
+      size="confirm"
+      isOpen={isOpen}
+      onOpenChange={(o) => !o && close()}
+    >
+      <div className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <p>{children}</p>
+        <div className="samuori-actions">
+          {error && refusedHint}
+          <Button variant="secondary" onPress={close}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onPress={() => void onConfirm().then(setError)}
+            isDisabled={!!error}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function LocationDialog({
+  onClose,
+  onDone,
+}: {
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState<string>();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const { error } = await api.POST("/locations", {
+      body: { name, description: description || undefined },
+    });
+    if (error) setError(describeError(error));
+    else onDone();
+  }
+  return (
+    <Dialog title="Add location" isOpen onOpenChange={(o) => !o && onClose()}>
+      <Form onSubmit={submit} className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <TextField
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+          description="Lowercase letters, digits and dashes, for example lab-1"
+        />
+        <TextField
+          label="Description (optional)"
+          value={description}
+          onChange={setDescription}
+        />
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Add location</Button>
         </div>
       </Form>
     </Dialog>

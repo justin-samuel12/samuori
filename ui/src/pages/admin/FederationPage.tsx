@@ -28,6 +28,9 @@ export function FederationPage() {
   const [state, setState] = useState<State>();
   const [dialog, setDialog] = useState<"peer" | "grant" | "route">();
   const [abandoning, setAbandoning] = useState<Delegation>();
+  const [disabling, setDisabling] = useState<Peer>();
+  const [revoking, setRevoking] = useState<Grant>();
+  const [deletingRoute, setDeletingRoute] = useState<Route>();
   const load = useCallback(async () => {
     const [identity, peers, grants, routes, delegations, projects] =
       await Promise.all([
@@ -55,6 +58,9 @@ export function FederationPage() {
   const done = () => {
     setDialog(undefined);
     setAbandoning(undefined);
+    setDisabling(undefined);
+    setRevoking(undefined);
+    setDeletingRoute(undefined);
     void load();
   };
   return (
@@ -115,8 +121,28 @@ export function FederationPage() {
               name: "State",
               render: (p) => (p.disabled ? "Disabled" : "Active"),
             },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (p) =>
+                !p.disabled && (
+                  <Button
+                    variant="danger"
+                    onPress={() => setDisabling(p)}
+                    aria-label={`Disable ${p.name}`}
+                  >
+                    Disable
+                  </Button>
+                ),
+            },
           ]}
         />
+        <p className="samuori-muted">
+          A peer&apos;s endpoint and CA pin are the trust anchors for every call
+          to it, so they cannot be edited. To change them, disable the peer and
+          add it again under a new name with the new values, then grant and
+          route to the new peer.
+        </p>
       </Section>
 
       <Section
@@ -165,6 +191,20 @@ export function FederationPage() {
               name: "State",
               render: (g) => (g.revoked ? "Revoked" : "Active"),
             },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (g) =>
+                !g.revoked && (
+                  <Button
+                    variant="danger"
+                    onPress={() => setRevoking(g)}
+                    aria-label={`Revoke the grant for ${peerName(g.peerId)}`}
+                  >
+                    Revoke
+                  </Button>
+                ),
+            },
           ]}
         />
       </Section>
@@ -197,6 +237,19 @@ export function FederationPage() {
               id: "remote",
               name: "Peer location",
               render: (r) => r.remoteLocation,
+            },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (r) => (
+                <Button
+                  variant="quiet"
+                  onPress={() => setDeletingRoute(r)}
+                  aria-label={`Delete the peer location ${r.location}`}
+                >
+                  Delete
+                </Button>
+              ),
             },
           ]}
         />
@@ -259,9 +312,51 @@ export function FederationPage() {
         onClose={() => setDialog(undefined)}
         onDone={done}
       />
-      <AbandonDialog
-        delegation={abandoning}
+      <ReasonDialog
+        title="Abandon a build at a peer"
+        isOpen={!!abandoning}
+        explanation="The build fails here at once. The peer is told to stop when it can be reached, and any result it sends later is refused."
+        action="Abandon"
+        onSubmit={(reason) =>
+          api.POST("/federation/delegations/{delegationId}/abandon", {
+            params: { path: { delegationId: abandoning?.id ?? "" } },
+            body: { reason },
+          })
+        }
         onClose={() => setAbandoning(undefined)}
+        onDone={done}
+      />
+      <ReasonDialog
+        title={`Disable peer ${disabling?.name ?? ""}`}
+        isOpen={!!disabling}
+        explanation="Federation with this peer stops in both directions at once: no new builds go to it or come from it. This cannot be undone; to federate again, add the peer under a new name."
+        action="Disable peer"
+        onSubmit={(reason) =>
+          api.POST("/federation/peers/{peerId}/disable", {
+            params: { path: { peerId: disabling?.id ?? "" } },
+            body: { reason },
+          })
+        }
+        onClose={() => setDisabling(undefined)}
+        onDone={done}
+      />
+      <ReasonDialog
+        title="Revoke a grant"
+        isOpen={!!revoking}
+        explanation={`${revoking ? peerName(revoking.peerId) : "The peer"} can no longer start new builds in this project.`}
+        action="Revoke grant"
+        onSubmit={(reason) =>
+          api.POST("/federation/grants/{grantId}/revoke", {
+            params: { path: { grantId: revoking?.id ?? "" } },
+            body: { reason },
+          })
+        }
+        onClose={() => setRevoking(undefined)}
+        onDone={done}
+      />
+      <DeleteRouteDialog
+        route={deletingRoute}
+        onClose={() => setDeletingRoute(undefined)}
         onDone={done}
       />
     </>
@@ -456,57 +551,118 @@ function RouteDialog({
   );
 }
 
-function AbandonDialog({
-  delegation,
+// ReasonDialog confirms a federation change that is recorded with the administrator's reason.
+function ReasonDialog({
+  title,
+  isOpen,
+  explanation,
+  action,
+  onSubmit,
   onClose,
   onDone,
-}: {
-  delegation?: Delegation;
-  onClose: () => void;
-  onDone: () => void;
+}: DialogProps & {
+  title: string;
+  explanation: string;
+  action: string;
+  onSubmit: (reason: string) => Promise<{ error?: unknown }>;
 }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string>();
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!delegation) return;
-    const { error } = await api.POST(
-      "/federation/delegations/{delegationId}/abandon",
-      { params: { path: { delegationId: delegation.id } }, body: { reason } },
-    );
+    const { error } = await onSubmit(reason);
     if (error) setError(describeError(error));
     else {
       setReason("");
+      setError(undefined);
       onDone();
     }
   }
   return (
     <Dialog
-      title="Abandon a build at a peer"
-      isOpen={!!delegation}
-      onOpenChange={(o) => !o && onClose()}
+      title={title}
+      isOpen={isOpen}
+      onOpenChange={(o) => {
+        if (!o) {
+          setError(undefined);
+          onClose();
+        }
+      }}
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <p>
-          The build fails here at once. The peer is told to stop when it can be
-          reached, and any result it sends later is refused.
-        </p>
+        <p>{explanation}</p>
         <TextField
           label="Reason"
           value={reason}
           onChange={setReason}
           isRequired
+          minLength={10}
+          description="At least 10 characters; recorded in the audit log."
         />
         <div className="samuori-actions">
           <Button variant="secondary" onPress={onClose}>
             Cancel
           </Button>
           <Button type="submit" variant="danger">
-            Abandon
+            {action}
           </Button>
         </div>
       </Form>
+    </Dialog>
+  );
+}
+
+function DeleteRouteDialog({
+  route,
+  onClose,
+  onDone,
+}: {
+  route?: Route;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [error, setError] = useState<string>();
+  async function remove() {
+    if (!route) return;
+    const { error } = await api.DELETE("/federation/routes/{routeId}", {
+      params: { path: { routeId: route.id } },
+    });
+    if (error) setError(describeError(error));
+    else onDone();
+  }
+  const close = () => {
+    setError(undefined);
+    onClose();
+  };
+  return (
+    <Dialog
+      title={`Delete peer location ${route?.location ?? ""}`}
+      size="confirm"
+      isOpen={!!route}
+      onOpenChange={(o) => !o && close()}
+    >
+      <div className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <p>
+          The location and its route to the peer are removed; new builds can no
+          longer choose it. Builds already sent to the peer keep running. It is
+          refused while a pool or a project&apos;s location restriction names
+          it.
+        </p>
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={close}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onPress={() => void remove()}
+            isDisabled={!!error}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
     </Dialog>
   );
 }

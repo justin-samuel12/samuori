@@ -26,7 +26,7 @@ var (
 	ErrNotFound  = errors.New("not found")
 	ErrForbidden = errors.New("forbidden")
 	ErrConflict  = errors.New("conflict")
-	ErrToken     = errors.New("enrollment token is invalid, expired or already used")
+	ErrToken     = errors.New("enrollment token is invalid, expired, revoked or already used")
 )
 
 const (
@@ -203,7 +203,7 @@ func (s *Store) Enroll(ctx context.Context, in EnrollRequest) (Worker, []byte, e
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
 		var tokenID, orgID string
 		var pool sql.NullString
-		err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT id, org_id, pool_id FROM enrollment_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?`), hash(in.Token), now).Scan(&tokenID, &orgID, &pool)
+		err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT id, org_id, pool_id FROM enrollment_tokens WHERE token_hash = ? AND used_at IS NULL AND revoked_at IS NULL AND expires_at > ?`), hash(in.Token), now).Scan(&tokenID, &orgID, &pool)
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrToken
 		}
@@ -211,7 +211,7 @@ func (s *Store) Enroll(ctx context.Context, in EnrollRequest) (Worker, []byte, e
 			return err
 		}
 		w.OrgID, w.PoolID = orgID, pool.String
-		res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE enrollment_tokens SET used_at = ?, worker_id = ? WHERE id = ? AND used_at IS NULL`), now, w.ID, tokenID)
+		res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE enrollment_tokens SET used_at = ?, worker_id = ? WHERE id = ? AND used_at IS NULL AND revoked_at IS NULL`), now, w.ID, tokenID)
 		if err != nil {
 			return err
 		}

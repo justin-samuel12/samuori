@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"samuori.invalid/samuori/internal/api/apigen"
 	"samuori.invalid/samuori/internal/federation"
@@ -17,7 +18,10 @@ type FederationInfo struct {
 
 func (a *API) federationError(w http.ResponseWriter, r *http.Request, err error) {
 	var inv *federation.Invalid
+	var inUse *federation.InUse
 	switch {
+	case errors.As(err, &inUse):
+		apigen.WriteProblem(w, http.StatusConflict, "in_use", "This location is still used by "+strings.Join(inUse.Uses, "; ")+". Remove it from those first.")
 	case errors.As(err, &inv):
 		apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid_federation", inv.Reason)
 	case errors.Is(err, federation.ErrForbidden):
@@ -160,6 +164,14 @@ func (a *API) CreateFederationRoute(w http.ResponseWriter, r *http.Request, _ ap
 		return
 	}
 	writeJSON(w, http.StatusCreated, toRoute(x))
+}
+
+func (a *API) DeleteFederationRoute(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.DeleteFederationRouteParams) {
+	if err := a.federation.DeleteRoute(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.federationError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *API) ListFederationDelegations(w http.ResponseWriter, r *http.Request) {

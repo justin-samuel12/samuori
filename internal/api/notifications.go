@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"samuori.invalid/samuori/internal/api/apigen"
@@ -11,7 +12,10 @@ import (
 
 func (a *API) notifyError(w http.ResponseWriter, r *http.Request, err error) {
 	var inv *notify.Invalid
+	var inUse *notify.InUse
 	switch {
+	case errors.As(err, &inUse):
+		apigen.WriteProblem(w, http.StatusConflict, "channel_in_use", "Rules still send events to this channel: "+strings.Join(inUse.Rules, "; ")+". Delete those rules or move them to another channel, or disable the channel instead.")
 	case errors.Is(err, notify.ErrForbidden):
 		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", "only organization administrators manage notifications")
 	case errors.Is(err, notify.ErrNotFound):
@@ -139,6 +143,14 @@ func (a *API) UpdateNotificationChannel(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	writeJSON(w, http.StatusOK, toChannel(c))
+}
+
+func (a *API) DeleteNotificationChannel(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.DeleteNotificationChannelParams) {
+	if err := a.notify.DeleteChannel(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.notifyError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *API) SetNotificationChannelState(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.SetNotificationChannelStateParams) {

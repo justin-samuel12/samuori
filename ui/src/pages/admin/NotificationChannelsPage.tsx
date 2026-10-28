@@ -54,6 +54,7 @@ export function NotificationChannelsPage() {
   const [notice, setNotice] = useState<string>();
   const [creating, setCreating] = useState<"channel" | "rule">();
   const [editingChannel, setEditingChannel] = useState<Channel>();
+  const [deletingChannel, setDeletingChannel] = useState<Channel>();
   const [editingRule, setEditingRule] = useState<Rule>();
   const [signingKey, setSigningKey] = useState<string>();
 
@@ -207,6 +208,13 @@ export function NotificationChannelsPage() {
                   >
                     {c.enabled ? "Disable" : "Enable"}
                   </Button>
+                  <Button
+                    variant="quiet"
+                    onPress={() => setDeletingChannel(c)}
+                    aria-label={`Delete ${c.name}`}
+                  >
+                    Delete
+                  </Button>
                 </div>
               ),
             },
@@ -349,6 +357,22 @@ export function NotificationChannelsPage() {
           void load();
         }}
       />
+      {deletingChannel && (
+        <DeleteChannelDialog
+          channel={deletingChannel}
+          rules={rules.filter((r) => r.channelId === deletingChannel.id)}
+          onDisable={async () => {
+            await setEnabled(deletingChannel, false);
+            setDeletingChannel(undefined);
+          }}
+          onClose={() => setDeletingChannel(undefined)}
+          onDone={() => {
+            setDeletingChannel(undefined);
+            setNotice(`Deleted ${deletingChannel.name}.`);
+            void load();
+          }}
+        />
+      )}
       <RuleDialog
         key={editingRule?.id ?? "new-rule"}
         isOpen={creating === "rule" || editingRule !== undefined}
@@ -366,6 +390,84 @@ export function NotificationChannelsPage() {
         }}
       />
     </>
+  );
+}
+
+// DeleteChannelDialog deletes a channel and its delivery log. Rules that use it must go first; the server refuses
+// otherwise, and disabling is offered instead.
+function DeleteChannelDialog({
+  channel,
+  rules,
+  onDisable,
+  onClose,
+  onDone,
+}: {
+  channel: Channel;
+  rules: Rule[];
+  onDisable: () => Promise<void>;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [error, setError] = useState<string>();
+  const blocked = rules.length > 0 || !!error;
+  async function remove() {
+    const { error } = await api.DELETE("/notification-channels/{channelId}", {
+      params: { path: { channelId: channel.id } },
+    });
+    if (error) setError(describeError(error));
+    else onDone();
+  }
+  return (
+    <Dialog
+      title={`Delete ${channel.name}`}
+      size="confirm"
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <div className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        {rules.length > 0 ? (
+          <Alert tone="warning">
+            {rules.length === 1 ? "A rule still sends" : "Rules still send"}{" "}
+            events to this channel:{" "}
+            {rules
+              .map((r) =>
+                r.events
+                  .map((e) => eventLabels[e as EventType] ?? e)
+                  .join(", "),
+              )
+              .join("; ")}
+            . Delete those rules or move them to another channel first, or
+            disable the channel instead.
+          </Alert>
+        ) : (
+          <p>
+            The channel and its delivery log are deleted; the deletion is
+            audited.
+            {channel.kind !== "email"
+              ? " Its stored secret then shows as no longer used under Security & Secrets, where you can delete it."
+              : ""}
+          </p>
+        )}
+        <div className="samuori-actions">
+          {blocked && channel.enabled && (
+            <Button variant="secondary" onPress={() => void onDisable()}>
+              Disable instead
+            </Button>
+          )}
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onPress={() => void remove()}
+            isDisabled={blocked}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

@@ -49,4 +49,17 @@ told to stop when it can be reached, and any result it sends later is refused.
 - Every call is mutual TLS with certificates from each installation's own CA, checked against the registered pin and
   organization; system roots are never used. **Disable** a peer to stop federation with it in both directions.
 - A peer acts in its hosting project with a developer's rights there and nowhere else, under the executor's policies.
-- After a CA rotation, the other administrator updates the pin; until then calls fail with a certificate error.
+- A peer's endpoint and CA pin are its trust anchors and cannot be edited. After a CA rotation or a move, the other
+  administrator replaces the peer: **Disable** it and **Add peer** again under a new name with the new pin or
+  endpoint, then grant and route to the new peer. Until then calls fail with a certificate error.
+
+## Change or remove federation
+
+All of these are administrator-only and audited.
+
+- **Disable** a peer (with a reason): federation with it stops in both directions at once. It cannot be re-enabled.
+- **Revoke** a grant (with a reason): the peer can no longer start builds in that hosting project.
+- **Delete** a peer location (`DELETE /federation/routes/{id}`): the route and the local location it added are
+  removed, so new builds can no longer choose it. Builds already sent to the peer keep their delegation. It is refused
+  (409) while a pool or a project's location restriction names the location; remove it from those first. The
+  location itself cannot be deleted on its own while the route exists.

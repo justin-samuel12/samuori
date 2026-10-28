@@ -5842,6 +5842,24 @@ type EngineStatus struct {
 	} `json:"workers"`
 }
 
+// EnrollmentToken defines model for EnrollmentToken.
+type EnrollmentToken struct {
+	CreatedAt Timestamp `json:"createdAt"`
+	CreatedBy string    `json:"createdBy"`
+	ExpiresAt Timestamp `json:"expiresAt"`
+
+	// Id ULID
+	Id Id `json:"id"`
+
+	// PoolId ULID
+	PoolId     *Id        `json:"poolId,omitempty"`
+	RevokedAt  *Timestamp `json:"revokedAt,omitempty"`
+	RevokedBy  *string    `json:"revokedBy,omitempty"`
+	UsedAt     *Timestamp `json:"usedAt,omitempty"`
+	WorkerId   *string    `json:"workerId,omitempty"`
+	WorkerName *string    `json:"workerName,omitempty"`
+}
+
 // EnrollmentTokenIssued defines model for EnrollmentTokenIssued.
 type EnrollmentTokenIssued struct {
 	// CaPin SPKI hash of the internal CA (public)
@@ -5856,6 +5874,11 @@ type EnrollmentTokenIssued struct {
 
 	// Token Single use; shown once
 	Token string `json:"token"`
+}
+
+// EnrollmentTokenList defines model for EnrollmentTokenList.
+type EnrollmentTokenList struct {
+	Items []EnrollmentToken `json:"items"`
 }
 
 // EnrollmentTokenRequest The worker the token enrols starts unassigned (ADR 0045)
@@ -9445,6 +9468,12 @@ type CreateEnrollmentTokenParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// RevokeEnrollmentTokenParams defines parameters for RevokeEnrollmentToken.
+type RevokeEnrollmentTokenParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // AbandonFederationDelegationParams defines parameters for AbandonFederationDelegation.
 type AbandonFederationDelegationParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -9477,6 +9506,12 @@ type DisableFederationPeerParams struct {
 
 // CreateFederationRouteParams defines parameters for CreateFederationRoute.
 type CreateFederationRouteParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// DeleteFederationRouteParams defines parameters for DeleteFederationRoute.
+type DeleteFederationRouteParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -9596,6 +9631,12 @@ type RotateMirrorTokenKeyParams struct {
 
 // CreateNotificationChannelParams defines parameters for CreateNotificationChannel.
 type CreateNotificationChannelParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// DeleteNotificationChannelParams defines parameters for DeleteNotificationChannel.
+type DeleteNotificationChannelParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -11256,6 +11297,11 @@ type ClientInterface interface {
 	// Revokes a project egress allowance; builds planned afterwards no longer get it. Organization administrators only.
 	RevokeEgressAllowance(ctx context.Context, allowanceId Id, params *RevokeEgressAllowanceParams, body RevokeEgressAllowanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListEnrollmentTokens performs a GET /enrollment-tokens (the `ListEnrollmentTokens` operationId) request.
+	//
+	// Recent worker enrollment tokens, newest first, without their values.
+	ListEnrollmentTokens(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateEnrollmentTokenWithBody performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request,
 	// with any type of body and a specified content type.
 	CreateEnrollmentTokenWithBody(ctx context.Context, params *CreateEnrollmentTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11263,6 +11309,11 @@ type ClientInterface interface {
 	// CreateEnrollmentToken performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request.
 	// Takes a body of the `application/json` content type.
 	CreateEnrollmentToken(ctx context.Context, params *CreateEnrollmentTokenParams, body CreateEnrollmentTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeEnrollmentToken performs a DELETE /enrollment-tokens/{tokenId} (the `RevokeEnrollmentToken` operationId) request.
+	//
+	// Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited.
+	RevokeEnrollmentToken(ctx context.Context, tokenId Id, params *RevokeEnrollmentTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListFederationDelegations performs a GET /federation/delegations (the `ListFederationDelegations` operationId) request.
 	//
@@ -11350,6 +11401,11 @@ type ClientInterface interface {
 	//
 	// Adds a location whose builds run at a peer location. Audited.
 	CreateFederationRoute(ctx context.Context, params *CreateFederationRouteParams, body CreateFederationRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFederationRoute performs a DELETE /federation/routes/{routeId} (the `DeleteFederationRoute` operationId) request.
+	//
+	// Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited.
+	DeleteFederationRoute(ctx context.Context, routeId Id, params *DeleteFederationRouteParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListHelpTopics performs a GET /help/topics (the `ListHelpTopics` operationId) request.
 	//
@@ -11575,6 +11631,11 @@ type ClientInterface interface {
 	//
 	// Webhook: Samuori generates the signing key and returns it once. Slack and Teams: give the incoming webhook URL as the secret. Email: recipients; the controller needs an SMTP server.
 	CreateNotificationChannel(ctx context.Context, params *CreateNotificationChannelParams, body CreateNotificationChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteNotificationChannel performs a DELETE /notification-channels/{channelId} (the `DeleteNotificationChannel` operationId) request.
+	//
+	// Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited.
+	DeleteNotificationChannel(ctx context.Context, channelId Id, params *DeleteNotificationChannelParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateNotificationChannelWithBody performs a PUT /notification-channels/{channelId} (the `UpdateNotificationChannel` operationId) request,
 	// with any type of body and a specified content type.
@@ -13811,6 +13872,21 @@ func (c *Client) RevokeEgressAllowance(ctx context.Context, allowanceId Id, para
 	return c.Client.Do(req)
 }
 
+// ListEnrollmentTokens performs a GET /enrollment-tokens (the `ListEnrollmentTokens` operationId) request.
+//
+// Recent worker enrollment tokens, newest first, without their values.
+func (c *Client) ListEnrollmentTokens(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEnrollmentTokensRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // CreateEnrollmentTokenWithBody performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request,
 // with any type of body and a specified content type.
 func (c *Client) CreateEnrollmentTokenWithBody(ctx context.Context, params *CreateEnrollmentTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13829,6 +13905,21 @@ func (c *Client) CreateEnrollmentTokenWithBody(ctx context.Context, params *Crea
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateEnrollmentToken(ctx context.Context, params *CreateEnrollmentTokenParams, body CreateEnrollmentTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateEnrollmentTokenRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokeEnrollmentToken performs a DELETE /enrollment-tokens/{tokenId} (the `RevokeEnrollmentToken` operationId) request.
+//
+// Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited.
+func (c *Client) RevokeEnrollmentToken(ctx context.Context, tokenId Id, params *RevokeEnrollmentTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeEnrollmentTokenRequest(c.Server, tokenId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14086,6 +14177,21 @@ func (c *Client) CreateFederationRouteWithBody(ctx context.Context, params *Crea
 // Adds a location whose builds run at a peer location. Audited.
 func (c *Client) CreateFederationRoute(ctx context.Context, params *CreateFederationRouteParams, body CreateFederationRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateFederationRouteRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFederationRoute performs a DELETE /federation/routes/{routeId} (the `DeleteFederationRoute` operationId) request.
+//
+// Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited.
+func (c *Client) DeleteFederationRoute(ctx context.Context, routeId Id, params *DeleteFederationRouteParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFederationRouteRequest(c.Server, routeId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14801,6 +14907,21 @@ func (c *Client) CreateNotificationChannelWithBody(ctx context.Context, params *
 // Webhook: Samuori generates the signing key and returns it once. Slack and Teams: give the incoming webhook URL as the secret. Email: recipients; the controller needs an SMTP server.
 func (c *Client) CreateNotificationChannel(ctx context.Context, params *CreateNotificationChannelParams, body CreateNotificationChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateNotificationChannelRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteNotificationChannel performs a DELETE /notification-channels/{channelId} (the `DeleteNotificationChannel` operationId) request.
+//
+// Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited.
+func (c *Client) DeleteNotificationChannel(ctx context.Context, channelId Id, params *DeleteNotificationChannelParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteNotificationChannelRequest(c.Server, channelId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -21348,6 +21469,33 @@ func NewRevokeEgressAllowanceRequestWithBody(server string, allowanceId Id, para
 	return req, nil
 }
 
+// NewListEnrollmentTokensRequest constructs an http.Request for the ListEnrollmentTokens method
+func NewListEnrollmentTokensRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/enrollment-tokens")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateEnrollmentTokenRequest calls the generic CreateEnrollmentToken builder with application/json body
 func NewCreateEnrollmentTokenRequest(server string, params *CreateEnrollmentTokenParams, body CreateEnrollmentTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -21406,6 +21554,55 @@ func NewCreateEnrollmentTokenRequestWithBody(server string, params *CreateEnroll
 		}
 
 		req.Header.Set("Idempotency-Key", headerParam1)
+
+	}
+
+	return req, nil
+}
+
+// NewRevokeEnrollmentTokenRequest constructs an http.Request for the RevokeEnrollmentToken method
+func NewRevokeEnrollmentTokenRequest(server string, tokenId Id, params *RevokeEnrollmentTokenParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "tokenId", tokenId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/enrollment-tokens/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
 
 	}
 
@@ -21879,6 +22076,55 @@ func NewCreateFederationRouteRequestWithBody(server string, params *CreateFedera
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteFederationRouteRequest constructs an http.Request for the DeleteFederationRoute method
+func NewDeleteFederationRouteRequest(server string, routeId Id, params *DeleteFederationRouteParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routeId", routeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/federation/routes/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if params != nil {
 
@@ -23558,6 +23804,55 @@ func NewCreateNotificationChannelRequestWithBody(server string, params *CreateNo
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteNotificationChannelRequest constructs an http.Request for the DeleteNotificationChannel method
+func NewDeleteNotificationChannelRequest(server string, channelId Id, params *DeleteNotificationChannelParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "channelId", channelId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/notification-channels/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if params != nil {
 
@@ -33077,6 +33372,13 @@ type ClientWithResponsesInterface interface {
 	// Revokes a project egress allowance; builds planned afterwards no longer get it. Organization administrators only.
 	RevokeEgressAllowanceWithResponse(ctx context.Context, allowanceId Id, params *RevokeEgressAllowanceParams, body RevokeEgressAllowanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeEgressAllowanceResponse, error)
 
+	// ListEnrollmentTokensWithResponse performs a GET /enrollment-tokens (the `ListEnrollmentTokens` operationId) request.
+	//
+	// Recent worker enrollment tokens, newest first, without their values.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListEnrollmentTokensWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEnrollmentTokensResponse, error)
+
 	// CreateEnrollmentTokenWithBodyWithResponse performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -33086,6 +33388,13 @@ type ClientWithResponsesInterface interface {
 	// CreateEnrollmentTokenWithResponse performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateEnrollmentTokenWithResponse(ctx context.Context, params *CreateEnrollmentTokenParams, body CreateEnrollmentTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnrollmentTokenResponse, error)
+
+	// RevokeEnrollmentTokenWithResponse performs a DELETE /enrollment-tokens/{tokenId} (the `RevokeEnrollmentToken` operationId) request.
+	//
+	// Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RevokeEnrollmentTokenWithResponse(ctx context.Context, tokenId Id, params *RevokeEnrollmentTokenParams, reqEditors ...RequestEditorFn) (*RevokeEnrollmentTokenResponse, error)
 
 	// ListFederationDelegationsWithResponse performs a GET /federation/delegations (the `ListFederationDelegations` operationId) request.
 	//
@@ -33195,6 +33504,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Adds a location whose builds run at a peer location. Audited.
 	CreateFederationRouteWithResponse(ctx context.Context, params *CreateFederationRouteParams, body CreateFederationRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationRouteResponse, error)
+
+	// DeleteFederationRouteWithResponse performs a DELETE /federation/routes/{routeId} (the `DeleteFederationRoute` operationId) request.
+	//
+	// Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteFederationRouteWithResponse(ctx context.Context, routeId Id, params *DeleteFederationRouteParams, reqEditors ...RequestEditorFn) (*DeleteFederationRouteResponse, error)
 
 	// ListHelpTopicsWithResponse performs a GET /help/topics (the `ListHelpTopics` operationId) request.
 	//
@@ -33492,6 +33808,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Webhook: Samuori generates the signing key and returns it once. Slack and Teams: give the incoming webhook URL as the secret. Email: recipients; the controller needs an SMTP server.
 	CreateNotificationChannelWithResponse(ctx context.Context, params *CreateNotificationChannelParams, body CreateNotificationChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNotificationChannelResponse, error)
+
+	// DeleteNotificationChannelWithResponse performs a DELETE /notification-channels/{channelId} (the `DeleteNotificationChannel` operationId) request.
+	//
+	// Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteNotificationChannelWithResponse(ctx context.Context, channelId Id, params *DeleteNotificationChannelParams, reqEditors ...RequestEditorFn) (*DeleteNotificationChannelResponse, error)
 
 	// UpdateNotificationChannelWithBodyWithResponse performs a PUT /notification-channels/{channelId} (the `UpdateNotificationChannel` operationId) request,
 	// with any type of body and a specified content type.
@@ -37589,6 +37912,47 @@ func (r RevokeEgressAllowanceResponse) ContentType() string {
 	return ""
 }
 
+type ListEnrollmentTokensResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EnrollmentTokenList
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListEnrollmentTokensResponse) GetJSON200() *EnrollmentTokenList {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ListEnrollmentTokensResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEnrollmentTokensResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEnrollmentTokensResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListEnrollmentTokensResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type CreateEnrollmentTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37624,6 +37988,54 @@ func (r CreateEnrollmentTokenResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateEnrollmentTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeEnrollmentTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RevokeEnrollmentTokenResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RevokeEnrollmentTokenResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r RevokeEnrollmentTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeEnrollmentTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeEnrollmentTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeEnrollmentTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -38147,6 +38559,54 @@ func (r CreateFederationRouteResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateFederationRouteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteFederationRouteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteFederationRouteResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteFederationRouteResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFederationRouteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFederationRouteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFederationRouteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFederationRouteResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -39875,6 +40335,54 @@ func (r CreateNotificationChannelResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateNotificationChannelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteNotificationChannelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteNotificationChannelResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteNotificationChannelResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteNotificationChannelResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteNotificationChannelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteNotificationChannelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteNotificationChannelResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -49371,6 +49879,19 @@ func (c *ClientWithResponses) RevokeEgressAllowanceWithResponse(ctx context.Cont
 	return ParseRevokeEgressAllowanceResponse(rsp)
 }
 
+// ListEnrollmentTokensWithResponse performs a GET /enrollment-tokens (the `ListEnrollmentTokens` operationId) request.
+//
+// Recent worker enrollment tokens, newest first, without their values.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListEnrollmentTokensWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEnrollmentTokensResponse, error) {
+	rsp, err := c.ListEnrollmentTokens(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEnrollmentTokensResponse(rsp)
+}
+
 // CreateEnrollmentTokenWithBodyWithResponse performs a POST /enrollment-tokens (the `CreateEnrollmentToken` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -49391,6 +49912,19 @@ func (c *ClientWithResponses) CreateEnrollmentTokenWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseCreateEnrollmentTokenResponse(rsp)
+}
+
+// RevokeEnrollmentTokenWithResponse performs a DELETE /enrollment-tokens/{tokenId} (the `RevokeEnrollmentToken` operationId) request.
+//
+// Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RevokeEnrollmentTokenWithResponse(ctx context.Context, tokenId Id, params *RevokeEnrollmentTokenParams, reqEditors ...RequestEditorFn) (*RevokeEnrollmentTokenResponse, error) {
+	rsp, err := c.RevokeEnrollmentToken(ctx, tokenId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeEnrollmentTokenResponse(rsp)
 }
 
 // ListFederationDelegationsWithResponse performs a GET /federation/delegations (the `ListFederationDelegations` operationId) request.
@@ -49602,6 +50136,19 @@ func (c *ClientWithResponses) CreateFederationRouteWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseCreateFederationRouteResponse(rsp)
+}
+
+// DeleteFederationRouteWithResponse performs a DELETE /federation/routes/{routeId} (the `DeleteFederationRoute` operationId) request.
+//
+// Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteFederationRouteWithResponse(ctx context.Context, routeId Id, params *DeleteFederationRouteParams, reqEditors ...RequestEditorFn) (*DeleteFederationRouteResponse, error) {
+	rsp, err := c.DeleteFederationRoute(ctx, routeId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFederationRouteResponse(rsp)
 }
 
 // ListHelpTopicsWithResponse performs a GET /help/topics (the `ListHelpTopics` operationId) request.
@@ -50193,6 +50740,19 @@ func (c *ClientWithResponses) CreateNotificationChannelWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseCreateNotificationChannelResponse(rsp)
+}
+
+// DeleteNotificationChannelWithResponse performs a DELETE /notification-channels/{channelId} (the `DeleteNotificationChannel` operationId) request.
+//
+// Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteNotificationChannelWithResponse(ctx context.Context, channelId Id, params *DeleteNotificationChannelParams, reqEditors ...RequestEditorFn) (*DeleteNotificationChannelResponse, error) {
+	rsp, err := c.DeleteNotificationChannel(ctx, channelId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteNotificationChannelResponse(rsp)
 }
 
 // UpdateNotificationChannelWithBodyWithResponse performs a PUT /notification-channels/{channelId} (the `UpdateNotificationChannel` operationId) request,
@@ -54944,6 +55504,32 @@ func ParseRevokeEgressAllowanceResponse(rsp *http.Response) (*RevokeEgressAllowa
 	return response, nil
 }
 
+// ParseListEnrollmentTokensResponse parses an HTTP response from a ListEnrollmentTokensWithResponse call
+func ParseListEnrollmentTokensResponse(rsp *http.Response) (*ListEnrollmentTokensResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEnrollmentTokensResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EnrollmentTokenList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCreateEnrollmentTokenResponse parses an HTTP response from a CreateEnrollmentTokenWithResponse call
 func ParseCreateEnrollmentTokenResponse(rsp *http.Response) (*CreateEnrollmentTokenResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -54964,6 +55550,42 @@ func ParseCreateEnrollmentTokenResponse(rsp *http.Response) (*CreateEnrollmentTo
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeEnrollmentTokenResponse parses an HTTP response from a RevokeEnrollmentTokenWithResponse call
+func ParseRevokeEnrollmentTokenResponse(rsp *http.Response) (*RevokeEnrollmentTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeEnrollmentTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -55323,6 +55945,42 @@ func ParseCreateFederationRouteResponse(rsp *http.Response) (*CreateFederationRo
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFederationRouteResponse parses an HTTP response from a DeleteFederationRouteWithResponse call
+func ParseDeleteFederationRouteResponse(rsp *http.Response) (*DeleteFederationRouteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFederationRouteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -56516,6 +57174,42 @@ func ParseCreateNotificationChannelResponse(rsp *http.Response) (*CreateNotifica
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteNotificationChannelResponse parses an HTTP response from a DeleteNotificationChannelWithResponse call
+func ParseDeleteNotificationChannelResponse(rsp *http.Response) (*DeleteNotificationChannelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteNotificationChannelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

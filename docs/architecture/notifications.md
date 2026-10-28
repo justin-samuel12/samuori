@@ -64,6 +64,15 @@ channel's kind is fixed; a webhook keeps its signing key; a Slack or Teams chann
 one is given, which becomes a new controller-only secret (the old one is then listed as no longer used under
 Security & Secrets → Secrets) and is never returned. Edits are audited without secrets.
 
+### Deleting a channel
+
+`DELETE /notification-channels/{id}` (administrator) deletes the channel and its delivery log in one transaction,
+audited as `notification-channel.delete` with the number of deliveries removed. It is refused with 409
+`channel_in_use` while any rule routes events to the channel; the refusal lists those rules, and the UI offers to
+disable the channel instead. Pending deliveries of the channel are dropped. A webhook signing key or Slack or Teams
+URL the channel held stays as a controller-only secret that nothing uses, listed under Security & Secrets → Secrets
+where an administrator may delete it.
+
 ### Webhook signatures
 
 Each webhook request carries:

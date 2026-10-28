@@ -227,8 +227,16 @@ func (Unimplemented) RevokeEgressAllowance(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "RevokeEgressAllowance")
 }
 
+func (Unimplemented) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "ListEnrollmentTokens")
+}
+
 func (Unimplemented) CreateEnrollmentToken(w http.ResponseWriter, r *http.Request, _ CreateEnrollmentTokenParams) {
 	NotImplemented(w, r, "CreateEnrollmentToken")
+}
+
+func (Unimplemented) RevokeEnrollmentToken(w http.ResponseWriter, r *http.Request, _ Id, _ RevokeEnrollmentTokenParams) {
+	NotImplemented(w, r, "RevokeEnrollmentToken")
 }
 
 func (Unimplemented) ListFederationDelegations(w http.ResponseWriter, r *http.Request) {
@@ -273,6 +281,10 @@ func (Unimplemented) ListFederationRoutes(w http.ResponseWriter, r *http.Request
 
 func (Unimplemented) CreateFederationRoute(w http.ResponseWriter, r *http.Request, _ CreateFederationRouteParams) {
 	NotImplemented(w, r, "CreateFederationRoute")
+}
+
+func (Unimplemented) DeleteFederationRoute(w http.ResponseWriter, r *http.Request, _ Id, _ DeleteFederationRouteParams) {
+	NotImplemented(w, r, "DeleteFederationRoute")
 }
 
 func (Unimplemented) ListHelpTopics(w http.ResponseWriter, r *http.Request) {
@@ -415,6 +427,10 @@ func (Unimplemented) ListNotificationChannels(w http.ResponseWriter, r *http.Req
 
 func (Unimplemented) CreateNotificationChannel(w http.ResponseWriter, r *http.Request, _ CreateNotificationChannelParams) {
 	NotImplemented(w, r, "CreateNotificationChannel")
+}
+
+func (Unimplemented) DeleteNotificationChannel(w http.ResponseWriter, r *http.Request, _ Id, _ DeleteNotificationChannelParams) {
+	NotImplemented(w, r, "DeleteNotificationChannel")
 }
 
 func (Unimplemented) UpdateNotificationChannel(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateNotificationChannelParams) {

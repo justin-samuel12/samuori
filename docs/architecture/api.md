@@ -195,6 +195,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | workers | GET | `/locations` | `listLocations` | every role |
 | workers | POST | `/locations` | `createLocation` | administrator |
 | workers | DELETE | `/locations/{locationName}` | `deleteLocation` | administrator |
+| system | DELETE | `/federation/routes/{routeId}` | `deleteFederationRoute` | administrator |
 | workers | GET | `/projects/{projectId}/locations` | `getProjectLocations` | every role (project visibility applies) |
 | workers | PUT | `/projects/{projectId}/locations` | `setProjectLocations` | administrator |
 | workers | GET | `/pki` | `getTrustBundle` | operator, administrator |
@@ -203,6 +204,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | artifacts | GET | `/artifact-quarantines` | `listArtifactQuarantines` | security-reviewer, administrator |
 | artifacts | POST | `/artifact-quarantines/{quarantineId}/release` | `releaseArtifactQuarantine` | security-reviewer, administrator |
 | workers | POST | `/enrollment-tokens` | `createEnrollmentToken` | administrator |
+| workers | GET | `/enrollment-tokens` | `listEnrollmentTokens` | administrator |
+| workers | DELETE | `/enrollment-tokens/{tokenId}` | `revokeEnrollmentToken` | administrator |
 | secrets | GET | `/secret-providers` | `listSecretProviders` | administrator |
 | secrets | POST | `/secret-providers` | `createSecretProvider` | administrator |
 | secrets | POST | `/secret-providers/{providerId}/test` | `testSecretProvider` | administrator |
@@ -254,6 +257,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | notifications | GET | `/notification-channels` | `listNotificationChannels` | administrator |
 | notifications | POST | `/notification-channels` | `createNotificationChannel` | administrator |
 | notifications | POST | `/notification-channels/{channelId}/state` | `setNotificationChannelState` | administrator |
+| notifications | DELETE | `/notification-channels/{channelId}` | `deleteNotificationChannel` | administrator |
 | notifications | POST | `/notification-channels/{channelId}/test` | `testNotificationChannel` | administrator |
 | notifications | GET | `/notification-rules` | `listNotificationRules` | administrator |
 | notifications | POST | `/notification-rules` | `createNotificationRule` | administrator |

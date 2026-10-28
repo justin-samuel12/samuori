@@ -19,6 +19,8 @@ Builds of uploaded source run only on **workers**: dedicated machines in **pools
   in the last 24 hours. Self-tests run when a worker is assigned to an enabled pool, when it connects, after its
   configuration changes, and every 20 hours.
 - The **Can build uploaded source** column says why a worker is not eligible, for example a stale self-test.
+- **Delete** removes a pool that never had workers. A pool that had workers is kept with their history; disable it
+  instead.
 
 ## Add a worker (administrators)
 
@@ -29,11 +31,16 @@ Builds of uploaded source run only on **workers**: dedicated machines in **pools
    instead.
 3. The worker appears as **Unassigned**. Choose **Assign to pool** and pick its pool.
 
+**Worker join codes** lists recent codes without their values. **Revoke** an unused code that was shared by mistake;
+a revoked code can never enroll a worker. A used code cannot be revoked: revoke the worker instead.
+
 **Move to pool** reassigns a worker. Its trust does not move with it: it must pass a new self-test for the new pool.
 A worker running builds cannot move; drain it first.
 
-Locations stay hidden while there is only one (`default`). To add another, choose **Put this pool in another
-location** when creating or editing a pool.
+Location columns stay hidden while there is only one (`default`). To add another, choose **Add location** under
+**Locations**, or **Put this pool in another location** when creating or editing a pool. **Delete** removes a
+location that no pool, project restriction or federation route uses; otherwise Samuori names what still uses it.
+Locations cannot be renamed.
 
 ## Take a worker out of service
 

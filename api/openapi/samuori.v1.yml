@@ -278,6 +278,19 @@ paths:
         "409": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
 
+  /federation/routes/{routeId}:
+    parameters: [{ name: routeId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    delete:
+      tags: [system]
+      operationId: deleteFederationRoute
+      description: Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
   /federation/delegations:
     get:
       tags: [system]
@@ -3138,6 +3151,17 @@ paths:
         "409": { $ref: "#/components/responses/Problem" }
 
   /enrollment-tokens:
+    get:
+      tags: [workers]
+      operationId: listEnrollmentTokens
+      description: Recent worker enrollment tokens, newest first, without their values.
+      x-samuori-roles: [administrator]
+      responses:
+        "200":
+          description: Enrollment tokens
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnrollmentTokenList" }
     post:
       tags: [workers]
       operationId: createEnrollmentToken
@@ -3154,6 +3178,19 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/EnrollmentTokenIssued" }
+
+  /enrollment-tokens/{tokenId}:
+    parameters: [{ name: tokenId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    delete:
+      tags: [workers]
+      operationId: revokeEnrollmentToken
+      description: Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Revoked and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /secret-providers:
     get:
@@ -4145,6 +4182,16 @@ paths:
         "404": { $ref: "#/components/responses/Problem" }
         "409": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [notifications]
+      operationId: deleteNotificationChannel
+      description: Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /notification-channels/{channelId}/state:
     parameters: [{ name: channelId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
@@ -6889,6 +6936,26 @@ components:
           type: string
           x-samuori-reveal-once: true
           description: "The controller worker endpoints, CA pin and token in one value (samuoriwj_...) for `samuori-join worker`; absent when this controller's worker endpoint accepts no remote workers"
+
+    EnrollmentToken:
+      type: object
+      required: [id, createdBy, createdAt, expiresAt]
+      properties:
+        id: { $ref: "#/components/schemas/Id" }
+        poolId: { $ref: "#/components/schemas/Id" }
+        createdBy: { type: string }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        expiresAt: { $ref: "#/components/schemas/Timestamp" }
+        usedAt: { $ref: "#/components/schemas/Timestamp" }
+        workerId: { type: string }
+        workerName: { type: string }
+        revokedAt: { $ref: "#/components/schemas/Timestamp" }
+        revokedBy: { type: string }
+    EnrollmentTokenList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/EnrollmentToken" } }
 
     SecretProviderCreate:
       type: object

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"regexp"
 	"slices"
 	"sort"
@@ -12,6 +13,7 @@ import (
 
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/authz"
+	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
 	"samuori.invalid/samuori/internal/isolation"
 )
@@ -66,7 +68,42 @@ func (s *Store) CreateLocation(ctx context.Context, actor authz.Principal, name,
 	return l, err
 }
 
-// DeleteLocation refuses a location that pools or projects still use.
+// InUse refuses deleting a pool or location that something still uses; Uses names each use for the administrator.
+type InUse struct{ Uses []string }
+
+func (e *InUse) Error() string { return "still in use by " + strings.Join(e.Uses, "; ") }
+
+func (e *InUse) Is(target error) bool { return target == ErrInUse }
+
+// LocationUses names the pools and projects that use a location; a location they use cannot be deleted.
+func LocationUses(ctx context.Context, d *db.DB, tx *sql.Tx, orgID, name string) ([]string, error) {
+	var uses []string
+	for _, q := range []struct{ query, what string }{
+		{`SELECT name FROM worker_pools WHERE org_id = ? AND location = ? ORDER BY name`, "pool "},
+		{`SELECT p.name FROM project_locations pl JOIN projects p ON p.id = pl.project_id WHERE p.org_id = ? AND pl.location = ? ORDER BY p.name`, "project "},
+	} {
+		rows, err := tx.QueryContext(ctx, d.Rebind(q.query), orgID, name)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var n string
+			if err := rows.Scan(&n); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			uses = append(uses, q.what+n)
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return uses, nil
+}
+
+// DeleteLocation refuses a location that pools, projects or a federation route still use.
 func (s *Store) DeleteLocation(ctx context.Context, actor authz.Principal, id, requestID string) error {
 	if !actor.IsOrgAdmin() {
 		return ErrForbidden
@@ -79,12 +116,19 @@ func (s *Store) DeleteLocation(ctx context.Context, actor authz.Principal, id, r
 			}
 			return err
 		}
-		var used int
-		if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT (SELECT COUNT(*) FROM worker_pools WHERE org_id = ? AND location = ?) + (SELECT COUNT(*) FROM project_locations pl JOIN projects p ON p.id = pl.project_id WHERE p.org_id = ? AND pl.location = ?)`), actor.OrgID, name, actor.OrgID, name).Scan(&used); err != nil {
+		uses, err := LocationUses(ctx, s.db, tx, actor.OrgID, name)
+		if err != nil {
 			return err
 		}
-		if used > 0 {
-			return ErrInUse
+		var route int
+		if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT COUNT(*) FROM federation_routes WHERE location_id = ?`), id).Scan(&route); err != nil {
+			return err
+		}
+		if route > 0 {
+			uses = append(uses, "a federation route (delete the route on the Federation page instead)")
+		}
+		if len(uses) > 0 {
+			return &InUse{Uses: uses}
 		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM locations WHERE id = ?`), id); err != nil {
 			return err
@@ -207,7 +251,7 @@ func (s *Store) DeletePool(ctx context.Context, actor authz.Principal, id, reque
 			return err
 		}
 		if n > 0 {
-			return ErrInUse
+			return &InUse{Uses: []string{fmt.Sprintf("%d worker(s), whose history is kept; disable the pool instead", n)}}
 		}
 		for _, q := range []string{`DELETE FROM enrollment_tokens WHERE pool_id = ?`, `DELETE FROM pool_approvals WHERE pool_id = ?`, `DELETE FROM pool_self_tests WHERE pool_id = ?`} {
 			if _, err := tx.ExecContext(ctx, s.db.Rebind(q), id); err != nil {

@@ -5,6 +5,14 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Editable infrastructure administration (2026-10-28, owner request).** Nodes & workers deletes pools that never
+  had workers (otherwise offers to disable), lists, adds and deletes locations (refusals name the pools, projects or
+  federation route that use them; no rename API), and lists and revokes unused worker join codes
+  (`GET`/`DELETE /enrollment-tokens`, migration 00069). Federation disables peers, revokes grants and deletes peer
+  locations (`DELETE /federation/routes/{id}`); peer endpoint and pin stay immutable, replaced by adding a new peer.
+  Notifications deletes channels (`DELETE /notification-channels/{id}`, 409 while rules use them). All administrator
+  only and audited. Runnable: API and UI; `TestEnrollmentTokenRevocation` and `TestInfrastructureDeletes` pass on
+  SQLite. Not yet run: PostgreSQL and a browser check of the new dialogs.
 - **Project archive, restore and purge (2026-10-28, owner decision, ADR 0058).** Maintainers and administrators
   archive a project (hidden from lists, new work refused with 409, grants revoked and audited, queued and running
   builds cancelled) and restore it without its grants; administrators purge an archived project with its typed name,

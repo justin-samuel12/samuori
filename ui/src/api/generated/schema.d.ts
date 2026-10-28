@@ -231,6 +231,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/federation/routes/{routeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routeId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Removes a peer location and the local location it added; refused while a pool or project uses that location. Builds already sent to the peer keep running. Audited. */
+        delete: operations["deleteFederationRoute"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/federation/delegations": {
         parameters: {
             query?: never;
@@ -2768,10 +2787,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** @description Recent worker enrollment tokens, newest first, without their values. */
+        get: operations["listEnrollmentTokens"];
         put?: never;
         post: operations["createEnrollmentToken"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/enrollment-tokens/{tokenId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tokenId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Revokes an unused worker enrollment token before it expires; a revoked token never enrolls a worker. Audited. */
+        delete: operations["revokeEnrollmentToken"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3517,7 +3556,8 @@ export interface paths {
         /** @description Edits a channel; its kind is fixed. Slack and Teams: a new incoming webhook URL as the secret replaces the stored one, or leave it out to keep it. Webhooks keep their signing key. Audited without the secret. */
         put: operations["updateNotificationChannel"];
         post?: never;
-        delete?: never;
+        /** @description Deletes a channel and its delivery log. Refused with 409 while any rule routes events to it; delete or move those rules, or disable the channel instead. Audited. */
+        delete: operations["deleteNotificationChannel"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5924,6 +5964,21 @@ export interface components {
             /** @description The controller worker endpoints, CA pin and token in one value (samuoriwj_...) for `samuori-join worker`; absent when this controller's worker endpoint accepts no remote workers */
             code?: string;
         };
+        EnrollmentToken: {
+            id: components["schemas"]["Id"];
+            poolId?: components["schemas"]["Id"];
+            createdBy: string;
+            createdAt: components["schemas"]["Timestamp"];
+            expiresAt: components["schemas"]["Timestamp"];
+            usedAt?: components["schemas"]["Timestamp"];
+            workerId?: string;
+            workerName?: string;
+            revokedAt?: components["schemas"]["Timestamp"];
+            revokedBy?: string;
+        };
+        EnrollmentTokenList: {
+            items: components["schemas"]["EnrollmentToken"][];
+        };
         SecretProviderCreate: {
             name: string;
             /** @enum {string} */
@@ -7720,6 +7775,31 @@ export interface operations {
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    deleteFederationRoute: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                routeId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     listFederationDelegations: {
@@ -12211,6 +12291,26 @@ export interface operations {
             409: components["responses"]["Problem"];
         };
     };
+    listEnrollmentTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enrollment tokens */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentTokenList"];
+                };
+            };
+        };
+    };
     createEnrollmentToken: {
         parameters: {
             query?: never;
@@ -12237,6 +12337,31 @@ export interface operations {
                     "application/json": components["schemas"]["EnrollmentTokenIssued"];
                 };
             };
+        };
+    };
+    revokeEnrollmentToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                tokenId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     listSecretProviders: {
@@ -13824,6 +13949,31 @@ export interface operations {
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    deleteNotificationChannel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                channelId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     setNotificationChannelState: {

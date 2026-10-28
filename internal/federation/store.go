@@ -336,6 +336,59 @@ func (s *Store) Routes(ctx context.Context, p authz.Principal) ([]Route, error) 
 	return out, rows.Err()
 }
 
+// InUse refuses deleting a route whose location pools or projects still use.
+type InUse struct{ Uses []string }
+
+func (e *InUse) Error() string { return "still used by " + strings.Join(e.Uses, "; ") }
+
+// DeleteRoute removes a route and the location it added. It is refused while a pool or a project's location
+// restriction names that location; builds already handed to the peer keep their delegation.
+func (s *Store) DeleteRoute(ctx context.Context, p authz.Principal, id, requestID string) error {
+	if err := admin(p); err != nil {
+		return err
+	}
+	return s.db.InTx(ctx, func(tx *sql.Tx) error {
+		var locID, location, remote, peerName string
+		err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT r.location_id, l.name, r.remote_location, pe.name FROM federation_routes r JOIN locations l ON l.id = r.location_id JOIN federation_peers pe ON pe.id = r.peer_id WHERE r.id = ? AND r.org_id = ?`), id, p.OrgID).
+			Scan(&locID, &location, &remote, &peerName)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		rows, err := tx.QueryContext(ctx, s.db.Rebind(`SELECT 'pool ' || name FROM worker_pools WHERE org_id = ? AND location = ?
+			UNION ALL SELECT 'project ' || pr.name FROM project_locations pl JOIN projects pr ON pr.id = pl.project_id WHERE pr.org_id = ? AND pl.location = ?`), p.OrgID, location, p.OrgID, location)
+		if err != nil {
+			return err
+		}
+		var uses []string
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err != nil {
+				rows.Close()
+				return err
+			}
+			uses = append(uses, u)
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if len(uses) > 0 {
+			return &InUse{Uses: uses}
+		}
+		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM federation_routes WHERE id = ?`), id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM locations WHERE id = ?`), locID); err != nil {
+			return err
+		}
+		return s.audit(ctx, tx, p, "federation.route.delete", "federation-route", id, location+" -> "+peerName+"/"+remote, requestID)
+	})
+}
+
 // route returns the route a location name stands for.
 func (s *Store) route(ctx context.Context, orgID, location string) (Route, error) {
 	var r Route
