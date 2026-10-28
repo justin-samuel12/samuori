@@ -1,6 +1,6 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { Form, Tab, TabList, TabPanel, Tabs } from "react-aria-components";
-import { api, type Schemas } from "../api/client";
+import { api, serverIsNewer, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { TextField } from "../components/Field";
 import { Alert, Loading } from "../components/Feedback";
@@ -75,8 +75,13 @@ export function LoginPage({ notice }: { notice?: string }) {
       setNewPassword("");
       setConfirm("");
       setMustChange(false);
-      await refresh();
       broadcast({ type: "signed-in" });
+      // Nothing is lost at sign-in, so pick up a release installed while this tab was open.
+      if (serverIsNewer()) {
+        window.location.reload();
+        return;
+      }
+      await refresh();
       return;
     }
     if (response.status === 429) {

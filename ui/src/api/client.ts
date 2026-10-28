@@ -44,6 +44,11 @@ export function loadedServerVersion(): string | undefined {
   return loadedVersion;
 }
 
+/** Whether a response has reported a newer release than the one this tab loaded. */
+export function serverIsNewer(): boolean {
+  return newerVersion !== undefined;
+}
+
 /** Orders a.b.c[-pre] releases; build metadata after + is ignored, as on the server. */
 export function compareVersions(a: string, b: string): number {
   const parse = (v: string) => {
