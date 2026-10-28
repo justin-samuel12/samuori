@@ -22,6 +22,15 @@ independently testable, not scope cuts. Update task status in the same PR that d
   Runnable: API, CLI and UI; `TestContractConsistency`, `TestCreateIdempotencyKeyReplays` and
   `TestPaginationOfWholeLists` pass on SQLite. Not yet run: PostgreSQL. Open: request bodies are inconsistent about
   unknown fields (61 reject them, 59 accept them); not changed because rejecting is breaking.
+- **Seamless session renewal (2026-10-28, owner request, ADR 0068).** Before the maximum session ends, the portal
+  shows "Your session ends at HH:MM. Renew it to keep working." (ten minutes ahead); **Renew session** asks for the
+  password (local and LDAP) or continues with the OIDC provider. `POST /auth/session/renewal` re-authenticates the
+  session's own user under the sign-in rate limit and lockout and replaces the session with a new ID, CSRF token and
+  deadlines in one transaction (audited `session.renew`); the maximum still bounds each session. OIDC sign-in and
+  renewal return to the page they started from through a server-validated same-origin `returnTo` (migration 00072).
+  Runnable: API and UI; SEC-AUTH-13 (`internal/auth/renewal_test.go`, `internal/api/session_renewal_test.go`) and
+  `ui/src/session/renewal.test.ts` pass on SQLite. Not yet run: a browser check of the dialog, a real OIDC provider,
+  LDAP renewal against a directory, and PostgreSQL.
 - **API usable from outside the repository (2026-10-28, owner request, ADR 0066).** The server publishes its
   contract at `GET /api/v1/openapi.yml` and `/openapi.json` to any signed-in caller (ETag, private caching); Help →
   API reference renders it with search, roles, parameters, schemas, the error format and curl examples for API

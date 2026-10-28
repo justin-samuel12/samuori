@@ -36,7 +36,9 @@ Under **Sessions** you set how long the portal stays signed in:
 
 - **Sign out after inactivity**, 15 to 120 minutes. Clicking or typing renews it; pages that refresh on their own do
   not.
-- **Maximum session**, 1 to 24 hours. Nothing extends it.
+- **Maximum session**, 1 to 24 hours. Activity never extends it. Ten minutes before it ends, people see **Renew
+  session**: they confirm who they are (their password, or their identity provider) and get a new session that
+  starts its own maximum, without leaving the page.
 - **Warn before signing out**, 30 to 600 seconds. People then see a countdown with **Stay signed in**.
 
 Changes apply to sessions already open and are audited.

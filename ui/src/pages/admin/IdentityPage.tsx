@@ -1014,7 +1014,7 @@ function SessionSettings({
           value={max}
           onChange={setMax}
           isRequired
-          description="1 to 24 hours. People sign in again after this, whatever they are doing."
+          description="1 to 24 hours. Shortly before, people can renew by confirming who they are; this starts a new session."
         />
         <TextField
           label="Warn before signing out (seconds)"

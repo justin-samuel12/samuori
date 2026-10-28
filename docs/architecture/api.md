@@ -115,6 +115,9 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | system | GET | `/operations/{operationId}` | `getOperation` | any |
 | identity | POST | `/auth/login` | `login` | public |
 | identity | POST | `/auth/logout` | `logout` | any |
+| identity | GET | `/auth/session` | `getSession` | any, browser session only |
+| identity | POST | `/auth/session/extend` | `extendSession` | any, browser session only |
+| identity | POST | `/auth/session/renewal` | `renewSession` | any person, browser session only; re-authenticates the session's own user into a new session (ADR 0068) |
 | identity | GET | `/auth/providers` | `listSignInProviders` | public |
 | identity | GET | `/auth/oidc/{providerId}/start` | `startOidcSignIn` | public |
 | identity | GET | `/auth/oidc/callback` | `finishOidcSignIn` | public |

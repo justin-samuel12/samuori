@@ -156,10 +156,11 @@ Test IDs are defined in the security test catalog.
 
 | ID | STRIDE | Threat | Mitigation | Tests |
 |---|---|---|---|---|
-| TM-01 | S | Session theft or fixation | httpOnly, Secure, SameSite cookies; rotation at login; idle and absolute timeouts that reads and polling never renew and extension never passes | SEC-AUTH-01, SEC-AUTH-11 |
+| TM-01 | S | Session theft or fixation | httpOnly, Secure, SameSite cookies; rotation at login; idle and absolute timeouts that reads and polling never renew and extension never passes; renewal re-authenticates into a new session (TM-132) | SEC-AUTH-01, SEC-AUTH-11, SEC-AUTH-13 |
 | TM-02 | T | Cross-site request forgery | CSRF token on state changes; strict CORS; JSON-only APIs | SEC-AUTH-02 |
 | TM-03 | S | Password guessing | argon2id; per-account and per-IP rate limits; audited lockout | SEC-AUTH-03 |
 | TM-131 | S/E | A leaver, a stolen session or a reset password keeps access | Disabling a user revokes their sessions and API tokens in one transaction; administrator resets give a shown-once temporary password, valid 24 hours, that only lets the user choose a new one, and end their sessions; a password change needs the current password under the sign-in limits and ends other sessions; the last enabled administrator and local administrator cannot be disabled (ADR 0065) | SEC-AUTH-12 |
+| TM-132 | S/T | Session renewal abused: a stolen session renewed indefinitely, renewal used to switch accounts, fixed session IDs, CSRF, password guessing through renewal, or an open redirect after SSO | Renewal re-authenticates (password under the sign-in rate limit and lockout, or the provider asserting the same subject) and replaces the session with a new ID, CSRF token and deadlines, revoking the old one in one transaction; only the session's own user; CSRF and a browser session required; ended sessions cannot renew; `returnTo` only a validated same-origin path stored with the sign-in state (ADR 0068) | SEC-AUTH-13 |
 | TM-07 | I | XSS via file names, logs, detector output or YAML | No raw HTML rendering; strict CSP; ANSI stripped from logs | SEC-UI-01 |
 | TM-08 | T | OIDC or LDAP login manipulation | OIDC state, nonce, PKCE, issuer and audience checks; LDAP filter escaping | SEC-AUTH-05, SEC-AUTH-06 |
 | TM-09 | D | Request or upload flooding | Per-user and per-team rate limits, size limits, quotas, pagination caps | SEC-DOS-01 |

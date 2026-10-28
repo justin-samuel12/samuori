@@ -72,3 +72,4 @@ owner approval.
 | [0064](0064-editing-secret-grants.md) | Editing secret grants | Accepted (provisional) |
 | [0065](0065-disabling-users-and-resetting-passwords.md) | Disabling users and resetting passwords | Accepted (provisional) |
 | [0066](0066-api-stability-and-deprecation.md) | API stability and deprecation | Accepted (provisional) |
+| [0068](0068-renewing-a-session-by-re-authenticating.md) | Renewing a session by re-authenticating | Accepted (provisional) |

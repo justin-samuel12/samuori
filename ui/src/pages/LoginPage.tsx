@@ -9,6 +9,7 @@ import { BrandMark } from "../components/BrandMark";
 import { Spinner } from "../components/Spinner";
 import { useLoader } from "../hooks";
 import { broadcast, rememberReturn } from "../session/broadcast";
+import { currentPage, oidcStartUrl } from "../session/renewal";
 import { useSession } from "../session/session";
 
 type SignInProvider = Schemas["SignInProviderList"]["items"][number];
@@ -196,7 +197,7 @@ export function LoginPage({ notice }: { notice?: string }) {
           {sso.map((p) => (
             <a
               key={p.id}
-              href={`/api/v1/auth/oidc/${p.id}/start`}
+              href={oidcStartUrl(p.id, currentPage(window.location))}
               onClick={rememberReturn}
               className="samuori-button samuori-button--secondary"
             >

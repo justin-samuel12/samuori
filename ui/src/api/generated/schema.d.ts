@@ -878,7 +878,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message. */
+        /** @description The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message. */
         get: operations["finishOidcSignIn"];
         put?: never;
         post?: never;
@@ -1150,6 +1150,23 @@ export interface paths {
         put?: never;
         /** @description Renews the idle deadline of the browser session. The absolute maximum is never extended. */
         post: operations["extendSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session/renewal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead. */
+        post: operations["renewSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4573,6 +4590,26 @@ export interface components {
             idleTimeoutSeconds: number;
             maxSessionSeconds: number;
             warningSeconds: number;
+            /**
+             * @description How the user renews the session before its maximum (renewSession); password covers local and LDAP accounts.
+             * @enum {string}
+             */
+            renewWith?: "password" | "provider";
+            /** @description The identity provider's display name, for accounts it manages */
+            providerName?: string;
+        };
+        SessionRenewalRequest: {
+            /**
+             * Format: password
+             * @description The current password; required for password accounts
+             */
+            password?: string;
+            /** @description For OIDC accounts, the web UI page to return to, a same-origin path; anything else is refused */
+            returnTo?: string;
+        };
+        SessionRenewalRedirect: {
+            /** @description The identity provider's sign-in URL to open in this browser tab */
+            redirectUrl: string;
         };
         ServiceIdentityCreate: {
             username: string;
@@ -9463,7 +9500,10 @@ export interface operations {
     };
     startOidcSignIn: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The web UI page to return to after sign-in, a same-origin path such as /projects/abc. Anything else, including absolute URLs and API paths, returns to /. */
+                returnTo?: string;
+            };
             header?: never;
             path: {
                 providerId: components["schemas"]["Id"];
@@ -10117,6 +10157,46 @@ export interface operations {
             };
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    renewSession: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionRenewalRequest"];
+            };
+        };
+        responses: {
+            /** @description Renewed; sets new httpOnly session and CSRF cookies and returns the new deadlines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionStatus"];
+                };
+            };
+            /** @description Continue at the identity provider; sets the short-lived OIDC browser cookie */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionRenewalRedirect"];
+                };
+            };
+            400: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             429: components["responses"]["RateLimited"];

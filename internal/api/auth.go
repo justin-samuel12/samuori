@@ -9,6 +9,7 @@ import (
 
 	"samuori.invalid/samuori/internal/api/apigen"
 	"samuori.invalid/samuori/internal/auth"
+	"samuori.invalid/samuori/internal/identity"
 )
 
 func (a *API) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
@@ -133,9 +134,110 @@ func (a *API) sessionStatus(w http.ResponseWriter, r *http.Request, get func(con
 		a.internalError(w, r, err)
 		return
 	}
+	a.writeSessionStatus(w, r, s)
+}
+
+func (a *API) writeSessionStatus(w http.ResponseWriter, r *http.Request, s auth.SessionStatus) {
+	out := apigen.SessionStatus{IdleExpiresAt: s.IdleExpiresAt, AbsoluteExpiresAt: s.AbsoluteExpiresAt, ServerTime: s.ServerTime,
+		IdleTimeoutSeconds: int(s.Timeouts.Idle / time.Second), MaxSessionSeconds: int(s.Timeouts.Max / time.Second), WarningSeconds: int(s.Timeouts.Warning / time.Second)}
+	if p := principal(r); p.ID != "" {
+		rn, err := a.auth.RenewalFor(r.Context(), p.ID)
+		if err != nil && !errors.Is(err, auth.ErrNotFound) {
+			a.internalError(w, r, err)
+			return
+		}
+		if rn.Method != "" {
+			method := apigen.SessionStatusRenewWith(rn.Method)
+			out.RenewWith = &method
+		}
+		if rn.ProviderName != "" {
+			out.ProviderName = &rn.ProviderName
+		}
+	}
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, http.StatusOK, apigen.SessionStatus{IdleExpiresAt: s.IdleExpiresAt, AbsoluteExpiresAt: s.AbsoluteExpiresAt, ServerTime: s.ServerTime,
-		IdleTimeoutSeconds: int(s.Timeouts.Idle / time.Second), MaxSessionSeconds: int(s.Timeouts.Max / time.Second), WarningSeconds: int(s.Timeouts.Warning / time.Second)})
+	writeJSON(w, http.StatusOK, out)
+}
+
+// RenewSession re-authenticates the session's user and replaces the session (ADR 0068). Wrong passwords answer 400,
+// never 401, so the page does not treat a typo as the session ending.
+func (a *API) RenewSession(w http.ResponseWriter, r *http.Request, _ apigen.RenewSessionParams) {
+	token, ok := browserSession(r)
+	if !ok {
+		apigen.WriteProblem(w, http.StatusForbidden, "browser_session_required", "only a browser session can be renewed; API tokens keep their own expiry")
+		return
+	}
+	var body apigen.SessionRenewalRequest
+	if !decodeBody(w, r, &body) {
+		return
+	}
+	returnTo := "/"
+	if body.ReturnTo != nil {
+		var safe bool
+		if returnTo, safe = auth.SafeReturnTo(*body.ReturnTo); !safe {
+			apigen.WriteProblem(w, http.StatusBadRequest, "invalid_return_to", "returnTo must be a page of this site, such as /projects")
+			return
+		}
+	}
+	p := principal(r)
+	rn, err := a.auth.RenewalFor(r.Context(), p.ID)
+	if err != nil {
+		a.renewalError(w, r, err)
+		return
+	}
+	if rn.Method == auth.RenewWithProvider {
+		a.renewWithProvider(w, r, token, rn.ProviderID, p.ID, returnTo)
+		return
+	}
+	if body.Password == nil || *body.Password == "" {
+		apigen.WriteProblem(w, http.StatusBadRequest, "invalid_request", "password is required")
+		return
+	}
+	s, st, err := a.auth.RenewSession(r.Context(), token, *body.Password, auth.ClientIP(r), requestID(w))
+	if err != nil {
+		a.renewalError(w, r, err)
+		return
+	}
+	a.setCookie(w, auth.SessionCookie, s.Token, true)
+	a.setCookie(w, auth.CSRFCookie, s.CSRF, false)
+	a.writeSessionStatus(w, r, st)
+}
+
+func (a *API) renewWithProvider(w http.ResponseWriter, r *http.Request, token, providerID, userID, returnTo string) {
+	if a.signIn == nil || !a.auth.AllowOIDCStart(auth.ClientIP(r)) {
+		w.Header().Set("Retry-After", "60")
+		apigen.WriteProblem(w, http.StatusTooManyRequests, "rate_limited", "too many sign-in attempts; try again later")
+		return
+	}
+	url, browser, err := a.signIn.StartOIDC(r.Context(), providerID, identity.OIDCStart{ReturnTo: returnTo, RenewSessionHash: auth.SessionHash(token), RenewUserID: userID})
+	if errors.Is(err, identity.ErrNotFound) || errors.Is(err, identity.ErrDisabled) {
+		apigen.WriteProblem(w, http.StatusForbidden, "provider_unavailable", "your identity provider is not available; sign out and sign in again")
+		return
+	}
+	if err != nil {
+		a.identityError(w, r, err)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: oidcCookie, Value: browser, Path: "/api/v1/auth/oidc/", MaxAge: 600, HttpOnly: true, Secure: a.secureCookies, SameSite: http.SameSiteLaxMode})
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusAccepted, apigen.SessionRenewalRedirect{RedirectUrl: url})
+}
+
+func (a *API) renewalError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case errors.Is(err, auth.ErrNotFound):
+		apigen.WriteProblem(w, http.StatusNotFound, "no_session", "the session has ended; sign in again")
+	case errors.Is(err, auth.ErrWrongPassword):
+		apigen.WriteProblem(w, http.StatusBadRequest, "wrong_password", err.Error())
+	case errors.Is(err, auth.ErrPasswordChangeRequired):
+		apigen.WriteProblem(w, http.StatusForbidden, "password_change_required", err.Error())
+	case errors.Is(err, auth.ErrInvalidCredentials), errors.Is(err, auth.ErrRenewWithProvider), errors.Is(err, auth.ErrDifferentUser):
+		apigen.WriteProblem(w, http.StatusForbidden, "renewal_refused", "this session cannot be renewed; sign out and sign in again")
+	case errors.Is(err, auth.ErrLocked), errors.Is(err, auth.ErrRateLimited):
+		w.Header().Set("Retry-After", "60")
+		apigen.WriteProblem(w, http.StatusTooManyRequests, "rate_limited", err.Error())
+	default:
+		a.internalError(w, r, err)
+	}
 }
 
 func (a *API) ListApiTokens(w http.ResponseWriter, r *http.Request, _ apigen.ListApiTokensParams) {

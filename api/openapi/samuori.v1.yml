@@ -1156,6 +1156,11 @@ paths:
       description: Redirects the browser to the provider with state, nonce and a PKCE challenge, and sets a short-lived cookie binding the sign-in to this browser.
       security: []
       x-samuori-public: true
+      parameters:
+        - name: returnTo
+          in: query
+          description: The web UI page to return to after sign-in, a same-origin path such as /projects/abc. Anything else, including absolute URLs and API paths, returns to /.
+          schema: { type: string, maxLength: 2048 }
       responses:
         "302": { description: Redirect to the identity provider }
         "400": { $ref: "#/components/responses/Problem" }
@@ -1166,7 +1171,7 @@ paths:
     get:
       tags: [identity]
       operationId: finishOidcSignIn
-      description: The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message.
+      description: The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message.
       security: []
       x-samuori-public: true
       parameters:
@@ -1568,6 +1573,39 @@ paths:
               schema: { $ref: "#/components/schemas/SessionStatus" }
         "400": { $ref: "#/components/responses/Problem" }
         "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/session/renewal:
+    post:
+      tags: [identity]
+      operationId: renewSession
+      description: >-
+        Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session
+        ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP)
+        send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the
+        provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo.
+        An ended session cannot be renewed; sign in again instead.
+      x-samuori-roles: [any]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionRenewalRequest" }
+      responses:
+        "200":
+          description: Renewed; sets new httpOnly session and CSRF cookies and returns the new deadlines
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionStatus" }
+        "202":
+          description: Continue at the identity provider; sets the short-lived OIDC browser cookie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionRenewalRedirect" }
+        "400": { $ref: "#/components/responses/Problem" }
         "403": { $ref: "#/components/responses/Problem" }
         "404": { $ref: "#/components/responses/Problem" }
         "429": { $ref: "#/components/responses/RateLimited" }
@@ -6798,6 +6836,22 @@ components:
         idleTimeoutSeconds: { type: integer }
         maxSessionSeconds: { type: integer }
         warningSeconds: { type: integer }
+        renewWith:
+          type: string
+          enum: [password, provider]
+          description: How the user renews the session before its maximum (renewSession); password covers local and LDAP accounts.
+        providerName: { type: string, description: "The identity provider's display name, for accounts it manages" }
+    SessionRenewalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        password: { type: string, format: password, writeOnly: true, minLength: 1, maxLength: 1024, description: "The current password; required for password accounts" }
+        returnTo: { type: string, maxLength: 2048, description: "For OIDC accounts, the web UI page to return to, a same-origin path; anything else is refused" }
+    SessionRenewalRedirect:
+      type: object
+      required: [redirectUrl]
+      properties:
+        redirectUrl: { type: string, description: "The identity provider's sign-in URL to open in this browser tab" }
     ServiceIdentityCreate:
       type: object
       additionalProperties: false

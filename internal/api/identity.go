@@ -59,13 +59,17 @@ func (a *API) ListSignInProviders(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (a *API) StartOidcSignIn(w http.ResponseWriter, r *http.Request, providerID apigen.Id) {
+func (a *API) StartOidcSignIn(w http.ResponseWriter, r *http.Request, providerID apigen.Id, params apigen.StartOidcSignInParams) {
 	if a.signIn == nil || !a.auth.AllowOIDCStart(auth.ClientIP(r)) {
 		w.Header().Set("Retry-After", "60")
 		apigen.WriteProblem(w, http.StatusTooManyRequests, "rate_limited", "too many sign-in attempts; try again later")
 		return
 	}
-	url, browser, err := a.signIn.StartOIDC(r.Context(), providerID)
+	returnTo := "/"
+	if params.ReturnTo != nil {
+		returnTo, _ = auth.SafeReturnTo(*params.ReturnTo)
+	}
+	url, browser, err := a.signIn.StartOIDC(r.Context(), providerID, identity.OIDCStart{ReturnTo: returnTo})
 	if errors.Is(err, identity.ErrNotFound) || errors.Is(err, identity.ErrDisabled) {
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "that sign-in option is not available")
 		return
@@ -91,7 +95,7 @@ func (a *API) FinishOidcSignIn(w http.ResponseWriter, r *http.Request, params ap
 	if c, err := r.Cookie(oidcCookie); err == nil {
 		browser = c.Value
 	}
-	userID, orgID, err := a.signIn.FinishOIDC(r.Context(), *params.State, *params.Code, browser, requestID(w))
+	res, err := a.signIn.FinishOIDC(r.Context(), *params.State, *params.Code, browser, requestID(w))
 	if err != nil {
 		if !errors.Is(err, identity.ErrAuthFailed) {
 			a.log.Error("OIDC sign-in", "error", err)
@@ -99,15 +103,27 @@ func (a *API) FinishOidcSignIn(w http.ResponseWriter, r *http.Request, params ap
 		fail()
 		return
 	}
-	s, err := a.auth.IssueSession(r.Context(), userID, orgID, requestID(w), "OIDC sign-in")
+	var s auth.Session
+	if res.RenewSessionHash != "" {
+		s, _, err = a.auth.ReplaceSession(r.Context(), res.RenewSessionHash, res.UserID, requestID(w), "OIDC")
+		if errors.Is(err, auth.ErrNotFound) {
+			// The renewed session ended during the round trip; the person has just signed in, so start a session.
+			s, err = a.auth.IssueSession(r.Context(), res.UserID, res.OrgID, requestID(w), "OIDC sign-in after the renewed session ended")
+		}
+	} else {
+		s, err = a.auth.IssueSession(r.Context(), res.UserID, res.OrgID, requestID(w), "OIDC sign-in")
+	}
 	if err != nil {
-		a.log.Error("OIDC session", "error", err)
+		if !errors.Is(err, auth.ErrDifferentUser) {
+			a.log.Error("OIDC session", "error", err)
+		}
 		fail()
 		return
 	}
 	a.setCookie(w, auth.SessionCookie, s.Token, true)
 	a.setCookie(w, auth.CSRFCookie, s.CSRF, false)
-	http.Redirect(w, r, "/", http.StatusFound)
+	back, _ := auth.SafeReturnTo(res.ReturnTo)
+	http.Redirect(w, r, back, http.StatusFound)
 }
 
 type providerView struct {

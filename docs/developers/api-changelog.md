@@ -6,6 +6,10 @@ nothing is stable yet.
 
 ## 2026-10-28
 
+- Added `POST /auth/session/renewal` (`renewSession`, additive): re-authenticates the user of a browser session and
+  replaces it with a new session (ADR 0068). `GET /auth/session` and the renewal response report `renewWith` and
+  `providerName`; `GET /auth/oidc/{providerId}/start` takes an optional same-origin `returnTo`, and the OIDC
+  callback now redirects there instead of always to `/`.
 - Added `GET /openapi.yml` and `GET /openapi.json` (`getApiContract`, `getApiContractJson`): the contract the server
   runs, for any signed-in caller.
 - Added deprecation signalling: operations marked `deprecated: true` answer with `Deprecation` and `Sunset` headers.

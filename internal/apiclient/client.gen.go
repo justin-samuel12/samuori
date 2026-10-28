@@ -3635,6 +3635,24 @@ func (e SensitiveFindingOutcome) Valid() bool {
 	}
 }
 
+// Defines values for SessionStatusRenewWith.
+const (
+	SessionStatusRenewWithPassword SessionStatusRenewWith = "password"
+	SessionStatusRenewWithProvider SessionStatusRenewWith = "provider"
+)
+
+// Valid indicates whether the value is a known member of the SessionStatusRenewWith enum.
+func (e SessionStatusRenewWith) Valid() bool {
+	switch e {
+	case SessionStatusRenewWithPassword:
+		return true
+	case SessionStatusRenewWithProvider:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ShippedRuntimeStatusWriteStatus.
 const (
 	ShippedRuntimeStatusWriteStatusApproved   ShippedRuntimeStatusWriteStatus = "approved"
@@ -8721,15 +8739,39 @@ type ServiceIdentityList struct {
 	NextCursor *NextCursor       `json:"nextCursor,omitempty"`
 }
 
+// SessionRenewalRedirect defines model for SessionRenewalRedirect.
+type SessionRenewalRedirect struct {
+	// RedirectUrl The identity provider's sign-in URL to open in this browser tab
+	RedirectUrl string `json:"redirectUrl"`
+}
+
+// SessionRenewalRequest defines model for SessionRenewalRequest.
+type SessionRenewalRequest struct {
+	// Password The current password; required for password accounts
+	Password *string `json:"password,omitempty"`
+
+	// ReturnTo For OIDC accounts, the web UI page to return to, a same-origin path; anything else is refused
+	ReturnTo *string `json:"returnTo,omitempty"`
+}
+
 // SessionStatus defines model for SessionStatus.
 type SessionStatus struct {
 	AbsoluteExpiresAt  Timestamp `json:"absoluteExpiresAt"`
 	IdleExpiresAt      Timestamp `json:"idleExpiresAt"`
 	IdleTimeoutSeconds int       `json:"idleTimeoutSeconds"`
 	MaxSessionSeconds  int       `json:"maxSessionSeconds"`
-	ServerTime         Timestamp `json:"serverTime"`
-	WarningSeconds     int       `json:"warningSeconds"`
+
+	// ProviderName The identity provider's display name, for accounts it manages
+	ProviderName *string `json:"providerName,omitempty"`
+
+	// RenewWith How the user renews the session before its maximum (renewSession); password covers local and LDAP accounts.
+	RenewWith      *SessionStatusRenewWith `json:"renewWith,omitempty"`
+	ServerTime     Timestamp               `json:"serverTime"`
+	WarningSeconds int                     `json:"warningSeconds"`
 }
+
+// SessionStatusRenewWith How the user renews the session before its maximum (renewSession); password covers local and LDAP accounts.
+type SessionStatusRenewWith string
 
 // SessionTimeouts defines model for SessionTimeouts.
 type SessionTimeouts struct {
@@ -9692,8 +9734,20 @@ type FinishOidcSignInParams struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty"`
 }
 
+// StartOidcSignInParams defines parameters for StartOidcSignIn.
+type StartOidcSignInParams struct {
+	// ReturnTo The web UI page to return to after sign-in, a same-origin path such as /projects/abc. Anything else, including absolute URLs and API paths, returns to /.
+	ReturnTo *string `form:"returnTo,omitempty" json:"returnTo,omitempty"`
+}
+
 // ExtendSessionParams defines parameters for ExtendSession.
 type ExtendSessionParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// RenewSessionParams defines parameters for RenewSession.
+type RenewSessionParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -11318,6 +11372,9 @@ type SetAuditPolicyJSONRequestBody = AuditPolicyUpdate
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
+// RenewSessionJSONRequestBody defines body for RenewSession for application/json ContentType.
+type RenewSessionJSONRequestBody = SessionRenewalRequest
+
 // SetBuildMethodPolicyJSONRequestBody defines body for SetBuildMethodPolicy for application/json ContentType.
 type SetBuildMethodPolicyJSONRequestBody = BuildMethodPolicy
 
@@ -11982,13 +12039,13 @@ type ClientInterface interface {
 
 	// FinishOidcSignIn performs a GET /auth/oidc/callback (the `FinishOidcSignIn` operationId) request.
 	//
-	// The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message.
+	// The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message.
 	FinishOidcSignIn(ctx context.Context, params *FinishOidcSignInParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartOidcSignIn performs a GET /auth/oidc/{providerId}/start (the `StartOidcSignIn` operationId) request.
 	//
 	// Redirects the browser to the provider with state, nonce and a PKCE challenge, and sets a short-lived cookie binding the sign-in to this browser.
-	StartOidcSignIn(ctx context.Context, providerId Id, reqEditors ...RequestEditorFn) (*http.Response, error)
+	StartOidcSignIn(ctx context.Context, providerId Id, params *StartOidcSignInParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSignInProviders performs a GET /auth/providers (the `ListSignInProviders` operationId) request.
 	//
@@ -12004,6 +12061,18 @@ type ClientInterface interface {
 	//
 	// Renews the idle deadline of the browser session. The absolute maximum is never extended.
 	ExtendSession(ctx context.Context, params *ExtendSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewSessionWithBody performs a POST /auth/session/renewal (the `RenewSession` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+	RenewSessionWithBody(ctx context.Context, params *RenewSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewSession performs a POST /auth/session/renewal (the `RenewSession` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+	RenewSession(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListBuildCaches performs a GET /build-caches (the `ListBuildCaches` operationId) request.
 	//
@@ -14333,7 +14402,7 @@ func (c *Client) Logout(ctx context.Context, params *LogoutParams, reqEditors ..
 
 // FinishOidcSignIn performs a GET /auth/oidc/callback (the `FinishOidcSignIn` operationId) request.
 //
-// The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message.
+// The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message.
 func (c *Client) FinishOidcSignIn(ctx context.Context, params *FinishOidcSignInParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFinishOidcSignInRequest(c.Server, params)
 	if err != nil {
@@ -14349,8 +14418,8 @@ func (c *Client) FinishOidcSignIn(ctx context.Context, params *FinishOidcSignInP
 // StartOidcSignIn performs a GET /auth/oidc/{providerId}/start (the `StartOidcSignIn` operationId) request.
 //
 // Redirects the browser to the provider with state, nonce and a PKCE challenge, and sets a short-lived cookie binding the sign-in to this browser.
-func (c *Client) StartOidcSignIn(ctx context.Context, providerId Id, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartOidcSignInRequest(c.Server, providerId)
+func (c *Client) StartOidcSignIn(ctx context.Context, providerId Id, params *StartOidcSignInParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartOidcSignInRequest(c.Server, providerId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14396,6 +14465,38 @@ func (c *Client) GetSession(ctx context.Context, reqEditors ...RequestEditorFn) 
 // Renews the idle deadline of the browser session. The absolute maximum is never extended.
 func (c *Client) ExtendSession(ctx context.Context, params *ExtendSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewExtendSessionRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewSessionWithBody performs a POST /auth/session/renewal (the `RenewSession` operationId) request,
+// with any type of body and a specified content type.
+//
+// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+func (c *Client) RenewSessionWithBody(ctx context.Context, params *RenewSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewSessionRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewSession performs a POST /auth/session/renewal (the `RenewSession` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+func (c *Client) RenewSession(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewSessionRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -21829,7 +21930,7 @@ func NewFinishOidcSignInRequest(server string, params *FinishOidcSignInParams) (
 }
 
 // NewStartOidcSignInRequest constructs an http.Request for the StartOidcSignIn method
-func NewStartOidcSignInRequest(server string, providerId Id) (*http.Request, error) {
+func NewStartOidcSignInRequest(server string, providerId Id, params *StartOidcSignInParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -21852,6 +21953,33 @@ func NewStartOidcSignInRequest(server string, providerId Id) (*http.Request, err
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ReturnTo != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "returnTo", *params.ReturnTo, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -21939,6 +22067,61 @@ func NewExtendSessionRequest(server string, params *ExtendSessionParams) (*http.
 	if err != nil {
 		return nil, err
 	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewRenewSessionRequest calls the generic RenewSession builder with application/json body
+func NewRenewSessionRequest(server string, params *RenewSessionParams, body RenewSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRenewSessionRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewRenewSessionRequestWithBody constructs an http.Request for the RenewSession method, with any body, and a specified content type
+func NewRenewSessionRequestWithBody(server string, params *RenewSessionParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/auth/session/renewal")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -38183,7 +38366,7 @@ type ClientWithResponsesInterface interface {
 
 	// FinishOidcSignInWithResponse performs a GET /auth/oidc/callback (the `FinishOidcSignIn` operationId) request.
 	//
-	// The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message.
+	// The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	FinishOidcSignInWithResponse(ctx context.Context, params *FinishOidcSignInParams, reqEditors ...RequestEditorFn) (*FinishOidcSignInResponse, error)
@@ -38193,7 +38376,7 @@ type ClientWithResponsesInterface interface {
 	// Redirects the browser to the provider with state, nonce and a PKCE challenge, and sets a short-lived cookie binding the sign-in to this browser.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	StartOidcSignInWithResponse(ctx context.Context, providerId Id, reqEditors ...RequestEditorFn) (*StartOidcSignInResponse, error)
+	StartOidcSignInWithResponse(ctx context.Context, providerId Id, params *StartOidcSignInParams, reqEditors ...RequestEditorFn) (*StartOidcSignInResponse, error)
 
 	// ListSignInProvidersWithResponse performs a GET /auth/providers (the `ListSignInProviders` operationId) request.
 	//
@@ -38215,6 +38398,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	ExtendSessionWithResponse(ctx context.Context, params *ExtendSessionParams, reqEditors ...RequestEditorFn) (*ExtendSessionResponse, error)
+
+	// RenewSessionWithBodyWithResponse performs a POST /auth/session/renewal (the `RenewSession` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RenewSessionWithBodyWithResponse(ctx context.Context, params *RenewSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewSessionResponse, error)
+
+	// RenewSessionWithResponse performs a POST /auth/session/renewal (the `RenewSession` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+	RenewSessionWithResponse(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSessionResponse, error)
 
 	// ListBuildCachesWithResponse performs a GET /build-caches (the `ListBuildCaches` operationId) request.
 	//
@@ -42814,6 +43011,89 @@ func (r ExtendSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ExtendSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RenewSessionResponse429Headers the declared response headers of an HTTP 429 response for RenewSession
+type RenewSessionResponse429Headers struct {
+	RetryAfter *int
+}
+
+type RenewSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SessionStatus
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *SessionRenewalRedirect
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RenewSessionResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RenewSessionResponse) GetJSON200() *SessionStatus {
+	return r.JSON200
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RenewSessionResponse) GetJSON202() *SessionRenewalRedirect {
+	return r.JSON202
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RenewSessionResponse) GetJSON400() *Problem {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RenewSessionResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RenewSessionResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RenewSessionResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r RenewSessionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RenewSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RenewSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RenewSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -66450,7 +66730,7 @@ func (c *ClientWithResponses) LogoutWithResponse(ctx context.Context, params *Lo
 
 // FinishOidcSignInWithResponse performs a GET /auth/oidc/callback (the `FinishOidcSignIn` operationId) request.
 //
-// The provider's redirect target. Establishes a session, then redirects to the web UI; failures redirect to the sign-in page with a generic message.
+// The provider's redirect target. Establishes a session (or, for a renewal, replaces the renewed session with a new one), then redirects to the page the sign-in started from; failures redirect to the sign-in page with a generic message.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) FinishOidcSignInWithResponse(ctx context.Context, params *FinishOidcSignInParams, reqEditors ...RequestEditorFn) (*FinishOidcSignInResponse, error) {
@@ -66466,8 +66746,8 @@ func (c *ClientWithResponses) FinishOidcSignInWithResponse(ctx context.Context, 
 // Redirects the browser to the provider with state, nonce and a PKCE challenge, and sets a short-lived cookie binding the sign-in to this browser.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) StartOidcSignInWithResponse(ctx context.Context, providerId Id, reqEditors ...RequestEditorFn) (*StartOidcSignInResponse, error) {
-	rsp, err := c.StartOidcSignIn(ctx, providerId, reqEditors...)
+func (c *ClientWithResponses) StartOidcSignInWithResponse(ctx context.Context, providerId Id, params *StartOidcSignInParams, reqEditors ...RequestEditorFn) (*StartOidcSignInResponse, error) {
+	rsp, err := c.StartOidcSignIn(ctx, providerId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -66511,6 +66791,32 @@ func (c *ClientWithResponses) ExtendSessionWithResponse(ctx context.Context, par
 		return nil, err
 	}
 	return ParseExtendSessionResponse(rsp)
+}
+
+// RenewSessionWithBodyWithResponse performs a POST /auth/session/renewal (the `RenewSession` operationId) request,
+// with any type of body and a specified content type.
+//
+// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RenewSessionWithBodyWithResponse(ctx context.Context, params *RenewSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewSessionResponse, error) {
+	rsp, err := c.RenewSessionWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewSessionResponse(rsp)
+}
+
+// RenewSessionWithResponse performs a POST /auth/session/renewal (the `RenewSession` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
+func (c *ClientWithResponses) RenewSessionWithResponse(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSessionResponse, error) {
+	rsp, err := c.RenewSession(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewSessionResponse(rsp)
 }
 
 // ListBuildCachesWithResponse performs a GET /build-caches (the `ListBuildCaches` operationId) request.
@@ -73218,6 +73524,80 @@ func ParseExtendSessionResponse(rsp *http.Response) (*ExtendSessionResponse, err
 	switch {
 	case rsp.StatusCode == 429:
 		var headers ExtendSessionResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRenewSessionResponse parses an HTTP response from a RenewSessionWithResponse call
+func ParseRenewSessionResponse(rsp *http.Response) (*RenewSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RenewSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SessionRenewalRedirect
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers RenewSessionResponse429Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {

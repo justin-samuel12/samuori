@@ -233,6 +233,7 @@ export const operationAccess = {
   releaseArtifactQuarantine: ["security-reviewer", "administrator"],
   removeAllowedSecret: ["administrator"],
   removeController: ["administrator"],
+  renewSession: "any",
   replaceCustomRecipeDraft: ["administrator"],
   replacePolicy: ["administrator"],
   requestBaseImage: ["developer", "maintainer"],

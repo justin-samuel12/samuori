@@ -4,6 +4,8 @@ export interface Deadlines {
   absoluteExpiresAt: number;
   idleTimeoutMs: number;
   warningMs: number;
+  renewWith?: "password" | "provider";
+  providerName?: string;
 }
 
 export type SessionMessage =

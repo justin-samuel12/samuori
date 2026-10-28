@@ -94,13 +94,37 @@ Browser sessions are server-side rows behind an httpOnly cookie, with a CSRF tok
 - **What counts as activity.** Only state-changing requests and `POST /auth/session/extend` renew the idle deadline.
   Reads never do, so background polling and `GET /auth/session`, which reports both deadlines, keep nothing alive.
   Extending a session past either deadline is refused, and the absolute deadline is never extended.
+- **Renewal is re-authentication (ADR 0068).** Before the maximum, `POST /auth/session/renewal` (session cookie and
+  CSRF token; API tokens are refused) lets the session's own user prove who they are again and replaces the session
+  with a new one: a new session ID and CSRF token, new idle and absolute deadlines, the same user. The old session is
+  revoked in the same transaction, the new cookies carry the sign-in flags, and `session.renew` is audited, as are
+  refusals. The maximum still bounds each session; renewal never moves a deadline of the old one.
+  - *Password accounts* (local and LDAP) send the current password. It is checked by the sign-in path, under the same
+    per-address rate limit and account lockout, and wrong attempts count toward the lockout. A wrong password answers
+    400 `wrong_password`, never 401, so the page does not sign out. Disabled users, temporary passwords that must be
+    changed and local passwords limited to administrators are refused as at sign-in. LDAP checks the stored username
+    and must resolve to the same user.
+  - *OIDC accounts* get 202 with the provider URL; the browser goes to the provider and comes back through the
+    callback, which replaces the renewed session only when the provider asserts the same subject. Another account is
+    refused (`/?signin=failed`) and the session stays as it was. If the renewed session ended during the round trip,
+    the person has just signed in, so the callback issues an ordinary session.
+  - An ended session cannot be renewed (401 from the guard, or 404 `no_session`): the person signs in again.
+- **Return to the page.** OIDC sign-in and renewal take `returnTo`, accepted only as a same-origin path of the web UI
+  (starts with one `/`, no backslash, whitespace or control characters, no scheme or host, not under `/api`) and
+  stored with the sign-in state, so the callback can only redirect within the site; anything else returns to `/`
+  (the sign-in start) or is refused with 400 `invalid_return_to` (renewal).
 - **Portal.** Clicks, keys and back/forward navigation renew the session quietly, at most once a minute and only
   after half of the idle window has passed. The warning lead before the idle deadline opens a dialog with a
-  countdown, **Stay signed in** and **Sign out**. Ten minutes before the absolute deadline a notice gives the end
-  time; it cannot be extended, so the notice offers **Sign in again now** (a new session on the same page) and
-  **Dismiss**. On expiry the sign-in page says why, and signing in returns to the same page
-  (across an OIDC sign-in too). Tabs of one browser share deadlines, extensions and sign-outs through a
-  `BroadcastChannel`, with a `localStorage` event fallback, so one tab extends for all.
+  countdown, **Stay signed in** and **Sign out**. Ten minutes before the absolute deadline (or the warning lead, if
+  longer) a notice says "Your session ends at HH:MM. Renew it to keep working." with **Renew session** and
+  **Dismiss**. **Renew session** opens a small dialog: a password field, or **Continue with** the provider, plus
+  **Sign out**. A password renewal closes the dialog, refreshes the deadlines in every tab and briefly confirms the
+  new end time; nothing on the page reloads. A provider renewal loads the provider's page and comes straight back to
+  the same page; wizard drafts are already saved on the server as the person works, so they survive it, but text
+  typed into other open forms does not. On expiry the sign-in page says why, and signing in returns to the same page
+  (in place for passwords, through `returnTo` for OIDC), still reloading onto a newer release when one was
+  installed. Tabs of one browser share deadlines, extensions and sign-outs through a `BroadcastChannel`, with a
+  `localStorage` event fallback, so one tab extends or renews for all.
 - **Settings.** Administrators set the idle timeout (15–120 minutes, default 30), the maximum session (1–24 hours,
   default 12, not shorter than the idle timeout) and the warning lead (30–600 seconds, default 120) on the Identity
   page (`PUT /identity-settings`, `session`). They are stored per organization, apply to existing sessions at once
@@ -191,6 +215,15 @@ All of these are for organization administrators only, checked on the server, an
   leave the idle deadline alone; extending stops at the absolute deadline; expired sessions cannot be extended or
   used; only administrators change the timeouts; out-of-bounds values are refused; a shorter idle timeout applies to
   existing sessions.
+- `internal/auth/renewal_test.go` and `internal/api/session_renewal_test.go` (**SEC-AUTH-13**): renewing with the
+  right password gives a new session and CSRF token with new deadlines and an audit event, the old cookie is then
+  refused and cannot renew again; another user's password, a wrong password (which counts toward the lockout and
+  then locks renewal and sign-in) and the per-address rate limit are refused without ending the session; an expired
+  session, a disabled user, a temporary password, an API token and a request without CSRF are refused; the cookies
+  keep their flags. Over HTTP with a fake OIDC client: renewal returns the provider URL, the callback replaces the
+  session and returns to `returnTo`, a different subject is refused and leaves the session alone, and absolute or
+  protocol-relative `returnTo` values return to `/` or are refused. `ui/src/session/renewal.test.ts` covers the
+  notice timing and the client-side return path.
 
 - `internal/api/people_test.go` (**SEC-AUTH-12**), over HTTP with real sessions on SQLite: disabling a user ends
   their session and API token at once and refuses sign-in, re-enabling does not revive the token, and disabling
@@ -210,4 +243,5 @@ All of these are for organization administrators only, checked on the server, an
 - No SCIM, no OIDC back-channel logout, no refresh of group membership between sign-ins.
 - LDAP StartTLS is implemented but only LDAPS is tested live.
 - One external URL per controller; several hostnames need a reverse proxy.
-- The session warning, cross-tab sharing and return-to-page behavior have no browser test yet.
+- The session warning, the renewal dialog, cross-tab sharing and return-to-page behavior have no browser test yet;
+  OIDC renewal is tested with a fake provider client, not a real provider, and LDAP renewal only by construction.

@@ -103,7 +103,7 @@ func (Unimplemented) FinishOidcSignIn(w http.ResponseWriter, r *http.Request, _ 
 	NotImplemented(w, r, "FinishOidcSignIn")
 }
 
-func (Unimplemented) StartOidcSignIn(w http.ResponseWriter, r *http.Request, _ Id) {
+func (Unimplemented) StartOidcSignIn(w http.ResponseWriter, r *http.Request, _ Id, _ StartOidcSignInParams) {
 	NotImplemented(w, r, "StartOidcSignIn")
 }
 
@@ -117,6 +117,10 @@ func (Unimplemented) GetSession(w http.ResponseWriter, r *http.Request) {
 
 func (Unimplemented) ExtendSession(w http.ResponseWriter, r *http.Request, _ ExtendSessionParams) {
 	NotImplemented(w, r, "ExtendSession")
+}
+
+func (Unimplemented) RenewSession(w http.ResponseWriter, r *http.Request, _ RenewSessionParams) {
+	NotImplemented(w, r, "RenewSession")
 }
 
 func (Unimplemented) ListBuildCaches(w http.ResponseWriter, r *http.Request, _ ListBuildCachesParams) {

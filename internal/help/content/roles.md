@@ -40,5 +40,9 @@ On **Account**, **Edit name** changes how your name is shown. With a local passw
 the current one; your other signed-in browsers are signed out, and your API tokens keep working. If an administrator
 reset your password, sign in with the temporary one and choose a new password on the sign-in page.
 
+A session lasts at most the time your administrator set. Shortly before it ends, a notice offers **Renew session**:
+enter your password, or continue with your identity provider, and you keep working on the same page. If a session has
+already ended, signing in again brings you back to the page you were on.
+
 **API tokens** on Account let scripts call the API as you. The [API reference](/help/api-reference) lists every
 operation, the roles it needs and a `curl` example; send the token as `Authorization: Bearer <token>`.

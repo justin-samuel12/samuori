@@ -75,9 +75,21 @@ func hash(v string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// OIDCStart says where a sign-in returns and, for a renewal, which session and user it renews (ADR 0068). ReturnTo must
+// already be a validated same-origin path (auth.SafeReturnTo).
+type OIDCStart struct {
+	ReturnTo, RenewSessionHash, RenewUserID string
+}
+
+// OIDCResult is a finished sign-in: the user, with the start's return path and renewal binding.
+type OIDCResult struct {
+	UserID, OrgID string
+	OIDCStart
+}
+
 // StartOIDC begins a sign-in. It returns the provider URL and a browser token that the callback must present, so a
 // login started in one browser cannot be completed in another.
-func (s *Service) StartOIDC(ctx context.Context, providerID string) (authURL, browser string, err error) {
+func (s *Service) StartOIDC(ctx context.Context, providerID string, start OIDCStart) (authURL, browser string, err error) {
 	if s.redirectURL == "" || s.oidc == nil {
 		return "", "", &Invalid{"OIDC sign-in needs the controller's external URL to be configured"}
 	}
@@ -97,8 +109,11 @@ func (s *Service) StartOIDC(ctx context.Context, providerID string) (authURL, br
 	if _, err := db.SQL.ExecContext(ctx, db.Rebind(`DELETE FROM oidc_logins WHERE expires_at < ?`), now.Add(-time.Hour)); err != nil {
 		return "", "", err
 	}
-	if _, err := db.SQL.ExecContext(ctx, db.Rebind(`INSERT INTO oidc_logins (state_hash, provider_id, browser_hash, nonce, verifier, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`),
-		hash(state), p.ID, hash(browser), nonce, verifier, now, now.Add(loginTTL)); err != nil {
+	if start.ReturnTo == "" {
+		start.ReturnTo = "/"
+	}
+	if _, err := db.SQL.ExecContext(ctx, db.Rebind(`INSERT INTO oidc_logins (state_hash, provider_id, browser_hash, nonce, verifier, created_at, expires_at, return_to, renew_session_hash, renew_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+		hash(state), p.ID, hash(browser), nonce, verifier, now, now.Add(loginTTL), start.ReturnTo, nullable(start.RenewSessionHash), nullable(start.RenewUserID)); err != nil {
 		return "", "", err
 	}
 	authURL, err = s.oidc.AuthCodeURL(ctx, p, s.redirectURL, state, nonce, challenge)
@@ -106,45 +121,61 @@ func (s *Service) StartOIDC(ctx context.Context, providerID string) (authURL, br
 }
 
 // FinishOIDC completes a sign-in from the provider's callback. The state is single-use, expires, and must belong to
-// the same browser.
-func (s *Service) FinishOIDC(ctx context.Context, state, code, browser, requestID string) (userID, orgID string, err error) {
+// the same browser. A renewal must come back as the user it was started for.
+func (s *Service) FinishOIDC(ctx context.Context, state, code, browser, requestID string) (OIDCResult, error) {
+	var out OIDCResult
 	db := s.store.db
 	now := s.now().UTC()
 	res, err := db.SQL.ExecContext(ctx, db.Rebind(`UPDATE oidc_logins SET used_at = ? WHERE state_hash = ? AND used_at IS NULL AND expires_at > ?`), now, hash(state), now)
 	if err != nil {
-		return "", "", err
+		return out, err
 	}
 	if n, _ := res.RowsAffected(); n != 1 || state == "" {
 		s.deny(ctx, "", "", "the sign-in state is unknown, expired or already used", requestID)
-		return "", "", ErrAuthFailed
+		return out, ErrAuthFailed
 	}
 	var providerID, browserHash, nonce, verifier string
-	if err := db.SQL.QueryRowContext(ctx, db.Rebind(`SELECT provider_id, browser_hash, nonce, verifier FROM oidc_logins WHERE state_hash = ?`), hash(state)).Scan(&providerID, &browserHash, &nonce, &verifier); err != nil {
-		return "", "", err
+	var renewSession, renewUser sql.NullString
+	if err := db.SQL.QueryRowContext(ctx, db.Rebind(`SELECT provider_id, browser_hash, nonce, verifier, return_to, renew_session_hash, renew_user_id FROM oidc_logins WHERE state_hash = ?`), hash(state)).
+		Scan(&providerID, &browserHash, &nonce, &verifier, &out.ReturnTo, &renewSession, &renewUser); err != nil {
+		return out, err
 	}
+	out.RenewSessionHash, out.RenewUserID = renewSession.String, renewUser.String
 	p, err := s.store.byID(ctx, providerID)
 	if err != nil {
-		return "", "", err
+		return out, err
 	}
 	if subtle.ConstantTimeCompare([]byte(hash(browser)), []byte(browserHash)) != 1 {
 		s.deny(ctx, p.OrgID, p.ID, "the sign-in was finished in a different browser than it started", requestID)
-		return "", "", ErrAuthFailed
+		return out, ErrAuthFailed
 	}
 	if !p.Enabled {
 		s.deny(ctx, p.OrgID, p.ID, "the provider is disabled", requestID)
-		return "", "", ErrAuthFailed
+		return out, ErrAuthFailed
 	}
 	secret, err := s.secret(ctx, p)
 	if err != nil {
-		return "", "", err
+		return out, err
 	}
 	claims, err := s.oidc.Exchange(ctx, p, secret, s.redirectURL, code, verifier, nonce)
 	if err != nil {
 		s.deny(ctx, p.OrgID, p.ID, clip(err.Error()), requestID)
-		return "", "", ErrAuthFailed
+		return out, ErrAuthFailed
 	}
-	userID, err = s.provision(ctx, p, claims, requestID)
-	return userID, p.OrgID, err
+	if out.RenewUserID != "" {
+		var subject string
+		err := db.SQL.QueryRowContext(ctx, db.Rebind(`SELECT external_id FROM users WHERE id = ? AND provider_id = ?`), out.RenewUserID, p.ID).Scan(&subject)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return out, err
+		}
+		if err != nil || subject != claims.Subject {
+			s.deny(ctx, p.OrgID, p.ID, "the renewal was completed by a different account than the session's", requestID)
+			return out, ErrAuthFailed
+		}
+	}
+	out.UserID, err = s.provision(ctx, p, claims, requestID)
+	out.OrgID = p.OrgID
+	return out, err
 }
 
 // LDAPLogin authenticates a username and password against an LDAP provider.
