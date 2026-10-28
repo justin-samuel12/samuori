@@ -544,6 +544,21 @@
     opacity: 0.9;
   }
 
+  .samuori-notices {
+    max-height: 60vh;
+    overflow: auto;
+    margin: 0;
+    padding: var(--samuori-space-4);
+    border-radius: 8px;
+    background: var(--samuori-code-bg);
+    color: var(--samuori-code-text);
+    font-family: var(--samuori-font-mono);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .samuori-about-motto {
     margin-top: var(--samuori-space-1);
     letter-spacing: 0.1em;

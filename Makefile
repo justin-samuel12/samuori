@@ -23,6 +23,7 @@ release:
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(RELEASE_ARCH) $(GO) build -trimpath -ldflags "$(LDFLAGS)" -o $(RELEASE)/ ./cmd/samuori-server ./cmd/samuori-worker ./cmd/samuori ./cmd/samuori-web
 	cd ui && $(NPM) run -s build
 	cp -R ui/dist $(RELEASE)/ui
+	cd tools/licensecheck && $(GO) run . -root ../.. -notices ../../$(RELEASE)/ui/licenses/THIRD_PARTY_NOTICES.txt
 	cp LICENSE NOTICE $(RELEASE)/
 	cp deploy/systemd/* deploy/compose/* $(RELEASE)/
 

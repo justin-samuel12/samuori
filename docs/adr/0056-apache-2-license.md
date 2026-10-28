@@ -25,7 +25,8 @@ release archives bundle only Samuori's own binaries and UI.
 ## Decision
 - Samuori is licensed under the Apache License, Version 2.0: `LICENSE` holds the unmodified license text, and `NOTICE`
   reads "Copyright 2026 Justin Samuel <jsamuel12@gmail.com>. Created, architected and maintained by Justin Samuel."
-  Both ship in every release archive, beside `THIRD_PARTY_NOTICES.txt`.
+  Both ship in every release archive, beside `THIRD_PARTY_NOTICES.txt`, which the UI also serves and shows under
+  **About Samuori → View third-party notices** (with the wordmark's font notice).
 - Attribution also appears in the README, in the UI (account menu, **About Samuori**) and in the version output of
   `samuori`, `samuori-server`, `samuori-worker` and `samuori-web` (`internal/version.Credit`).
 - Source files carry no per-file license headers (ADR 0020); `LICENSE` and `NOTICE` at the root cover them.

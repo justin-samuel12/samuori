@@ -20,7 +20,8 @@ make command line still overrides it.
 
    `dist/artifacts/` then holds the release tarball (`samuori-server`, `samuori-worker`, `samuori`, the UI, systemd units,
    `install.sh` and the Compose files), the SPDX SBOM, `THIRD_PARTY_NOTICES.txt`, `SHA256SUMS` and
-   `SHA256SUMS.sig`.
+   `SHA256SUMS.sig`. `make release` also writes `THIRD_PARTY_NOTICES.txt` into the UI's `licenses/` folder, so every
+   installation shows it under **About Samuori → View third-party notices**.
 4. Verify against the allowed signers file (default `dist/signing/allowed_signers`), one line per release key, for
    example `release@samuori.invalid namespaces="samuori-release" ssh-ed25519 AAAA…`:
 
