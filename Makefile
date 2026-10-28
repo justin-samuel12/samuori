@@ -121,12 +121,12 @@ vet:
 
 # Focused regression tests for security boundaries (ADR 0039, as amended); the seccomp and sandbox ones need Linux.
 test:
-	$(GO) test -race -count=1 $(PKGS)
+	$(GO) test -race -count=1 -timeout 30m $(PKGS)
 	cd tools/licensecheck && $(GO) test -count=1 ./...
 
 test-vm:
 	deploy/dev/lima/sync.sh
-	limactl shell samuori-dev sh -c 'cd ~/samuori && PATH=/usr/local/go/bin:$$PATH GOTOOLCHAIN=local go test -race -count=1 ./...'
+	limactl shell samuori-dev sh -c 'cd ~/samuori && PATH=/usr/local/go/bin:$$PATH GOTOOLCHAIN=local go test -race -count=1 -timeout 30m ./...'
 
 # License policy for everything linked or bundled (docs/dependencies.md#license-policy).
 license-check:

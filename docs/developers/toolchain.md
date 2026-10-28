@@ -24,7 +24,7 @@ Status: **Authoritative.** Pins are set in ADR 0011 and verified in `docs/depend
 | `make fmt` / `make fmt-check` | `gofmt -s` on every Go file, writing or only checking |
 | `make vet` | `go vet` on the product and `tools/apicheck` |
 | `make build` | Builds `samuori`, `samuori-server`, `samuori-worker` and `samuori-web` into `bin/` |
-| `make test` | Focused Go regression tests with `-race`, and the license-policy tests; the seccomp and sandbox tests need Linux |
+| `make test` | Focused Go regression tests with `-race` (30-minute timeout: `internal/api` runs its tests one after another and takes about 10 minutes under the race detector), and the license-policy tests; the seccomp and sandbox tests need Linux |
 | `make test-vm` | macOS: syncs the tree into the `samuori-dev` Lima VM and runs every Go test there, including the Linux-only ones |
 | `make api-check` | OpenAPI validity, Samuori API rules and worker protocol rules via `tools/apicheck` |
 | `make yml-check` | Fails if any tracked or untracked file ends in `.yaml` outside the exceptions below |
