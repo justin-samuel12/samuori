@@ -8,7 +8,7 @@ image. Requirements and architecture live in `docs/` (index: `docs/README.md`); 
 ## Start of every session
 
 1. Read the "Current position" section of `docs/roadmap.md` to find the current milestone and its open tasks.
-2. Read only the docs relevant to the task. Check `docs/open-decisions.md` before choosing anything listed there.
+2. Follow `SKILLS.md`, the short working guide for everyone changing Samuori. Read only the docs relevant to the task. Check `docs/open-decisions.md` before choosing anything listed there.
 3. **Execution mode:** work through all 28 work packages in
    `docs/roadmap.md` continuously: implement, integrate, fix, update status and traceability, commit, then
    continue. Progress reports are not approval checkpoints. Ask only about material changes to architecture,
@@ -59,7 +59,7 @@ image. Requirements and architecture live in `docs/` (index: `docs/README.md`); 
 ## Repository layout (ADR 0009)
 
 ```
-README.md LICENSE NOTICE CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md Makefile go.mod   .github/workflows/
+README.md LICENSE NOTICE CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md SKILLS.md Makefile go.mod   .github/workflows/
 cmd/{samuori-server,samuori-worker,samuori-web,samuori}/   internal/<domain>/   internal/adapters/<kind>/<impl>/   internal/apiclient/
 api/openapi/  api/schemas/         migrations/{sqlite,postgres}/   ui/  (generated TS: ui/src/api/generated/)
 deploy/{compose,systemd,helm,dev}/   examples/   tools/   docs/
