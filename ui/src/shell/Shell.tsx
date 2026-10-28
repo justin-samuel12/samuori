@@ -33,6 +33,7 @@ import { useSession, type Me } from "../session/session";
 import { useHealth } from "./health";
 import { BrandMark } from "../components/BrandMark";
 import { Button } from "../components/Button";
+import { Dialog } from "../components/Dialog";
 import {
   accountNav,
   isCurrent,
@@ -531,20 +532,47 @@ function HealthPill() {
   );
 }
 
-/** Tells everyone signed in that Samuori was updated; reloading picks up the new portal. Nobody is signed out. */
+/** Tells everyone signed in that Samuori was updated, in a dialog wherever they are; the banner stays as a reminder
+ * after "Later". Reloading picks up the new portal; nobody is signed out. */
 function UpdatedBanner() {
   const [version, setVersion] = useState<string>();
-  useEffect(() => onServerUpdated(setVersion), []);
+  const [asking, setAsking] = useState(false);
+  useEffect(
+    () =>
+      onServerUpdated((v) => {
+        setVersion(v);
+        setAsking(true);
+      }),
+    [],
+  );
   if (!version) return null;
   return (
-    <div className="samuori-alert samuori-alert--info mb-6" role="status">
-      <div className="samuori-alert-body">
-        Samuori was updated to {version}. Reload to use the new version; you
-        stay signed in.{" "}
-        <Button variant="quiet" onPress={() => window.location.reload()}>
-          Reload
-        </Button>
+    <>
+      <Dialog
+        title="Samuori was updated"
+        size="confirm"
+        isOpen={asking}
+        onOpenChange={setAsking}
+      >
+        <p>
+          Version {version} is running. Reload to use it; you stay signed in.
+        </p>
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={() => setAsking(false)}>
+            Later
+          </Button>
+          <Button onPress={() => window.location.reload()}>Reload now</Button>
+        </div>
+      </Dialog>
+      <div className="samuori-alert samuori-alert--info mb-6" role="status">
+        <div className="samuori-alert-body">
+          Samuori was updated to {version}. Reload to use the new version; you
+          stay signed in.{" "}
+          <Button variant="quiet" onPress={() => window.location.reload()}>
+            Reload
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
