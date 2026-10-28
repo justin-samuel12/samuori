@@ -104,6 +104,9 @@ func (s *Service) OnDecision(subject string, h Handler) { s.handlers[subject] = 
 
 // Create records a pending approval inside the caller's transaction.
 func (s *Service) Create(ctx context.Context, tx *sql.Tx, orgID, projectID, subjectType, subjectID, summary, requestedBy string, ttl time.Duration) (Approval, error) {
+	if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+		return Approval{}, err
+	}
 	now := s.now().UTC()
 	a := Approval{ID: ids.New(), OrgID: orgID, ProjectID: projectID, SubjectType: subjectType, SubjectID: subjectID, State: Pending, Summary: summary, RequestedBy: requestedBy, CreatedAt: now, ExpiresAt: now.Add(ttl)}
 	_, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO approvals (id, org_id, project_id, subject_type, subject_id, state, summary, requested_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`),

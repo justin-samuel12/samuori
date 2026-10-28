@@ -153,6 +153,16 @@ publications and stored SBOMs are kept as well.
   then skips the build's artifacts and its failed publications' images, so the space is freed at the next run unless
   another build shares the content.
 
+## Purging a project (ADR 0058)
+
+An organization administrator purges an archived project (`POST /projects/{id}/purge`, with the project's name in
+`X-Samuori-Confirm`). It marks every upload and build of the project deleted, removes cache entries, live output,
+staged chunks, drafts, discovery results and conversion file contents, then deletes the snapshot manifests and files,
+images, logs, reports and validation outputs that nothing else references; holds and content shared with other
+projects are kept. Records with their IDs, digests and times and the audit trail stay. Images already pushed to
+external registries are not deleted. A purge that fails part-way answers 500 `purge_incomplete` and can be repeated;
+garbage collection no longer keeps a purged project's validation outputs either.
+
 ## Publication (WP21)
 
 Implemented for generic OCI registries: [`publication.md`](publication.md).

@@ -533,6 +533,10 @@ func (Unimplemented) UpdateProject(w http.ResponseWriter, r *http.Request, _ Pro
 	NotImplemented(w, r, "UpdateProject")
 }
 
+func (Unimplemented) ArchiveProject(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ArchiveProjectParams) {
+	NotImplemented(w, r, "ArchiveProject")
+}
+
 func (Unimplemented) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, _ ProjectId) {
 	NotImplemented(w, r, "ListBaseImageRequests")
 }
@@ -593,12 +597,20 @@ func (Unimplemented) RequestOutputException(w http.ResponseWriter, r *http.Reque
 	NotImplemented(w, r, "RequestOutputException")
 }
 
+func (Unimplemented) PurgeProject(w http.ResponseWriter, r *http.Request, _ ProjectId, _ PurgeProjectParams) {
+	NotImplemented(w, r, "PurgeProject")
+}
+
 func (Unimplemented) ListRepositoryRequests(w http.ResponseWriter, r *http.Request, _ ProjectId) {
 	NotImplemented(w, r, "ListRepositoryRequests")
 }
 
 func (Unimplemented) RequestRepository(w http.ResponseWriter, r *http.Request, _ ProjectId, _ RequestRepositoryParams) {
 	NotImplemented(w, r, "RequestRepository")
+}
+
+func (Unimplemented) RestoreProject(w http.ResponseWriter, r *http.Request, _ ProjectId, _ RestoreProjectParams) {
+	NotImplemented(w, r, "RestoreProject")
 }
 
 func (Unimplemented) ListSecretBindings(w http.ResponseWriter, r *http.Request, _ ProjectId) {

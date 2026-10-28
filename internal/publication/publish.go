@@ -17,6 +17,7 @@ import (
 	"samuori.invalid/samuori/internal/ids"
 	"samuori.invalid/samuori/internal/signing"
 	"samuori.invalid/samuori/internal/telemetry"
+	"samuori.invalid/samuori/internal/tenancy"
 	"samuori.invalid/samuori/internal/validation"
 )
 
@@ -88,6 +89,9 @@ func (s *Service) Request(ctx context.Context, p authz.Principal, roles []authz.
 	}
 	if !authz.Can(p, publishRoles, authz.Resource{OrgID: art.OrgID, TeamID: team, ProjectID: art.ProjectID}) {
 		return Publication{}, ErrForbidden
+	}
+	if err := tenancy.RequireActive(ctx, s.db, s.db.SQL, art.ProjectID); err != nil {
+		return Publication{}, err
 	}
 	var existing string
 	if err := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT id FROM publications WHERE requested_by = ? AND idempotency_key = ?`), p.ID, key).Scan(&existing); err == nil {
@@ -201,6 +205,9 @@ const ApprovalTTL = 72 * time.Hour
 
 // insert records a publication; destinations that require approval hold it in awaiting_approval.
 func (s *Service) insert(ctx context.Context, tx *sql.Tx, pub *Publication, d Destination, actor authz.Principal, key, requestID string) error {
+	if err := tenancy.RequireActive(ctx, s.db, tx, pub.ProjectID); err != nil {
+		return err
+	}
 	rawTags, _ := json.Marshal(pub.Tags)
 	if d.RequiresApproval {
 		if s.approvals == nil {
@@ -695,7 +702,7 @@ func (s *Service) AutoPublish(ctx context.Context, tx *sql.Tx, v validation.Run)
 	}
 	var mode, specID string
 	var rev int
-	if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT p.publication_mode, r.spec_id, r.spec_revision FROM build_runs r JOIN projects p ON p.id = r.project_id WHERE r.id = ?`), v.BuildRunID).Scan(&mode, &specID, &rev); err != nil {
+	if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT CASE WHEN p.state = 'active' THEN p.publication_mode ELSE 'manual' END, r.spec_id, r.spec_revision FROM build_runs r JOIN projects p ON p.id = r.project_id WHERE r.id = ?`), v.BuildRunID).Scan(&mode, &specID, &rev); err != nil {
 		return err
 	}
 	if mode != "automatic" {

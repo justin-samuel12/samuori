@@ -1409,8 +1409,12 @@ paths:
     get:
       tags: [tenancy]
       operationId: listProjects
+      description: "Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058)."
       x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
-      parameters: [{ $ref: "#/components/parameters/Cursor" }, { $ref: "#/components/parameters/Limit" }]
+      parameters:
+        - { $ref: "#/components/parameters/Cursor" }
+        - { $ref: "#/components/parameters/Limit" }
+        - { name: include, in: query, schema: { type: string, enum: [archived] } }
       responses:
         "200":
           description: Projects visible to the caller
@@ -1465,6 +1469,69 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Project" }
         "404": { $ref: "#/components/responses/Problem" }
+
+  /projects/{projectId}/archive:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    post:
+      tags: [tenancy]
+      operationId: archiveProject
+      description: "Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058)."
+      x-samuori-roles: [maintainer, administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectArchiveRequest" }
+      responses:
+        "200":
+          description: Archived
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectArchive" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /projects/{projectId}/restore:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    post:
+      tags: [tenancy]
+      operationId: restoreProject
+      description: "Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058)."
+      x-samuori-roles: [maintainer, administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "200":
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /projects/{projectId}/purge:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    post:
+      tags: [tenancy]
+      operationId: purgeProject
+      description: "Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058)."
+      x-samuori-roles: [administrator]
+      parameters:
+        - { $ref: "#/components/parameters/CsrfToken" }
+        - { name: X-Samuori-Confirm, in: header, schema: { type: string, maxLength: 512 } }
+      responses:
+        "200":
+          description: Purged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectPurge" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+        "500": { $ref: "#/components/responses/Problem" }
 
   /projects/{projectId}/images:
     parameters: [{ $ref: "#/components/parameters/ProjectId" }]
@@ -5087,6 +5154,46 @@ components:
         name: { type: string }
         publicationMode: { type: string, enum: [manual, automatic] }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
+        state: { type: string, enum: [active, archived, purged], description: "Archived and purged projects accept no new work (ADR 0058)." }
+        archivedAt: { $ref: "#/components/schemas/Timestamp" }
+        archivedBy: { type: string, description: Display name of who archived the project }
+        purgedAt: { $ref: "#/components/schemas/Timestamp" }
+        purgedBy: { type: string, description: Display name of who purged the project }
+    ProjectArchiveRequest:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 1024 }
+    ProjectArchive:
+      type: object
+      required: [project, revoked, cancelledBuilds, closedUploads, notes]
+      properties:
+        project: { $ref: "#/components/schemas/Project" }
+        revoked:
+          type: object
+          description: What archiving revoked or closed; none of it returns on restore.
+          required: [secretGrants, secretBindings, egressAllowances, destinations, federationGrants, pipelines, outputExceptions, requests]
+          properties:
+            secretGrants: { type: integer }
+            secretBindings: { type: integer }
+            egressAllowances: { type: integer }
+            destinations: { type: integer, description: Publication destinations no longer open to the project }
+            federationGrants: { type: integer }
+            pipelines: { type: integer, description: Pipelines disabled }
+            outputExceptions: { type: integer }
+            requests: { type: integer, description: Pending approvals and requests expired }
+        cancelledBuilds: { type: integer }
+        closedUploads: { type: integer }
+        notes: { type: array, items: { type: string }, description: Builds or uploads that could not be stopped }
+    ProjectPurge:
+      type: object
+      required: [project, snapshots, builds, removedBlobs, keptBlobs, externalCopies]
+      properties:
+        project: { $ref: "#/components/schemas/Project" }
+        snapshots: { type: integer, description: Uploads marked deleted by this purge }
+        builds: { type: integer, description: Builds marked deleted by this purge }
+        removedBlobs: { type: integer, description: Stored files removed }
+        keptBlobs: { type: integer, description: "Stored files kept because another project, a hold or a release still uses them" }
+        externalCopies: { type: string, description: States that images already pushed to external registries were not deleted }
     ProjectList:
       type: object
       required: [items]

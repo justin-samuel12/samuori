@@ -130,6 +130,9 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | tenancy | GET | `/projects` | `listProjects` | developer, maintainer, publisher, security-reviewer, administrator |
 | tenancy | POST | `/projects` | `createProject` | maintainer, administrator |
 | tenancy | GET | `/projects/{projectId}` | `getProject` | developer, maintainer, publisher, security-reviewer, administrator |
+| tenancy | POST | `/projects/{projectId}/archive` | `archiveProject` | maintainer, administrator (of the project; ADR 0058) |
+| tenancy | POST | `/projects/{projectId}/restore` | `restoreProject` | maintainer, administrator (of the project; ADR 0058) |
+| tenancy | POST | `/projects/{projectId}/purge` | `purgeProject` | administrator (organization; `X-Samuori-Confirm` = project name; ADR 0058) |
 | sources | POST | `/projects/{projectId}/uploads` | `createUploadSession` | developer, maintainer |
 | sources | PUT | `/uploads/{uploadId}/chunks/{index}` | `putUploadChunk` | developer, maintainer |
 | sources | POST | `/uploads/{uploadId}/commit` | `commitUpload` | developer, maintainer |

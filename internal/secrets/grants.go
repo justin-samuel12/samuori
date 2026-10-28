@@ -13,6 +13,7 @@ import (
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/ids"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 const Revoked = "revoked"
@@ -136,6 +137,9 @@ func (s *Service) CreateGrant(ctx context.Context, actor authz.Principal, req Gr
 	keys, _ := json.Marshal(fields)
 	id, now := ids.New(), s.now().UTC()
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, req.ProjectID); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO secret_grants (id, org_id, project_id, name, provider_id, provider_ref, version_policy, usage, pool_ids, status, reason, created_by, created_at, fields, allowed_secret_id)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
 			id, actor.OrgID, req.ProjectID, req.Name, t.prov.ID, t.ref, t.versionPolicy, req.Usage, string(pools), Active, req.Reason, actor.ID, now, string(keys), allowedID); err != nil {

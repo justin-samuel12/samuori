@@ -10,11 +10,43 @@ interface Binding {
   scopeId: string;
 }
 
-/** Where an object sits; a binding on its team or project, or any organization binding, covers it. */
+/**
+ * Where an object sits; a binding on its team or project, or any organization binding, covers it. archived marks
+ * an archived or purged project, which refuses new work (ADR 0058).
+ */
 export interface Scope {
   teamId?: string;
   projectId?: string;
+  archived?: boolean;
 }
+
+/** Operations that add work to a project; the server answers 409 for them while the project is archived. */
+export const projectWork: ReadonlySet<OperationId> = new Set<OperationId>([
+  "archiveProject",
+  "bindSecretGrant",
+  "commitUpload",
+  "createBuild",
+  "createKubeConversion",
+  "createSecretBinding",
+  "createSecretGrant",
+  "createSpec",
+  "createSpecRevision",
+  "createUploadSession",
+  "editKubeConversionFile",
+  "putUploadChunk",
+  "requestBaseImage",
+  "requestEgressAccess",
+  "requestOutputException",
+  "requestPublication",
+  "requestRepository",
+  "requestSecretBinding",
+  "rerunKubeConversion",
+  "saveWizardDraft",
+  "startDiscovery",
+  "startPipelineRun",
+  "startRevalidation",
+  "updateProject",
+]);
 
 /**
  * Whether the server's role check would let these bindings call an operation: the coarse check every request
@@ -42,6 +74,7 @@ export function can(
   op: OperationId,
   scope?: Scope,
 ): boolean {
+  if (scope?.archived && projectWork.has(op)) return false;
   return allows(operationAccess[op], me.roles, scope);
 }
 

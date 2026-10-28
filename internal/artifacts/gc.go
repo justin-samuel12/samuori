@@ -72,34 +72,38 @@ func (s *Store) Collect(ctx context.Context, p GCPolicy) (GCResult, error) {
 }
 
 // RemoveUnreferenced deletes those of the given blobs that nothing references any more, at once and without the grace
-// period, for content its owner deleted; blobs another snapshot, artifact or hold uses are kept.
-func (s *Store) RemoveUnreferenced(ctx context.Context, digests []string) (int, error) {
+// period, for content its owner deleted; blobs another snapshot, artifact or hold uses are kept. It reports how many
+// stored blobs it removed and how many it kept because they are referenced.
+func (s *Store) RemoveUnreferenced(ctx context.Context, digests []string) (removed, kept int, err error) {
 	keep, err := s.references(ctx)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	n := 0
 	for _, d := range digests {
 		if keep[d] {
+			kept++
 			continue
 		}
+		_, stored := s.blobs.ModTime(d)
 		if err := s.blobs.Delete(d); err != nil && !errors.Is(err, storage.ErrNotFound) {
-			return n, err
+			return removed, kept, err
 		}
-		n++
+		if stored {
+			removed++
+		}
 	}
-	return n, nil
+	return removed, kept, nil
 }
 
-// references is every blob something still uses: holds, artifacts, publications, open uploads and the manifests and
-// files of snapshots that are not deleted.
+// references is every blob something still uses: holds, artifacts, publications, open uploads, validation outputs of
+// projects that are not purged, and the manifests and files of snapshots that are not deleted.
 func (s *Store) references(ctx context.Context) (map[string]bool, error) {
 	keep := map[string]bool{}
 	for _, q := range []string{
 		`SELECT digest FROM artifact_holds WHERE released_at IS NULL`,
 		`SELECT digest FROM build_artifacts WHERE run_id NOT IN (SELECT run_id FROM build_run_deletions)`,
 		`SELECT artifact_digest FROM build_runs WHERE artifact_digest IS NOT NULL AND id NOT IN (SELECT run_id FROM build_run_deletions)`,
-		`SELECT output_digest FROM check_results WHERE output_digest IS NOT NULL`,
+		`SELECT output_digest FROM check_results WHERE output_digest IS NOT NULL AND validation_run_id NOT IN (SELECT v.id FROM validation_runs v JOIN projects p ON p.id = v.project_id WHERE p.state = 'purged')`,
 		`SELECT artifact_digest FROM publications WHERE artifact_id NOT IN (SELECT a.id FROM build_artifacts a JOIN build_run_deletions d ON d.run_id = a.run_id)`,
 		`SELECT digest FROM upload_chunks WHERE digest IS NOT NULL`,
 		`SELECT digest FROM releases`,

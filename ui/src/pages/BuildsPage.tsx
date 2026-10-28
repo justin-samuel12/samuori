@@ -89,7 +89,9 @@ export function BuildsPage() {
   const load = useCallback(async () => {
     const [b, p] = await Promise.all([
       api.GET("/builds", { params: { query: { limit: 100 } } }),
-      api.GET("/projects", { params: { query: { limit: 100 } } }),
+      api.GET("/projects", {
+        params: { query: { limit: 100, include: "archived" } },
+      }),
     ]);
     if (!b.data) {
       setError(describeError(b.error, "Builds could not be loaded."));

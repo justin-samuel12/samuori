@@ -26,6 +26,11 @@ import { BaseImageRequests, RequestBaseImageDialog } from "./BaseImageRequests";
 import { EgressAllowances } from "./EgressAllowances";
 import { WorkflowRail } from "../components/WorkflowRail";
 import type { OperationId } from "../api/generated/roles";
+import {
+  ArchiveProjectButton,
+  ArchivedBanner,
+  isArchived,
+} from "./ProjectLifecycle";
 
 export function ProjectPage({ id }: { id: string }) {
   const can = useCan();
@@ -54,7 +59,11 @@ export function ProjectPage({ id }: { id: string }) {
   const mode =
     publicationModes.find((m) => m.id === project.publicationMode) ??
     publicationModes[0];
-  const scope = { teamId: project.teamId, projectId: project.id };
+  const scope = {
+    teamId: project.teamId,
+    projectId: project.id,
+    archived: isArchived(project),
+  };
   return (
     <>
       <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
@@ -63,7 +72,19 @@ export function ProjectPage({ id }: { id: string }) {
         </Link>{" "}
         / {project.name}
       </nav>
-      <PageHeader title={project.name} />
+      <PageHeader
+        title={project.name}
+        actions={
+          can("archiveProject", scope) && (
+            <ArchiveProjectButton
+              project={project}
+              scope={scope}
+              onChange={setProject}
+            />
+          )
+        }
+      />
+      <ArchivedBanner project={project} scope={scope} onChange={setProject} />
       <dl className="samuori-details">
         <dt>Team</dt>
         <dd>{project.teamName ?? teamName(teams, project.teamId)}</dd>

@@ -29,6 +29,8 @@ column — ADR 0003. `validation_runs`/`check_results` are added by ADR 0003.)
 - Enforce uniqueness and referential integrity in the schema.
 - Separate current mutable metadata (project name, settings) from immutable execution records (snapshots, spec
   revisions, runs, attempts, artifacts, approvals, policy decisions, audit events).
+- A project is `active`, `archived` or `purged` (ADR 0058). Archived and purged projects accept no new work; every
+  create path checks the state inside its own transaction (`tenancy.RequireActive`). Projects are never deleted.
 - Explicit revision numbers and optimistic concurrency (`ETag` / `If-Match`) for spec and policy edits.
 - Audit is append-only at the application layer. A SQL row is **not** tamper-proof; where stronger guarantees are
   needed, ship tamper-evident copies externally. Never claim otherwise.

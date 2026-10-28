@@ -2406,6 +2406,27 @@ func (e ProjectPublicationMode) Valid() bool {
 	}
 }
 
+// Defines values for ProjectState.
+const (
+	ProjectStateActive   ProjectState = "active"
+	ProjectStateArchived ProjectState = "archived"
+	ProjectStatePurged   ProjectState = "purged"
+)
+
+// Valid indicates whether the value is a known member of the ProjectState enum.
+func (e ProjectState) Valid() bool {
+	switch e {
+	case ProjectStateActive:
+		return true
+	case ProjectStateArchived:
+		return true
+	case ProjectStatePurged:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectCreatePublicationMode.
 const (
 	ProjectCreatePublicationModeAutomatic ProjectCreatePublicationMode = "automatic"
@@ -4242,6 +4263,21 @@ func (e ListNotificationDeliveriesParamsState) Valid() bool {
 	case ListNotificationDeliveriesParamsStateDelivered:
 		return true
 	case ListNotificationDeliveriesParamsStatePending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectsParamsInclude.
+const (
+	ListProjectsParamsIncludeArchived ListProjectsParamsInclude = "archived"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectsParamsInclude enum.
+func (e ListProjectsParamsInclude) Valid() bool {
+	switch e {
+	case ListProjectsParamsIncludeArchived:
 		return true
 	default:
 		return false
@@ -7185,12 +7221,23 @@ type ProblemDetail struct {
 
 // Project defines model for Project.
 type Project struct {
-	CreatedAt Timestamp `json:"createdAt"`
+	ArchivedAt *Timestamp `json:"archivedAt,omitempty"`
+
+	// ArchivedBy Display name of who archived the project
+	ArchivedBy *string   `json:"archivedBy,omitempty"`
+	CreatedAt  Timestamp `json:"createdAt"`
 
 	// Id ULID
 	Id              Id                      `json:"id"`
 	Name            string                  `json:"name"`
 	PublicationMode *ProjectPublicationMode `json:"publicationMode,omitempty"`
+	PurgedAt        *Timestamp              `json:"purgedAt,omitempty"`
+
+	// PurgedBy Display name of who purged the project
+	PurgedBy *string `json:"purgedBy,omitempty"`
+
+	// State Archived and purged projects accept no new work (ADR 0058).
+	State *ProjectState `json:"state,omitempty"`
 
 	// TeamId ULID
 	TeamId Id `json:"teamId"`
@@ -7201,6 +7248,41 @@ type Project struct {
 
 // ProjectPublicationMode defines model for Project.PublicationMode.
 type ProjectPublicationMode string
+
+// ProjectState Archived and purged projects accept no new work (ADR 0058).
+type ProjectState string
+
+// ProjectArchive defines model for ProjectArchive.
+type ProjectArchive struct {
+	CancelledBuilds int `json:"cancelledBuilds"`
+	ClosedUploads   int `json:"closedUploads"`
+
+	// Notes Builds or uploads that could not be stopped
+	Notes   []string `json:"notes"`
+	Project Project  `json:"project"`
+
+	// Revoked What archiving revoked or closed; none of it returns on restore.
+	Revoked struct {
+		// Destinations Publication destinations no longer open to the project
+		Destinations     int `json:"destinations"`
+		EgressAllowances int `json:"egressAllowances"`
+		FederationGrants int `json:"federationGrants"`
+		OutputExceptions int `json:"outputExceptions"`
+
+		// Pipelines Pipelines disabled
+		Pipelines int `json:"pipelines"`
+
+		// Requests Pending approvals and requests expired
+		Requests       int `json:"requests"`
+		SecretBindings int `json:"secretBindings"`
+		SecretGrants   int `json:"secretGrants"`
+	} `json:"revoked"`
+}
+
+// ProjectArchiveRequest defines model for ProjectArchiveRequest.
+type ProjectArchiveRequest struct {
+	Reason *string `json:"reason,omitempty"`
+}
 
 // ProjectCreate defines model for ProjectCreate.
 type ProjectCreate struct {
@@ -7223,6 +7305,25 @@ type ProjectList struct {
 // ProjectLocations defines model for ProjectLocations.
 type ProjectLocations struct {
 	Locations []string `json:"locations"`
+}
+
+// ProjectPurge defines model for ProjectPurge.
+type ProjectPurge struct {
+	// Builds Builds marked deleted by this purge
+	Builds int `json:"builds"`
+
+	// ExternalCopies States that images already pushed to external registries were not deleted
+	ExternalCopies string `json:"externalCopies"`
+
+	// KeptBlobs Stored files kept because another project, a hold or a release still uses them
+	KeptBlobs int     `json:"keptBlobs"`
+	Project   Project `json:"project"`
+
+	// RemovedBlobs Stored files removed
+	RemovedBlobs int `json:"removedBlobs"`
+
+	// Snapshots Uploads marked deleted by this purge
+	Snapshots int `json:"snapshots"`
 }
 
 // ProjectUpdate defines model for ProjectUpdate.
@@ -9470,9 +9571,13 @@ type DryRunPolicyParams struct {
 
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
-	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor  *Cursor                    `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit   *Limit                     `form:"limit,omitempty" json:"limit,omitempty"`
+	Include *ListProjectsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 }
+
+// ListProjectsParamsInclude defines parameters for ListProjects.
+type ListProjectsParamsInclude string
 
 // CreateProjectParams defines parameters for CreateProject.
 type CreateProjectParams struct {
@@ -9482,6 +9587,12 @@ type CreateProjectParams struct {
 
 // UpdateProjectParams defines parameters for UpdateProject.
 type UpdateProjectParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// ArchiveProjectParams defines parameters for ArchiveProject.
+type ArchiveProjectParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -9527,8 +9638,21 @@ type RequestOutputExceptionParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// PurgeProjectParams defines parameters for PurgeProject.
+type PurgeProjectParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken      *CsrfToken `json:"X-CSRF-Token,omitempty"`
+	XSamuoriConfirm *string    `json:"X-Samuori-Confirm,omitempty"`
+}
+
 // RequestRepositoryParams defines parameters for RequestRepository.
 type RequestRepositoryParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// RestoreProjectParams defines parameters for RestoreProject.
+type RestoreProjectParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10238,6 +10362,9 @@ type CreateProjectJSONRequestBody = ProjectCreate
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// ArchiveProjectJSONRequestBody defines body for ArchiveProject for application/json ContentType.
+type ArchiveProjectJSONRequestBody = ProjectArchiveRequest
 
 // RequestBaseImageJSONRequestBody defines body for RequestBaseImage for application/json ContentType.
 type RequestBaseImageJSONRequestBody = BaseImageRequestCreate
@@ -11420,6 +11547,8 @@ type ClientInterface interface {
 	DryRunPolicy(ctx context.Context, policyId Id, params *DryRunPolicyParams, body DryRunPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjects performs a GET /projects (the `ListProjects` operationId) request.
+	//
+	// Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058).
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateProjectWithBody performs a POST /projects (the `CreateProject` operationId) request,
@@ -11444,6 +11573,18 @@ type ClientInterface interface {
 	//
 	// Changes project settings. Automatic publication also needs the spec to ask for it.
 	UpdateProject(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ArchiveProjectWithBody performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+	ArchiveProjectWithBody(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ArchiveProject performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+	ArchiveProject(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, body ArchiveProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListBaseImageRequests performs a GET /projects/{projectId}/base-image-requests (the `ListBaseImageRequests` operationId) request.
 	ListBaseImageRequests(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11543,6 +11684,11 @@ type ClientInterface interface {
 	// Requests an exception for require-exception findings under the given paths (ADR 0031). An administrator other than the requester decides it; block findings are never excepted.
 	RequestOutputException(ctx context.Context, projectId Id, params *RequestOutputExceptionParams, body RequestOutputExceptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PurgeProject performs a POST /projects/{projectId}/purge (the `PurgeProject` operationId) request.
+	//
+	// Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058).
+	PurgeProject(ctx context.Context, projectId ProjectId, params *PurgeProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRepositoryRequests performs a GET /projects/{projectId}/repository-requests (the `ListRepositoryRequests` operationId) request.
 	ListRepositoryRequests(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11557,6 +11703,11 @@ type ClientInterface interface {
 	//
 	// Asks administrators for a publication repository (D03). Creates an approval that only administrators decide, by fulfilling it with a destination open to the project or by rejecting it.
 	RequestRepository(ctx context.Context, projectId ProjectId, params *RequestRepositoryParams, body RequestRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RestoreProject performs a POST /projects/{projectId}/restore (the `RestoreProject` operationId) request.
+	//
+	// Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058).
+	RestoreProject(ctx context.Context, projectId ProjectId, params *RestoreProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSecretBindings performs a GET /projects/{projectId}/secret-bindings (the `ListSecretBindings` operationId) request.
 	ListSecretBindings(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14969,6 +15120,8 @@ func (c *Client) DryRunPolicy(ctx context.Context, policyId Id, params *DryRunPo
 }
 
 // ListProjects performs a GET /projects (the `ListProjects` operationId) request.
+//
+// Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058).
 func (c *Client) ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListProjectsRequest(c.Server, params)
 	if err != nil {
@@ -15044,6 +15197,38 @@ func (c *Client) UpdateProjectWithBody(ctx context.Context, projectId ProjectId,
 // Changes project settings. Automatic publication also needs the spec to ask for it.
 func (c *Client) UpdateProject(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProjectRequest(c.Server, projectId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ArchiveProjectWithBody performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
+// with any type of body and a specified content type.
+//
+// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+func (c *Client) ArchiveProjectWithBody(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewArchiveProjectRequestWithBody(c.Server, projectId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ArchiveProject performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+func (c *Client) ArchiveProject(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, body ArchiveProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewArchiveProjectRequest(c.Server, projectId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15352,6 +15537,21 @@ func (c *Client) RequestOutputException(ctx context.Context, projectId Id, param
 	return c.Client.Do(req)
 }
 
+// PurgeProject performs a POST /projects/{projectId}/purge (the `PurgeProject` operationId) request.
+//
+// Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058).
+func (c *Client) PurgeProject(ctx context.Context, projectId ProjectId, params *PurgeProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPurgeProjectRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRepositoryRequests performs a GET /projects/{projectId}/repository-requests (the `ListRepositoryRequests` operationId) request.
 func (c *Client) ListRepositoryRequests(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRepositoryRequestsRequest(c.Server, projectId)
@@ -15387,6 +15587,21 @@ func (c *Client) RequestRepositoryWithBody(ctx context.Context, projectId Projec
 // Asks administrators for a publication repository (D03). Creates an approval that only administrators decide, by fulfilling it with a destination open to the project or by rejecting it.
 func (c *Client) RequestRepository(ctx context.Context, projectId ProjectId, params *RequestRepositoryParams, body RequestRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestRepositoryRequest(c.Server, projectId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RestoreProject performs a POST /projects/{projectId}/restore (the `RestoreProject` operationId) request.
+//
+// Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058).
+func (c *Client) RestoreProject(ctx context.Context, projectId ProjectId, params *RestoreProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestoreProjectRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -24335,6 +24550,18 @@ func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Re
 
 		}
 
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -24476,6 +24703,68 @@ func NewUpdateProjectRequestWithBody(server string, projectId ProjectId, params 
 	}
 
 	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewArchiveProjectRequest calls the generic ArchiveProject builder with application/json body
+func NewArchiveProjectRequest(server string, projectId ProjectId, params *ArchiveProjectParams, body ArchiveProjectJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewArchiveProjectRequestWithBody(server, projectId, params, "application/json", bodyReader)
+}
+
+// NewArchiveProjectRequestWithBody constructs an http.Request for the ArchiveProject method, with any body, and a specified content type
+func NewArchiveProjectRequestWithBody(server string, projectId ProjectId, params *ArchiveProjectParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/archive", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -25213,6 +25502,66 @@ func NewRequestOutputExceptionRequestWithBody(server string, projectId Id, param
 	return req, nil
 }
 
+// NewPurgeProjectRequest constructs an http.Request for the PurgeProject method
+func NewPurgeProjectRequest(server string, projectId ProjectId, params *PurgeProjectParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/purge", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+		if params.XSamuoriConfirm != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "X-Samuori-Confirm", *params.XSamuoriConfirm, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Samuori-Confirm", headerParam1)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListRepositoryRequestsRequest constructs an http.Request for the ListRepositoryRequests method
 func NewListRepositoryRequestsRequest(server string, projectId ProjectId) (*http.Request, error) {
 	var err error
@@ -25290,6 +25639,55 @@ func NewRequestRepositoryRequestWithBody(server string, projectId ProjectId, par
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewRestoreProjectRequest constructs an http.Request for the RestoreProject method
+func NewRestoreProjectRequest(server string, projectId ProjectId, params *RestoreProjectParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/restore", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if params != nil {
 
@@ -32511,6 +32909,8 @@ type ClientWithResponsesInterface interface {
 
 	// ListProjectsWithResponse performs a GET /projects (the `ListProjects` operationId) request.
 	//
+	// Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058).
+	//
 	// Returns a wrapper object for the known response body format(s).
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
@@ -32542,6 +32942,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Changes project settings. Automatic publication also needs the spec to ask for it.
 	UpdateProjectWithResponse(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
+
+	// ArchiveProjectWithBodyWithResponse performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ArchiveProjectWithBodyWithResponse(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error)
+
+	// ArchiveProjectWithResponse performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+	ArchiveProjectWithResponse(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, body ArchiveProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error)
 
 	// ListBaseImageRequestsWithResponse performs a GET /projects/{projectId}/base-image-requests (the `ListBaseImageRequests` operationId) request.
 	//
@@ -32671,6 +33085,13 @@ type ClientWithResponsesInterface interface {
 	// Requests an exception for require-exception findings under the given paths (ADR 0031). An administrator other than the requester decides it; block findings are never excepted.
 	RequestOutputExceptionWithResponse(ctx context.Context, projectId Id, params *RequestOutputExceptionParams, body RequestOutputExceptionJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestOutputExceptionResponse, error)
 
+	// PurgeProjectWithResponse performs a POST /projects/{projectId}/purge (the `PurgeProject` operationId) request.
+	//
+	// Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PurgeProjectWithResponse(ctx context.Context, projectId ProjectId, params *PurgeProjectParams, reqEditors ...RequestEditorFn) (*PurgeProjectResponse, error)
+
 	// ListRepositoryRequestsWithResponse performs a GET /projects/{projectId}/repository-requests (the `ListRepositoryRequests` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -32689,6 +33110,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Asks administrators for a publication repository (D03). Creates an approval that only administrators decide, by fulfilling it with a destination open to the project or by rejecting it.
 	RequestRepositoryWithResponse(ctx context.Context, projectId ProjectId, params *RequestRepositoryParams, body RequestRepositoryJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRepositoryResponse, error)
+
+	// RestoreProjectWithResponse performs a POST /projects/{projectId}/restore (the `RestoreProject` operationId) request.
+	//
+	// Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RestoreProjectWithResponse(ctx context.Context, projectId ProjectId, params *RestoreProjectParams, reqEditors ...RequestEditorFn) (*RestoreProjectResponse, error)
 
 	// ListSecretBindingsWithResponse performs a GET /projects/{projectId}/secret-bindings (the `ListSecretBindings` operationId) request.
 	//
@@ -39955,6 +40383,75 @@ func (r UpdateProjectResponse) ContentType() string {
 	return ""
 }
 
+type ArchiveProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectArchive
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ArchiveProjectResponse) GetJSON200() *ProjectArchive {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ArchiveProjectResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ArchiveProjectResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ArchiveProjectResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r ArchiveProjectResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r ArchiveProjectResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ArchiveProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ArchiveProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ArchiveProjectResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListBaseImageRequestsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -40724,6 +41221,82 @@ func (r RequestOutputExceptionResponse) ContentType() string {
 	return ""
 }
 
+type PurgeProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectPurge
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Problem
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PurgeProjectResponse) GetJSON200() *ProjectPurge {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PurgeProjectResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PurgeProjectResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PurgeProjectResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r PurgeProjectResponse) GetJSON428() *Problem {
+	return r.JSON428
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PurgeProjectResponse) GetJSON500() *Problem {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r PurgeProjectResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PurgeProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PurgeProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PurgeProjectResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRepositoryRequestsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -40821,6 +41394,68 @@ func (r RequestRepositoryResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RequestRepositoryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RestoreProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Project
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RestoreProjectResponse) GetJSON200() *Project {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RestoreProjectResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RestoreProjectResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RestoreProjectResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r RestoreProjectResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RestoreProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RestoreProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RestoreProjectResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -48784,6 +49419,8 @@ func (c *ClientWithResponses) DryRunPolicyWithResponse(ctx context.Context, poli
 
 // ListProjectsWithResponse performs a GET /projects (the `ListProjects` operationId) request.
 //
+// Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058).
+//
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
 	rsp, err := c.ListProjects(ctx, params, reqEditors...)
@@ -48850,6 +49487,32 @@ func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseUpdateProjectResponse(rsp)
+}
+
+// ArchiveProjectWithBodyWithResponse performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
+// with any type of body and a specified content type.
+//
+// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ArchiveProjectWithBodyWithResponse(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error) {
+	rsp, err := c.ArchiveProjectWithBody(ctx, projectId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseArchiveProjectResponse(rsp)
+}
+
+// ArchiveProjectWithResponse performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058).
+func (c *ClientWithResponses) ArchiveProjectWithResponse(ctx context.Context, projectId ProjectId, params *ArchiveProjectParams, body ArchiveProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ArchiveProjectResponse, error) {
+	rsp, err := c.ArchiveProject(ctx, projectId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseArchiveProjectResponse(rsp)
 }
 
 // ListBaseImageRequestsWithResponse performs a GET /projects/{projectId}/base-image-requests (the `ListBaseImageRequests` operationId) request.
@@ -49100,6 +49763,19 @@ func (c *ClientWithResponses) RequestOutputExceptionWithResponse(ctx context.Con
 	return ParseRequestOutputExceptionResponse(rsp)
 }
 
+// PurgeProjectWithResponse performs a POST /projects/{projectId}/purge (the `PurgeProject` operationId) request.
+//
+// Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PurgeProjectWithResponse(ctx context.Context, projectId ProjectId, params *PurgeProjectParams, reqEditors ...RequestEditorFn) (*PurgeProjectResponse, error) {
+	rsp, err := c.PurgeProject(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePurgeProjectResponse(rsp)
+}
+
 // ListRepositoryRequestsWithResponse performs a GET /projects/{projectId}/repository-requests (the `ListRepositoryRequests` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -49135,6 +49811,19 @@ func (c *ClientWithResponses) RequestRepositoryWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseRequestRepositoryResponse(rsp)
+}
+
+// RestoreProjectWithResponse performs a POST /projects/{projectId}/restore (the `RestoreProject` operationId) request.
+//
+// Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RestoreProjectWithResponse(ctx context.Context, projectId ProjectId, params *RestoreProjectParams, reqEditors ...RequestEditorFn) (*RestoreProjectResponse, error) {
+	rsp, err := c.RestoreProject(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestoreProjectResponse(rsp)
 }
 
 // ListSecretBindingsWithResponse performs a GET /projects/{projectId}/secret-bindings (the `ListSecretBindings` operationId) request.
@@ -55447,6 +56136,60 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 	return response, nil
 }
 
+// ParseArchiveProjectResponse parses an HTTP response from a ArchiveProjectWithResponse call
+func ParseArchiveProjectResponse(rsp *http.Response) (*ArchiveProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ArchiveProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectArchive
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListBaseImageRequestsResponse parses an HTTP response from a ListBaseImageRequestsWithResponse call
 func ParseListBaseImageRequestsResponse(rsp *http.Response) (*ListBaseImageRequestsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -55991,6 +56734,67 @@ func ParseRequestOutputExceptionResponse(rsp *http.Response) (*RequestOutputExce
 	return response, nil
 }
 
+// ParsePurgeProjectResponse parses an HTTP response from a PurgeProjectWithResponse call
+func ParsePurgeProjectResponse(rsp *http.Response) (*PurgeProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PurgeProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectPurge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRepositoryRequestsResponse parses an HTTP response from a ListRepositoryRequestsWithResponse call
 func ParseListRepositoryRequestsResponse(rsp *http.Response) (*ListRepositoryRequestsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -56058,6 +56862,53 @@ func ParseRequestRepositoryResponse(rsp *http.Response) (*RequestRepositoryRespo
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRestoreProjectResponse parses an HTTP response from a RestoreProjectWithResponse call
+func ParseRestoreProjectResponse(rsp *http.Response) (*RestoreProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RestoreProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Project
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

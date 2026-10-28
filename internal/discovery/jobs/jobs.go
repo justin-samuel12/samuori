@@ -20,6 +20,7 @@ import (
 	"samuori.invalid/samuori/internal/operations"
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 const (
@@ -77,6 +78,9 @@ func (s *Service) Start(ctx context.Context, p authz.Principal, roles []authz.Ro
 	var op operations.Operation
 	id := ids.New()
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, snap.ProjectID); err != nil {
+			return err
+		}
 		var created bool
 		op, created, err = s.ops.Begin(ctx, tx, p, "discovery", id)
 		if err != nil || !created {

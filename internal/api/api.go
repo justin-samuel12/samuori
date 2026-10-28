@@ -12,6 +12,7 @@ import (
 	"samuori.invalid/samuori/internal/capacity"
 	"samuori.invalid/samuori/internal/cluster"
 	"samuori.invalid/samuori/internal/federation"
+	"samuori.invalid/samuori/internal/projects"
 
 	"samuori.invalid/samuori/internal/admission"
 	"samuori.invalid/samuori/internal/api/apigen"
@@ -145,6 +146,7 @@ type API struct {
 	topology       *topology.Store
 	providers      *providers.Store
 	kube           *kubeconvert.Service
+	projects       *projects.Service
 	topologyInfo   TopologyInfo
 	hookLimit      *limiter
 	confirmKey     []byte
@@ -162,7 +164,8 @@ type API struct {
 }
 
 func New(d Deps) *API {
-	a := &API{log: d.Log, health: d.Health, tenancy: d.Tenancy, auth: d.Auth, dataDir: d.DataDir, secureCookies: d.SecureCookies, sources: d.Sources, ops: d.Operations, discovery: d.Discovery, specs: d.Specs, admission: d.Admission, recipes: d.Recipes, policies: d.Policies, workers: d.Workers, db: d.DB, builds: d.Builds, secrets: d.Secrets, validations: d.Validations, publications: d.Publications, approvals: d.Approvals, signing: d.Signing, artifacts: d.Artifacts, bus: d.Bus, channel: d.Channel, rateLimit: d.RateLimit, retention: d.Retention, diagnostics: d.Diagnostics, telemetry: d.Telemetry, signIn: d.Identity, idStore: d.IdentityStore, imageSources: d.ImageSources, notify: d.Notify, pipelines: d.Pipelines, topology: d.Topology, providers: d.Providers, kube: d.Kube, topologyInfo: d.TopologyInfo, hookLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 30}), confirmKey: d.ConfirmKey, backups: d.Backups, cluster: d.Cluster, removals: d.Removals, clusterJoin: d.ClusterJoin, workerJoin: d.WorkerJoin, database: d.Database, selfUpdate: d.SelfUpdate, capacity: d.Capacity, joinLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 5}), federation: d.Federation, federationInfo: d.FederationInfo}
+	a := &API{log: d.Log, health: d.Health, tenancy: d.Tenancy, auth: d.Auth, dataDir: d.DataDir, secureCookies: d.SecureCookies, sources: d.Sources, ops: d.Operations, discovery: d.Discovery, specs: d.Specs, admission: d.Admission, recipes: d.Recipes, policies: d.Policies, workers: d.Workers, db: d.DB, builds: d.Builds, secrets: d.Secrets, validations: d.Validations, publications: d.Publications, approvals: d.Approvals, signing: d.Signing, artifacts: d.Artifacts, bus: d.Bus, channel: d.Channel, rateLimit: d.RateLimit, retention: d.Retention, diagnostics: d.Diagnostics, telemetry: d.Telemetry, signIn: d.Identity, idStore: d.IdentityStore, imageSources: d.ImageSources, notify: d.Notify, pipelines: d.Pipelines, topology: d.Topology, providers: d.Providers, kube: d.Kube, topologyInfo: d.TopologyInfo, hookLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 30}), confirmKey: d.ConfirmKey, backups: d.Backups, cluster: d.Cluster, removals: d.Removals, clusterJoin: d.ClusterJoin, workerJoin: d.WorkerJoin, database: d.Database, selfUpdate: d.SelfUpdate, capacity: d.Capacity, joinLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 5}), federation: d.Federation, federationInfo: d.FederationInfo,
+		projects: projects.NewService(d.DB, d.Tenancy, d.Approvals, d.Builds, d.Sources, d.Artifacts)}
 	if a.confirmKey == nil {
 		a.confirmKey = randomKey()
 	}
@@ -239,7 +242,8 @@ func (a *API) ListProjects(w http.ResponseWriter, r *http.Request, params apigen
 	if params.Cursor != nil {
 		cursor = *params.Cursor
 	}
-	projects, err := a.tenancy.ListProjects(r.Context(), principal(r), operationRoles(r.Context()), cursor, limit+1)
+	includeArchived := params.Include != nil && *params.Include == apigen.ListProjectsParamsIncludeArchived
+	projects, err := a.tenancy.ListProjects(r.Context(), principal(r), operationRoles(r.Context()), cursor, limit+1, includeArchived)
 	if err != nil {
 		a.internalError(w, r, err)
 		return
@@ -251,7 +255,7 @@ func (a *API) ListProjects(w http.ResponseWriter, r *http.Request, params apigen
 		out.NextCursor = &next
 	}
 	for _, p := range projects {
-		out.Items = append(out.Items, toProject(p))
+		out.Items = append(out.Items, a.toProject(r.Context(), p))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -262,7 +266,7 @@ func (a *API) GetProject(w http.ResponseWriter, r *http.Request, id apigen.Proje
 		a.tenancyError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toProject(p))
+	writeJSON(w, http.StatusOK, a.toProject(r.Context(), p))
 }
 
 func (a *API) CreateProject(w http.ResponseWriter, r *http.Request, _ apigen.CreateProjectParams) {
@@ -280,14 +284,23 @@ func (a *API) CreateProject(w http.ResponseWriter, r *http.Request, _ apigen.Cre
 		a.tenancyError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toProject(p))
+	writeJSON(w, http.StatusCreated, a.toProject(r.Context(), p))
 }
 
-func toProject(p tenancy.Project) apigen.Project {
+func (a *API) toProject(ctx context.Context, p tenancy.Project) apigen.Project {
 	mode := apigen.ProjectPublicationMode(p.PublicationMode)
-	out := apigen.Project{Id: p.ID, TeamId: p.TeamID, Name: p.Name, PublicationMode: &mode, CreatedAt: p.CreatedAt}
+	state := apigen.ProjectState(p.State)
+	out := apigen.Project{Id: p.ID, TeamId: p.TeamID, Name: p.Name, PublicationMode: &mode, CreatedAt: p.CreatedAt, State: &state, ArchivedAt: p.ArchivedAt, PurgedAt: p.PurgedAt}
 	if p.TeamName != "" {
 		out.TeamName = &p.TeamName
+	}
+	if p.ArchivedBy != "" {
+		name := a.displayName(ctx, p.ArchivedBy)
+		out.ArchivedBy = &name
+	}
+	if p.PurgedBy != "" {
+		name := a.displayName(ctx, p.PurgedBy)
+		out.PurgedBy = &name
 	}
 	return out
 }
@@ -307,6 +320,7 @@ func (a *API) tenancyError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, tenancy.ErrNotFound):
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "not found")
+	case refuseArchived(w, err):
 	case errors.Is(err, tenancy.ErrForbidden):
 		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", "your roles do not permit this operation here")
 	case errors.Is(err, tenancy.ErrConflict):
@@ -317,6 +331,9 @@ func (a *API) tenancyError(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func (a *API) internalError(w http.ResponseWriter, r *http.Request, err error) {
+	if refuseArchived(w, err) {
+		return
+	}
 	a.log.Error("request failed", "id", w.Header().Get("X-Request-ID"), "method", r.Method, "path", r.URL.Path, "error", err)
 	apigen.WriteProblem(w, http.StatusInternalServerError, "internal", "internal error; quote request ID "+w.Header().Get("X-Request-ID")+" to an operator")
 }

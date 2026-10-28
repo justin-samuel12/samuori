@@ -5,6 +5,12 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Project archive, restore and purge (2026-10-28, owner decision, ADR 0058).** Maintainers and administrators
+  archive a project (hidden from lists, new work refused with 409, grants revoked and audited, queued and running
+  builds cancelled) and restore it without its grants; administrators purge an archived project with its typed name,
+  which deletes its stored files and keeps its records and audit trail. Runnable: API and UI; `TestProjectArchiveRestorePurge`
+  and the `can` test pass on SQLite. Not yet run: PostgreSQL, a browser check, and a purge with a real worker's
+  images or a remote blob store.
 - **Name and brand (2026-10-27, owner decision, ADR 0057).** The logo and palette come from `docs/brand/`; the UI
   loading indicators animate the mark.
 - **Tests (ADR 0039 as amended).** All tests were removed on 2026-10-20, and focused regression tests for critical

@@ -64,3 +64,4 @@ owner approval.
 | [0055](0055-frontend-and-backend-in-one-image.md) | A frontend and a backend in one image | Accepted (provisional) |
 | [0056](0056-apache-2-license.md) | Samuori is licensed under Apache-2.0 | Accepted |
 | [0057](0057-samuori-name-and-brand.md) | The product is named Samuori | Accepted |
+| [0058](0058-archiving-restoring-and-purging-projects.md) | Archiving, restoring and purging projects | Accepted (provisional) |

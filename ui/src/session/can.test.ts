@@ -81,3 +81,25 @@ test("developers download only when the organization allows it", () => {
   const reviewer = { roles: [bind("security-reviewer", "organization", "o1")] };
   assert.equal(canDownload({ ...reviewer, developerDownloads: true }), false);
 });
+
+test("an archived project offers no new work; its maintainers and administrators manage it", () => {
+  const maintainer = { roles: [bind("maintainer", "team", "t1")] };
+  const live = { teamId: "t1", projectId: "p1" };
+  const archived = { ...live, archived: true };
+  assert.equal(can(dev, "createBuild", live), true);
+  assert.equal(can(dev, "createBuild", archived), false);
+  assert.equal(can(dev, "createUploadSession", archived), false);
+  assert.equal(can(dev, "listBuilds", archived), true);
+  assert.equal(can(dev, "archiveProject", live), false);
+  assert.equal(can(dev, "restoreProject", archived), false);
+  assert.equal(can(maintainer, "archiveProject", live), true);
+  assert.equal(can(maintainer, "archiveProject", archived), false);
+  assert.equal(can(maintainer, "restoreProject", archived), true);
+  assert.equal(
+    can(maintainer, "archiveProject", { teamId: "t2", projectId: "p3" }),
+    false,
+    "another team's maintainer",
+  );
+  assert.equal(can(maintainer, "purgeProject", archived), false);
+  assert.equal(can(admin, "purgeProject", archived), true);
+});

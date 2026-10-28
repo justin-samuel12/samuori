@@ -39,6 +39,7 @@ func (a *API) RequestBaseImage(w http.ResponseWriter, r *http.Request, projectID
 	}
 	x, err := a.approvals.RequestBaseImage(r.Context(), principal(r), operationRoles(r.Context()), projectID, in.Repository, in.Justification)
 	switch {
+	case refuseArchived(w, err):
 	case errors.Is(err, approvals.ErrNotFound):
 		a.approvalError(w, r, err)
 	case errors.Is(err, approvals.ErrAlreadyAllowed):

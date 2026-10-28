@@ -13,6 +13,7 @@ import (
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/buildspec"
 	"samuori.invalid/samuori/internal/secretscan"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 // Rendering is what the editor needs to switch views: the normalized document, its YAML and any issues.
@@ -103,6 +104,9 @@ func (s *Service) SaveDraft(ctx context.Context, p authz.Principal, roles []auth
 	}
 	d := Draft{Version: version + 1, Data: data, UpdatedAt: time.Now().UTC()}
 	err := s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+			return err
+		}
 		var res sql.Result
 		var err error
 		if version == 0 {

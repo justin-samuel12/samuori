@@ -78,6 +78,9 @@ func (a *API) RequestSecretBinding(w http.ResponseWriter, r *http.Request, proje
 		return
 	}
 	ap, err := a.approvals.RequestBinding(r.Context(), principal(r), operationRoles(r.Context()), projectID, in.LogicalId, in.Justification)
+	if refuseArchived(w, err) {
+		return
+	}
 	if errors.Is(err, approvals.ErrNotFound) {
 		a.approvalError(w, r, err)
 		return
@@ -99,7 +102,7 @@ func (a *API) UpdateProject(w http.ResponseWriter, r *http.Request, id apigen.Pr
 		a.tenancyError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toProject(p))
+	writeJSON(w, http.StatusOK, a.toProject(r.Context(), p))
 }
 
 func (a *API) ListProjectImages(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListProjectImagesParams) {

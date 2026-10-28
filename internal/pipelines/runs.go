@@ -187,6 +187,9 @@ func (s *Service) enqueue(ctx context.Context, p Pipeline, trigger, ref, commit,
 				return ErrBusy
 			}
 		}
+		if err := tenancy.RequireActive(ctx, s.db, tx, p.ProjectID); err != nil {
+			return err
+		}
 		now := s.now().UTC()
 		id := ids.New()
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO pipeline_runs (id, org_id, pipeline_id, project_id, trigger, ref, requested_commit, delivery_id, state, failure_message, requested_by, created_at, updated_at)

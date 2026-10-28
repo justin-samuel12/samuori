@@ -758,6 +758,9 @@ func (s *Service) revalidate(ctx context.Context, p authz.Principal, roles []aut
 	}
 	id, now := ids.New(), s.now().UTC()
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, a.ProjectID); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO validation_runs (id, org_id, project_id, artifact_id, artifact_digest, build_run_id, source_run_id, trigger_kind, state, plan, policy_versions, requested_by, idempotency_key, created_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, '{}', ?, ?, ?)`), id, a.OrgID, a.ProjectID, a.ID, a.Digest, a.BuildRunID, source, trigger, plan, p.ID, key, now); err != nil {
 			return err

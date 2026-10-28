@@ -1275,6 +1275,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Active projects visible to the caller. include=archived adds archived and purged ones (ADR 0058). */
         get: operations["listProjects"];
         put?: never;
         post: operations["createProject"];
@@ -1301,6 +1302,63 @@ export interface paths {
         head?: never;
         /** @description Changes project settings. Automatic publication also needs the spec to ask for it. */
         patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/projects/{projectId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Hides the project and refuses new work for it with 409. Revokes its secret grants and bindings, egress allowances, destination access, federation grants and pipelines, expires its pending requests and cancels its unfinished builds; each is audited. Restoring does not bring grants back (ADR 0058). */
+        post: operations["archiveProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Makes an archived project usable again, with no grants. A purged project cannot be restored (ADR 0058). */
+        post: operations["restoreProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Deletes what an archived project stored in internal storage and keeps its records and audit trail. X-Samuori-Confirm must be the project's name; without it the answer is 428. Images already pushed to external registries are not deleted. Safe to run again after a partial failure (ADR 0058). */
+        post: operations["purgeProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/projects/{projectId}/images": {
@@ -4239,6 +4297,54 @@ export interface components {
             /** @enum {string} */
             publicationMode?: "manual" | "automatic";
             createdAt: components["schemas"]["Timestamp"];
+            /**
+             * @description Archived and purged projects accept no new work (ADR 0058).
+             * @enum {string}
+             */
+            state?: "active" | "archived" | "purged";
+            archivedAt?: components["schemas"]["Timestamp"];
+            /** @description Display name of who archived the project */
+            archivedBy?: string;
+            purgedAt?: components["schemas"]["Timestamp"];
+            /** @description Display name of who purged the project */
+            purgedBy?: string;
+        };
+        ProjectArchiveRequest: {
+            reason?: string;
+        };
+        ProjectArchive: {
+            project: components["schemas"]["Project"];
+            /** @description What archiving revoked or closed; none of it returns on restore. */
+            revoked: {
+                secretGrants: number;
+                secretBindings: number;
+                egressAllowances: number;
+                /** @description Publication destinations no longer open to the project */
+                destinations: number;
+                federationGrants: number;
+                /** @description Pipelines disabled */
+                pipelines: number;
+                outputExceptions: number;
+                /** @description Pending approvals and requests expired */
+                requests: number;
+            };
+            cancelledBuilds: number;
+            closedUploads: number;
+            /** @description Builds or uploads that could not be stopped */
+            notes: string[];
+        };
+        ProjectPurge: {
+            project: components["schemas"]["Project"];
+            /** @description Uploads marked deleted by this purge */
+            snapshots: number;
+            /** @description Builds marked deleted by this purge */
+            builds: number;
+            /** @description Stored files removed */
+            removedBlobs: number;
+            /** @description Stored files kept because another project, a hold or a release still uses them */
+            keptBlobs: number;
+            /** @description States that images already pushed to external registries were not deleted */
+            externalCopies: string;
         };
         ProjectList: {
             items: components["schemas"]["Project"][];
@@ -9141,6 +9247,7 @@ export interface operations {
             query?: {
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
+                include?: "archived";
             };
             header?: never;
             path?: never;
@@ -9237,6 +9344,98 @@ export interface operations {
                 };
             };
             404: components["responses"]["Problem"];
+        };
+    };
+    archiveProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ProjectArchiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Archived */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectArchive"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    restoreProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    purgeProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                "X-Samuori-Confirm"?: string;
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Purged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPurge"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+            500: components["responses"]["Problem"];
         };
     };
     listProjectImages: {

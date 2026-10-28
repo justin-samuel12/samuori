@@ -336,6 +336,9 @@ func (s *Service) Create(ctx context.Context, p authz.Principal, roles []authz.R
 	}
 	platforms, _ := json.Marshal(r.Platforms)
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, r.ProjectID); err != nil {
+			return err
+		}
 		if planRaw != nil {
 			if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO build_plans (digest, org_id, plan, created_at) SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM build_plans WHERE digest = ?)`),
 				r.PlanDigest, p.OrgID, string(planRaw), now, r.PlanDigest); err != nil {

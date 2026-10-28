@@ -172,7 +172,7 @@ func (a *API) DeleteSnapshot(w http.ResponseWriter, r *http.Request, id apigen.S
 		a.sourcesError(w, r, err)
 		return
 	}
-	if _, err := a.artifacts.RemoveUnreferenced(r.Context(), digests); err != nil {
+	if _, _, err := a.artifacts.RemoveUnreferenced(r.Context(), digests); err != nil {
 		a.log.Error("removing a deleted upload's files", "snapshot", id, "error", err)
 	}
 	w.WriteHeader(http.StatusNoContent)

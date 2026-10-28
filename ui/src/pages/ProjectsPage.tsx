@@ -4,8 +4,14 @@ import { Form, Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
-import { RadioGroup, Select, TextField } from "../components/Field";
-import { Alert, EmptyState, Loading, PageHeader } from "../components/Feedback";
+import { Checkbox, RadioGroup, Select, TextField } from "../components/Field";
+import {
+  Alert,
+  Badge,
+  EmptyState,
+  Loading,
+  PageHeader,
+} from "../components/Feedback";
 import { Table } from "../components/Table";
 import { navigate } from "../router";
 import { useCan } from "../session/session";
@@ -35,6 +41,7 @@ export function ProjectsPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [error, setError] = useState<string>();
   const [creating, setCreating] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const can = useCan();
   // Creating a project needs maintainer or administrator on its team or the organization, not on another project.
   const creatable = (teams ?? []).filter((t) =>
@@ -42,21 +49,32 @@ export function ProjectsPage() {
   );
   const canCreate = creatable.length > 0;
 
-  const load = useCallback(async (after?: string) => {
-    const { data, error, response } = await api.GET("/projects", {
-      params: { query: { limit: 50, cursor: after } },
-    });
-    if (response.status === 403) {
-      setItems([]);
-      return;
-    }
-    if (!data) {
-      setError(describeError(error, "Projects could not be loaded."));
-      return;
-    }
-    setItems((prev) => (after ? [...(prev ?? []), ...data.items] : data.items));
-    setCursor(data.nextCursor ?? null);
-  }, []);
+  const load = useCallback(
+    async (after?: string) => {
+      const { data, error, response } = await api.GET("/projects", {
+        params: {
+          query: {
+            limit: 50,
+            cursor: after,
+            include: showArchived ? "archived" : undefined,
+          },
+        },
+      });
+      if (response.status === 403) {
+        setItems([]);
+        return;
+      }
+      if (!data) {
+        setError(describeError(error, "Projects could not be loaded."));
+        return;
+      }
+      setItems((prev) =>
+        after ? [...(prev ?? []), ...data.items] : data.items,
+      );
+      setCursor(data.nextCursor ?? null);
+    },
+    [showArchived],
+  );
 
   useLoader(load);
 
@@ -72,6 +90,9 @@ export function ProjectsPage() {
           )
         }
       />
+      <Checkbox isSelected={showArchived} onChange={setShowArchived}>
+        Show archived projects
+      </Checkbox>
       {error && <Alert>{error}</Alert>}
       {!items && !error && <Loading />}
       {items && (
@@ -84,9 +105,15 @@ export function ProjectsPage() {
               name: "Name",
               isRowHeader: true,
               render: (p) => (
-                <Link href={`/projects/${p.id}`} className="samuori-link">
-                  {p.name}
-                </Link>
+                <span className="inline-flex items-center gap-2">
+                  <Link href={`/projects/${p.id}`} className="samuori-link">
+                    {p.name}
+                  </Link>
+                  {p.state === "archived" && (
+                    <Badge tone="warn">Archived</Badge>
+                  )}
+                  {p.state === "purged" && <Badge tone="bad">Purged</Badge>}
+                </span>
               ),
             },
             {

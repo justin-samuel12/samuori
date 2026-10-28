@@ -56,6 +56,9 @@ func (a *API) RequestRepository(w http.ResponseWriter, r *http.Request, projectI
 		return
 	}
 	x, err := a.approvals.RequestRepository(r.Context(), principal(r), operationRoles(r.Context()), projectID, in.RegistryID, in.Repository, in.Justification)
+	if refuseArchived(w, err) {
+		return
+	}
 	if errors.Is(err, approvals.ErrNotFound) {
 		a.approvalError(w, r, err)
 		return

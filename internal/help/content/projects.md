@@ -13,6 +13,18 @@ apply to it.
 On **Projects**, choose **New project**, pick the team and a name (lower-case letters, digits and dashes), and
 whether approved images are published manually or automatically.
 
+## Archive, restore or purge a project
+
+A project's maintainers and administrators can **Archive project** on its page. An archived project is hidden from
+**Projects** (turn on **Show archived projects** to see it) and accepts no new uploads, specs, builds, publications
+or requests. Queued and running builds are cancelled. Its secret grants and bindings, egress allowances, destination
+access and pipelines are revoked and pending requests are closed. **Restore** makes it usable again, but the grants
+do not come back: an administrator must grant them again.
+
+An administrator can **Purge** an archived project by typing its name. This deletes the uploads, images, logs,
+reports and SBOMs it stored, keeps its name, records and audit trail, and cannot be undone. A purged project cannot
+be restored. Images already pushed to external registries are not deleted.
+
 ## On the project page
 
 - **Source uploads:** every upload, newest first.

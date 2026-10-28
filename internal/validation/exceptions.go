@@ -13,6 +13,7 @@ import (
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/ids"
 	"samuori.invalid/samuori/internal/imagescan"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 // Exception lets require-exception findings of a project pass, for paths matching its patterns, until it expires
@@ -84,6 +85,9 @@ func (s *Service) RequestException(ctx context.Context, actor authz.Principal, r
 	cl, _ := json.Marshal(e.Classes)
 	pp, _ := json.Marshal(e.PathPatterns)
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO output_exceptions (id, org_id, project_id, classes, path_patterns, justification, state, requested_by, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
 			e.ID, e.OrgID, projectID, string(cl), string(pp), justification, e.State, actor.ID, e.ExpiresAt, now); err != nil {
 			return err

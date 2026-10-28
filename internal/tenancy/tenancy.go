@@ -19,6 +19,14 @@ var (
 	ErrNotFound  = errors.New("not found")
 	ErrForbidden = errors.New("forbidden")
 	ErrConflict  = errors.New("conflict")
+	// ErrArchived refuses new work on a project that is archived or purged (ADR 0058).
+	ErrArchived = errors.New("this project is archived; restore it before adding uploads, specs, builds, publications or requests")
+)
+
+const (
+	ProjectActive   = "active"
+	ProjectArchived = "archived"
+	ProjectPurged   = "purged"
 )
 
 type Team struct {
@@ -31,6 +39,10 @@ type Project struct {
 	// TeamName is set when the project is read; anyone who may see a project may see its team's name.
 	TeamName             string
 	CreatedAt, UpdatedAt time.Time
+	// State is active, archived or purged; ArchivedBy and PurgedBy are user IDs (ADR 0058).
+	State                string
+	ArchivedBy, PurgedBy string
+	ArchivedAt, PurgedAt *time.Time
 }
 
 type Store struct{ db *db.DB }
@@ -255,10 +267,14 @@ func (s *Store) ListTeams(ctx context.Context, p authz.Principal) ([]Team, error
 	return out, rows.Err()
 }
 
-// ListProjects returns projects visible to p through roles, ordered by ID, starting after cursor.
-func (s *Store) ListProjects(ctx context.Context, p authz.Principal, roles []authz.Role, cursor string, limit int) ([]Project, error) {
+// ListProjects returns projects visible to p through roles, ordered by ID, starting after cursor. Archived and
+// purged projects are left out unless includeArchived is set.
+func (s *Store) ListProjects(ctx context.Context, p authz.Principal, roles []authz.Role, cursor string, limit int, includeArchived bool) ([]Project, error) {
 	where, args := s.visibility(p, roles, "team_id", "id")
-	q := `SELECT id, org_id, team_id, name, publication_mode, created_at, updated_at, COALESCE((SELECT t.name FROM teams t WHERE t.id = projects.team_id), '') FROM projects WHERE org_id = ? AND id > ? AND (` + where + `) ORDER BY id LIMIT ?`
+	if !includeArchived {
+		where = "(" + where + ") AND state = 'active'"
+	}
+	q := `SELECT ` + projectCols + ` FROM projects WHERE org_id = ? AND id > ? AND (` + where + `) ORDER BY id LIMIT ?`
 	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q), append(append([]any{p.OrgID, cursor}, args...), limit)...)
 	if err != nil {
 		return nil, err
@@ -276,7 +292,7 @@ func (s *Store) ListProjects(ctx context.Context, p authz.Principal, roles []aut
 }
 
 func (s *Store) GetProject(ctx context.Context, p authz.Principal, roles []authz.Role, id string) (Project, error) {
-	row := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT id, org_id, team_id, name, publication_mode, created_at, updated_at, COALESCE((SELECT t.name FROM teams t WHERE t.id = projects.team_id), '') FROM projects WHERE id = ? AND org_id = ?`), id, p.OrgID)
+	row := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT `+projectCols+` FROM projects WHERE id = ? AND org_id = ?`), id, p.OrgID)
 	pr, err := scanProject(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Project{}, ErrNotFound
@@ -310,7 +326,7 @@ func (s *Store) CreateProject(ctx context.Context, p authz.Principal, teamID, na
 		mode = "manual"
 	}
 	now := time.Now().UTC()
-	pr := Project{ID: ids.New(), OrgID: orgID, TeamID: teamID, Name: name, PublicationMode: mode, CreatedAt: now, UpdatedAt: now}
+	pr := Project{ID: ids.New(), OrgID: orgID, TeamID: teamID, Name: name, PublicationMode: mode, CreatedAt: now, UpdatedAt: now, State: ProjectActive}
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO projects (id, org_id, team_id, name, publication_mode, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`),
 			pr.ID, pr.OrgID, pr.TeamID, pr.Name, pr.PublicationMode, pr.CreatedAt, pr.UpdatedAt); err != nil {
@@ -366,10 +382,46 @@ func (s *Store) visibility(p authz.Principal, roles []authz.Role, teamCol, proje
 
 type scanner interface{ Scan(...any) error }
 
+const projectCols = `id, org_id, team_id, name, publication_mode, created_at, updated_at, COALESCE((SELECT t.name FROM teams t WHERE t.id = projects.team_id), ''), state, COALESCE(archived_by, ''), archived_at, COALESCE(purged_by, ''), purged_at`
+
 func scanProject(r scanner) (Project, error) {
 	var p Project
-	err := r.Scan(&p.ID, &p.OrgID, &p.TeamID, &p.Name, &p.PublicationMode, &p.CreatedAt, &p.UpdatedAt, &p.TeamName)
+	var archived, purged sql.NullTime
+	err := r.Scan(&p.ID, &p.OrgID, &p.TeamID, &p.Name, &p.PublicationMode, &p.CreatedAt, &p.UpdatedAt, &p.TeamName, &p.State, &p.ArchivedBy, &archived, &p.PurgedBy, &purged)
+	if archived.Valid {
+		p.ArchivedAt = &archived.Time
+	}
+	if purged.Valid {
+		p.PurgedAt = &purged.Time
+	}
 	return p, err
+}
+
+// Querier is a *sql.DB or *sql.Tx.
+type Querier interface {
+	QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row
+}
+
+// RequireActive is the one guard every path that creates work for a project calls inside its transaction; it
+// returns ErrArchived unless the project is active (ADR 0058). On PostgreSQL it share-locks the row so an archive
+// that commits first is seen.
+func RequireActive(ctx context.Context, d *db.DB, q Querier, projectID string) error {
+	query := `SELECT state FROM projects WHERE id = ?`
+	if d.Dialect == db.Postgres {
+		query += ` FOR SHARE`
+	}
+	var state string
+	err := q.QueryRowContext(ctx, d.Rebind(query), projectID).Scan(&state)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if state != ProjectActive {
+		return ErrArchived
+	}
+	return nil
 }
 
 func conflict(err error) error {
@@ -398,6 +450,9 @@ func (s *Store) SetPublicationMode(ctx context.Context, p authz.Principal, id, m
 	}
 	now := time.Now().UTC()
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := RequireActive(ctx, s.db, tx, id); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE projects SET publication_mode = ?, updated_at = ? WHERE id = ?`), mode, now, id); err != nil {
 			return err
 		}

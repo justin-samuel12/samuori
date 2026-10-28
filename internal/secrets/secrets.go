@@ -29,6 +29,7 @@ import (
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 const (
@@ -697,6 +698,9 @@ func (s *Service) insertBinding(ctx context.Context, actor authz.Principal, proj
 		grant = grantID
 	}
 	err := s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE secret_bindings SET status = ?, version = version + 1, reason = ?, updated_by = ?, updated_at = ? WHERE project_id = ? AND logical_id = ? AND status = ?`),
 			Disabled, "replaced by "+id, actor.ID, now, projectID, logical, Active); err != nil {
 			return err

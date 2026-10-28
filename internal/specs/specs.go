@@ -100,6 +100,9 @@ func (s *Service) Create(ctx context.Context, p authz.Principal, roles []authz.R
 	sp := Spec{ID: ids.New(), ProjectID: projectID, Name: name, LatestRevision: 1, CreatedAt: now}
 	rev := Revision{SpecID: sp.ID, Revision: 1, Digest: digest, Document: canonical, EditorMode: mode, Note: note, CreatedBy: p.ID, CreatedAt: now}
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO build_specs (id, org_id, project_id, name, latest_revision, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?)`),
 			sp.ID, p.OrgID, projectID, name, p.ID, now, now); err != nil {
 			if isUnique(err) {
@@ -128,6 +131,9 @@ func (s *Service) AddRevision(ctx context.Context, p authz.Principal, roles []au
 	now := time.Now().UTC()
 	rev := Revision{SpecID: specID, Revision: sp.LatestRevision + 1, Digest: digest, Document: canonical, EditorMode: mode, Note: note, CreatedBy: p.ID, CreatedAt: now}
 	err = s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, sp.ProjectID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE build_specs SET latest_revision = ?, updated_at = ? WHERE id = ? AND latest_revision = ?`), rev.Revision, now, specID, sp.LatestRevision)
 		if err != nil {
 			return err

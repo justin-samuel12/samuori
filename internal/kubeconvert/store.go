@@ -503,6 +503,9 @@ func inlineManifest(files map[string]string) sources.Manifest {
 const maxAttempts = 3
 
 func (s *Service) insertRun(ctx context.Context, tx *sql.Tx, c Conversion, r preparedRun, actor string, now time.Time) error {
+	if err := tenancy.RequireActive(ctx, s.db, tx, c.ProjectID); err != nil {
+		return err
+	}
 	opts, _ := json.Marshal(r.options)
 	answers, _ := json.Marshal(r.answers)
 	inline, _ := json.Marshal(r.inline)
@@ -814,6 +817,9 @@ func (s *Service) Download(ctx context.Context, p authz.Principal, id string, nu
 func (s *Service) Edit(ctx context.Context, p authz.Principal, id string, base int, filePath, newContent, requestID string) (Revision, error) {
 	c, err := s.load(ctx, p, id, true)
 	if err != nil {
+		return Revision{}, err
+	}
+	if err := tenancy.RequireActive(ctx, s.db, s.db.SQL, c.ProjectID); err != nil {
 		return Revision{}, err
 	}
 	if !convertjob.LocalPath(filePath) || !manifestFile(filePath) && !strings.HasSuffix(filePath, ".md") && !helmMeta(filePath) {

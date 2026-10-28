@@ -144,6 +144,9 @@ func (s *Service) CreateSession(ctx context.Context, p authz.Principal, roles []
 		Received: []int{}, ExpiresAt: now.Add(s.cfg.SessionTTL),
 	}
 	err := s.db.InTx(ctx, func(tx *sql.Tx) error {
+		if err := tenancy.RequireActive(ctx, s.db, tx, projectID); err != nil {
+			return err
+		}
 		var open int
 		if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT COUNT(*) FROM upload_sessions WHERE created_by = ? AND status IN (?, ?) AND expires_at > ?`), p.ID, StatusOpen, StatusCommitting, now).Scan(&open); err != nil {
 			return err
@@ -392,6 +395,9 @@ func (s *Service) fail(ctx context.Context, p authz.Principal, id, opID, code, m
 }
 
 func (s *Service) insertSnapshot(ctx context.Context, tx *sql.Tx, p authz.Principal, snap Snapshot, requestID string) error {
+	if err := tenancy.RequireActive(ctx, s.db, tx, snap.ProjectID); err != nil {
+		return err
+	}
 	warnings, _ := json.Marshal(snap.Warnings)
 	if _, err := tx.ExecContext(ctx, s.db.Rebind(`INSERT INTO source_snapshots (id, org_id, project_id, digest, file_count, total_bytes, rejected_entries, excluded_entries, warnings, created_by, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`), snap.ID, p.OrgID, snap.ProjectID, snap.Digest, snap.FileCount, snap.TotalBytes, snap.Rejected, snap.Excluded, string(warnings), p.ID, snap.CreatedAt); err != nil {
@@ -658,6 +664,43 @@ func (s *Service) Expire(ctx context.Context) error {
 		_ = os.RemoveAll(filepath.Join(s.staging, id))
 	}
 	return nil
+}
+
+// ExpireProject closes a project's open uploads and removes their staged chunks, for an archived project (ADR 0058).
+func (s *Service) ExpireProject(ctx context.Context, projectID string) (int, error) {
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT id FROM upload_sessions WHERE project_id = ? AND status = ?`), projectID, StatusOpen)
+	if err != nil {
+		return 0, err
+	}
+	var open []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		open = append(open, id)
+	}
+	rows.Close()
+	n := 0
+	for _, id := range open {
+		err := s.db.InTx(ctx, func(tx *sql.Tx) error {
+			res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE upload_sessions SET status = ? WHERE id = ? AND status = ?`), StatusExpired, id, StatusOpen)
+			if err != nil {
+				return err
+			}
+			if c, _ := res.RowsAffected(); c == 1 {
+				n++
+			}
+			_, err = tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM upload_chunks WHERE upload_id = ?`), id)
+			return err
+		})
+		if err != nil {
+			return n, err
+		}
+		_ = os.RemoveAll(filepath.Join(s.staging, id))
+	}
+	return n, nil
 }
 
 // RunJanitor expires stale uploads until ctx ends.
