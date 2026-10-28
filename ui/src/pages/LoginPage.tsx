@@ -25,6 +25,9 @@ export function LoginPage({ notice }: { notice?: string }) {
   const { refresh } = useSession();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [mustChange, setMustChange] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | undefined>(
     ssoFailed
       ? "Sign-in with the identity provider failed. Try again, or contact an administrator."
@@ -52,18 +55,26 @@ export function LoginPage({ notice }: { notice?: string }) {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (mustChange && newPassword !== confirm) {
+      setError("The new passwords do not match.");
+      return;
+    }
     setBusy(true);
     setError(undefined);
-    const { response } = await api.POST("/auth/login", {
+    const { response, error: problem } = await api.POST("/auth/login", {
       body: {
         username,
         password,
         providerId: account && account !== "local" ? account : undefined,
+        newPassword: mustChange ? newPassword : undefined,
       },
     });
     setBusy(false);
     if (response.status === 204) {
       setPassword("");
+      setNewPassword("");
+      setConfirm("");
+      setMustChange(false);
       await refresh();
       broadcast({ type: "signed-in" });
       return;
@@ -75,6 +86,16 @@ export function LoginPage({ notice }: { notice?: string }) {
       );
     } else if (response.status === 401) {
       setError("The username or password is incorrect.");
+    } else if (problem?.code === "password_change_required") {
+      setMustChange(true);
+      setError(
+        "An administrator reset your password. Choose a new password to sign in.",
+      );
+    } else if (response.status === 400 && mustChange) {
+      setError(
+        problem?.message ??
+          "Choose a password of at least 12 characters that does not contain your username.",
+      );
     } else {
       setError("Sign-in failed. Try again, or contact an administrator.");
     }
@@ -98,6 +119,27 @@ export function LoginPage({ notice }: { notice?: string }) {
         isRequired
         autoComplete="current-password"
       />
+      {mustChange && (
+        <>
+          <TextField
+            label="New password"
+            type="password"
+            value={newPassword}
+            onChange={setNewPassword}
+            isRequired
+            autoComplete="new-password"
+            description="At least 12 characters, not containing your username."
+          />
+          <TextField
+            label="Confirm new password"
+            type="password"
+            value={confirm}
+            onChange={setConfirm}
+            isRequired
+            autoComplete="new-password"
+          />
+        </>
+      )}
       <Button type="submit" isDisabled={busy}>
         {busy && <Spinner decorative />}
         {busy ? "Signing in…" : "Sign in"}

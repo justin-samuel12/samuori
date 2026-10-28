@@ -319,6 +319,10 @@ func (Unimplemented) CreateIdentityProvider(w http.ResponseWriter, r *http.Reque
 	NotImplemented(w, r, "CreateIdentityProvider")
 }
 
+func (Unimplemented) DeleteIdentityProvider(w http.ResponseWriter, r *http.Request, _ Id, _ DeleteIdentityProviderParams) {
+	NotImplemented(w, r, "DeleteIdentityProvider")
+}
+
 func (Unimplemented) UpdateIdentityProvider(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateIdentityProviderParams) {
 	NotImplemented(w, r, "UpdateIdentityProvider")
 }
@@ -433,6 +437,10 @@ func (Unimplemented) DeleteLocation(w http.ResponseWriter, r *http.Request, _ st
 
 func (Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) { NotImplemented(w, r, "GetMe") }
 
+func (Unimplemented) UpdateMe(w http.ResponseWriter, r *http.Request, _ UpdateMeParams) {
+	NotImplemented(w, r, "UpdateMe")
+}
+
 func (Unimplemented) ListApiTokens(w http.ResponseWriter, r *http.Request, _ ListApiTokensParams) {
 	NotImplemented(w, r, "ListApiTokens")
 }
@@ -443,6 +451,10 @@ func (Unimplemented) CreateApiToken(w http.ResponseWriter, r *http.Request, _ Cr
 
 func (Unimplemented) RevokeApiToken(w http.ResponseWriter, r *http.Request, _ Id, _ RevokeApiTokenParams) {
 	NotImplemented(w, r, "RevokeApiToken")
+}
+
+func (Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request, _ ChangePasswordParams) {
+	NotImplemented(w, r, "ChangePassword")
 }
 
 func (Unimplemented) RotateMirrorTokenKey(w http.ResponseWriter, r *http.Request, _ RotateMirrorTokenKeyParams) {
@@ -853,6 +865,10 @@ func (Unimplemented) CreateRoleBinding(w http.ResponseWriter, r *http.Request, _
 	NotImplemented(w, r, "CreateRoleBinding")
 }
 
+func (Unimplemented) ChangeRoleBinding(w http.ResponseWriter, r *http.Request, _ Id, _ ChangeRoleBindingParams) {
+	NotImplemented(w, r, "ChangeRoleBinding")
+}
+
 func (Unimplemented) RevokeRoleBinding(w http.ResponseWriter, r *http.Request, _ Id, _ RevokeRoleBindingParams) {
 	NotImplemented(w, r, "RevokeRoleBinding")
 }
@@ -899,6 +915,10 @@ func (Unimplemented) ListServiceIdentities(w http.ResponseWriter, r *http.Reques
 
 func (Unimplemented) CreateServiceIdentity(w http.ResponseWriter, r *http.Request, _ CreateServiceIdentityParams) {
 	NotImplemented(w, r, "CreateServiceIdentity")
+}
+
+func (Unimplemented) UpdateServiceIdentity(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateServiceIdentityParams) {
+	NotImplemented(w, r, "UpdateServiceIdentity")
 }
 
 func (Unimplemented) CreateServiceToken(w http.ResponseWriter, r *http.Request, _ Id, _ CreateServiceTokenParams) {
@@ -1117,6 +1137,14 @@ func (Unimplemented) CreateTeam(w http.ResponseWriter, r *http.Request, _ Create
 	NotImplemented(w, r, "CreateTeam")
 }
 
+func (Unimplemented) DeleteTeam(w http.ResponseWriter, r *http.Request, _ Id, _ DeleteTeamParams) {
+	NotImplemented(w, r, "DeleteTeam")
+}
+
+func (Unimplemented) UpdateTeam(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateTeamParams) {
+	NotImplemented(w, r, "UpdateTeam")
+}
+
 func (Unimplemented) GetUploadPolicy(w http.ResponseWriter, r *http.Request) {
 	NotImplemented(w, r, "GetUploadPolicy")
 }
@@ -1139,6 +1167,18 @@ func (Unimplemented) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 func (Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request, _ CreateUserParams) {
 	NotImplemented(w, r, "CreateUser")
+}
+
+func (Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, _ Id, _ UpdateUserParams) {
+	NotImplemented(w, r, "UpdateUser")
+}
+
+func (Unimplemented) ResetUserPassword(w http.ResponseWriter, r *http.Request, _ Id, _ ResetUserPasswordParams) {
+	NotImplemented(w, r, "ResetUserPassword")
+}
+
+func (Unimplemented) SetUserState(w http.ResponseWriter, r *http.Request, _ Id, _ SetUserStateParams) {
+	NotImplemented(w, r, "SetUserState")
 }
 
 func (Unimplemented) GetValidation(w http.ResponseWriter, r *http.Request, _ Id) {

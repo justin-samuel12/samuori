@@ -79,9 +79,9 @@ func (s *Store) CreateTeam(ctx context.Context, actor authz.Principal, name, req
 
 // User is a person in the organization. Source names the identity provider that created them; empty for local.
 type User struct {
-	ID, Username, DisplayName, Source string
-	Disabled                          bool
-	Roles                             []RoleBinding
+	ID, Username, DisplayName, Source, Kind string
+	Disabled                                bool
+	Roles                                   []RoleBinding
 }
 
 // RoleBinding is a granted role. Source names the identity provider whose group mapping granted it; such bindings
@@ -139,9 +139,12 @@ func (s *Store) Unbind(ctx context.Context, actor authz.Principal, bindingID, re
 		return ErrForbidden
 	}
 	return s.db.InTx(ctx, func(tx *sql.Tx) error {
-		var role, scope string
+		if err := s.lockOrg(ctx, tx, actor.OrgID); err != nil {
+			return err
+		}
+		var role, scope, principalID string
 		var local bool
-		err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT rb.role, rb.scope_type, u.provider_id IS NULL AND u.kind = 'user' FROM role_bindings rb JOIN users u ON u.id = rb.principal_id WHERE rb.id = ? AND rb.org_id = ?`), bindingID, actor.OrgID).Scan(&role, &scope, &local)
+		err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT rb.role, rb.scope_type, rb.principal_id, u.provider_id IS NULL AND u.kind = 'user' FROM role_bindings rb JOIN users u ON u.id = rb.principal_id WHERE rb.id = ? AND rb.org_id = ?`), bindingID, actor.OrgID).Scan(&role, &scope, &principalID, &local)
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
@@ -149,22 +152,8 @@ func (s *Store) Unbind(ctx context.Context, actor authz.Principal, bindingID, re
 			return err
 		}
 		if role == string(authz.Administrator) && scope == string(authz.ScopeOrganization) {
-			var n int
-			if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT COUNT(*) FROM role_bindings rb JOIN users u ON u.id = rb.principal_id
-				WHERE rb.org_id = ? AND rb.role = 'administrator' AND rb.scope_type = 'organization' AND u.disabled = ?`), actor.OrgID, false).Scan(&n); err != nil {
+			if err := s.keepAdmins(ctx, tx, actor.OrgID, principalID, local); err != nil {
 				return err
-			}
-			if n <= 1 {
-				return ErrLastAdmin
-			}
-			if local {
-				if err := tx.QueryRowContext(ctx, s.db.Rebind(`SELECT COUNT(*) FROM role_bindings rb JOIN users u ON u.id = rb.principal_id
-					WHERE rb.org_id = ? AND rb.role = 'administrator' AND rb.scope_type = 'organization' AND u.disabled = ? AND u.provider_id IS NULL AND u.kind = 'user'`), actor.OrgID, false).Scan(&n); err != nil {
-					return err
-				}
-				if n <= 1 {
-					return ErrLastLocalAdmin
-				}
 			}
 		}
 		if _, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM role_bindings WHERE id = ?`), bindingID); err != nil {
@@ -179,7 +168,7 @@ func (s *Store) ListUsers(ctx context.Context, actor authz.Principal) ([]User, e
 	if !actor.IsOrgAdmin() {
 		return nil, ErrForbidden
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT u.id, u.username, u.display_name, u.disabled, COALESCE(up.display_name, ''), rb.id, rb.role, rb.scope_type, rb.scope_id, COALESCE(bp.display_name, '')
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT u.id, u.username, u.display_name, u.disabled, u.kind, COALESCE(up.display_name, ''), rb.id, rb.role, rb.scope_type, rb.scope_id, COALESCE(bp.display_name, '')
 		FROM users u
 		LEFT JOIN identity_providers up ON up.id = u.provider_id
 		LEFT JOIN role_bindings rb ON rb.principal_id = u.id AND rb.org_id = u.org_id
@@ -194,7 +183,7 @@ func (s *Store) ListUsers(ctx context.Context, actor authz.Principal) ([]User, e
 		var u User
 		var bid, role, scope, scopeID sql.NullString
 		var bindingSource string
-		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Disabled, &u.Source, &bid, &role, &scope, &scopeID, &bindingSource); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Disabled, &u.Kind, &u.Source, &bid, &role, &scope, &scopeID, &bindingSource); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].ID != u.ID {

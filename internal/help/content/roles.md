@@ -33,3 +33,9 @@ Hiding a page is never what protects it, and these guides are filtered the same 
 
 Roles come from an administrator, under Administration > Users, or from your groups in the company directory
 (LDAP, Active Directory or OIDC), refreshed each time you sign in.
+
+## Your account
+
+On **Account**, **Edit name** changes how your name is shown. With a local password, **Change password** asks for
+the current one; your other signed-in browsers are signed out, and your API tokens keep working. If an administrator
+reset your password, sign in with the temporary one and choose a new password on the sign-in page.

@@ -19,6 +19,9 @@ groups.
 3. **Add mapping:** members of a directory group get a role at a scope. Name the group by its full DN or its `cn`.
 4. Enable the provider. The sign-in page then offers it.
 
+**Delete** removes a provider only while nobody has signed in through it. After that, people's accounts stay linked
+to it; disable it instead.
+
 ## How group roles behave
 
 - Roles from mappings are recalculated at every sign-in: leave the group and the role goes at the next sign-in.
@@ -41,4 +44,5 @@ Changes apply to sessions already open and are audited.
 ## Service identities
 
 For automation: **Add service identity**, give it roles like a user, then **Issue token**. Tokens expire within a
-year and are shown once.
+year and are shown once. **Edit name** changes the display name. Service identities are never deleted, because
+pipelines name them as owners; disable one to stop its tokens.

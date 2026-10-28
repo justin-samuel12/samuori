@@ -198,6 +198,14 @@ func (a *API) GetMe(w http.ResponseWriter, r *http.Request) {
 	if display != "" {
 		me.DisplayName = &display
 	}
+	if p.Kind == authz.User {
+		local, err := a.auth.HasPassword(r.Context(), p.ID)
+		if err != nil {
+			a.internalError(w, r, err)
+			return
+		}
+		me.LocalPassword = &local
+	}
 	if a.policies != nil && p.OrgID != "" {
 		if eff, err := a.policies.Effective(r.Context(), p.OrgID); err == nil && eff.Publication.DeveloperDownloads {
 			me.DeveloperDownloads = &eff.Publication.DeveloperDownloads

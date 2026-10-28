@@ -3890,6 +3890,24 @@ func (e UploadSessionStatus) Valid() bool {
 	}
 }
 
+// Defines values for UserKind.
+const (
+	UserKindService UserKind = "service"
+	UserKindUser    UserKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the UserKind enum.
+func (e UserKind) Valid() bool {
+	switch e {
+	case UserKindService:
+		return true
+	case UserKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ValidationRunClassification.
 const (
 	ValidationRunClassificationRestricted ValidationRunClassification = "restricted"
@@ -5594,6 +5612,11 @@ type DiscoveryList struct {
 	Items []Discovery `json:"items"`
 }
 
+// DisplayNameUpdate defines model for DisplayNameUpdate.
+type DisplayNameUpdate struct {
+	DisplayName string `json:"displayName"`
+}
+
 // DockerfileAnalysis defines model for DockerfileAnalysis.
 type DockerfileAnalysis struct {
 	Ambiguities  *[]Warning `json:"ambiguities,omitempty"`
@@ -6763,7 +6786,9 @@ type LogicalSecretId = string
 
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
-	Password *string `json:"password,omitempty"`
+	// NewPassword Replaces a temporary password set by an administrator. Signing in with a temporary password and no newPassword fails with 403 password_change_required; ignored for any other account.
+	NewPassword *string `json:"newPassword,omitempty"`
+	Password    *string `json:"password,omitempty"`
 
 	// ProviderId ULID
 	ProviderId *Id    `json:"providerId,omitempty"`
@@ -6773,10 +6798,13 @@ type LoginRequest struct {
 // Me defines model for Me.
 type Me struct {
 	// DeveloperDownloads The organization lets developers download validated images (publication policy, ADR 0053).
-	DeveloperDownloads *bool     `json:"developerDownloads,omitempty"`
-	DisplayName        *string   `json:"displayName,omitempty"`
-	Principal          Principal `json:"principal"`
-	Roles              []struct {
+	DeveloperDownloads *bool   `json:"developerDownloads,omitempty"`
+	DisplayName        *string `json:"displayName,omitempty"`
+
+	// LocalPassword The caller has a Samuori password and may change it from Account
+	LocalPassword *bool     `json:"localPassword,omitempty"`
+	Principal     Principal `json:"principal"`
+	Roles         []struct {
 		Role Role `json:"role"`
 
 		// ScopeId ULID
@@ -7116,6 +7144,14 @@ type OutputExceptionRequest struct {
 
 // OutputExceptionRequestClasses defines model for OutputExceptionRequest.Classes.
 type OutputExceptionRequestClasses string
+
+// PasswordChange defines model for PasswordChange.
+type PasswordChange struct {
+	CurrentPassword *string `json:"currentPassword,omitempty"`
+
+	// NewPassword At least 12 characters and not containing the username; the server enforces the policy
+	NewPassword *string `json:"newPassword,omitempty"`
+}
 
 // Pipeline defines model for Pipeline.
 type Pipeline struct {
@@ -8143,6 +8179,11 @@ type RoleBinding struct {
 // RoleBindingScopeType defines model for RoleBinding.ScopeType.
 type RoleBindingScopeType string
 
+// RoleBindingChange defines model for RoleBindingChange.
+type RoleBindingChange struct {
+	Role Role `json:"role"`
+}
+
 // RoleBindingCreate defines model for RoleBindingCreate.
 type RoleBindingCreate struct {
 	// PrincipalId ULID
@@ -8837,6 +8878,14 @@ type TeamList struct {
 	NextCursor *NextCursor `json:"nextCursor,omitempty"`
 }
 
+// TemporaryPassword defines model for TemporaryPassword.
+type TemporaryPassword struct {
+	ExpiresAt Timestamp `json:"expiresAt"`
+
+	// TemporaryPassword Shown once; give it to the user over a secure channel
+	TemporaryPassword string `json:"temporaryPassword"`
+}
+
 // Timestamp defines model for Timestamp.
 type Timestamp = time.Time
 
@@ -9017,13 +9066,19 @@ type User struct {
 	DisplayName string `json:"displayName"`
 
 	// Id ULID
-	Id    Id            `json:"id"`
+	Id Id `json:"id"`
+
+	// Kind service for service identities, which are managed on the Identity page
+	Kind  *UserKind     `json:"kind,omitempty"`
 	Roles []RoleBinding `json:"roles"`
 
 	// Source The identity provider that created the user; absent for local accounts
 	Source   *string `json:"source,omitempty"`
 	Username string  `json:"username"`
 }
+
+// UserKind service for service identities, which are managed on the Identity page
+type UserKind string
 
 // UserCreate defines model for UserCreate.
 type UserCreate struct {
@@ -9685,6 +9740,12 @@ type CreateIdentityProviderParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// DeleteIdentityProviderParams defines parameters for DeleteIdentityProvider.
+type DeleteIdentityProviderParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // UpdateIdentityProviderParams defines parameters for UpdateIdentityProvider.
 type UpdateIdentityProviderParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -9789,6 +9850,12 @@ type DeleteLocationParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// UpdateMeParams defines parameters for UpdateMe.
+type UpdateMeParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListApiTokensParams defines parameters for ListApiTokens.
 type ListApiTokensParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -9803,6 +9870,12 @@ type CreateApiTokenParams struct {
 
 // RevokeApiTokenParams defines parameters for RevokeApiToken.
 type RevokeApiTokenParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// ChangePasswordParams defines parameters for ChangePassword.
+type ChangePasswordParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10300,6 +10373,12 @@ type CreateRoleBindingParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// ChangeRoleBindingParams defines parameters for ChangeRoleBinding.
+type ChangeRoleBindingParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // RevokeRoleBindingParams defines parameters for RevokeRoleBinding.
 type RevokeRoleBindingParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -10352,6 +10431,12 @@ type TestSecretProviderParams struct {
 
 // CreateServiceIdentityParams defines parameters for CreateServiceIdentity.
 type CreateServiceIdentityParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdateServiceIdentityParams defines parameters for UpdateServiceIdentity.
+type UpdateServiceIdentityParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10567,6 +10652,18 @@ type CreateTeamParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// DeleteTeamParams defines parameters for DeleteTeam.
+type DeleteTeamParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdateTeamParams defines parameters for UpdateTeam.
+type UpdateTeamParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // PutUploadChunkParams defines parameters for PutUploadChunk.
 type PutUploadChunkParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -10582,6 +10679,24 @@ type CommitUploadParams struct {
 
 // CreateUserParams defines parameters for CreateUser.
 type CreateUserParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdateUserParams defines parameters for UpdateUser.
+type UpdateUserParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// ResetUserPasswordParams defines parameters for ResetUserPassword.
+type ResetUserPasswordParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// SetUserStateParams defines parameters for SetUserState.
+type SetUserStateParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10764,8 +10879,14 @@ type RerunKubeConversionJSONRequestBody = KubeConversionRerun
 // CreateLocationJSONRequestBody defines body for CreateLocation for application/json ContentType.
 type CreateLocationJSONRequestBody = LocationCreate
 
+// UpdateMeJSONRequestBody defines body for UpdateMe for application/json ContentType.
+type UpdateMeJSONRequestBody = DisplayNameUpdate
+
 // CreateApiTokenJSONRequestBody defines body for CreateApiToken for application/json ContentType.
 type CreateApiTokenJSONRequestBody = ApiTokenRequest
+
+// ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
+type ChangePasswordJSONRequestBody = PasswordChange
 
 // CreateNotificationChannelJSONRequestBody defines body for CreateNotificationChannel for application/json ContentType.
 type CreateNotificationChannelJSONRequestBody = NotificationChannelCreate
@@ -10908,6 +11029,9 @@ type UpdateRegistryCredentialProfileJSONRequestBody = RegistryCredentialProfileU
 // CreateRoleBindingJSONRequestBody defines body for CreateRoleBinding for application/json ContentType.
 type CreateRoleBindingJSONRequestBody = RoleBindingCreate
 
+// ChangeRoleBindingJSONRequestBody defines body for ChangeRoleBinding for application/json ContentType.
+type ChangeRoleBindingJSONRequestBody = RoleBindingChange
+
 // ApplySecretBindingActionJSONRequestBody defines body for ApplySecretBindingAction for application/json ContentType.
 type ApplySecretBindingActionJSONRequestBody = SecretBindingAction
 
@@ -10922,6 +11046,9 @@ type StoreLocalSecretJSONRequestBody = LocalSecretWrite
 
 // CreateServiceIdentityJSONRequestBody defines body for CreateServiceIdentity for application/json ContentType.
 type CreateServiceIdentityJSONRequestBody = ServiceIdentityCreate
+
+// UpdateServiceIdentityJSONRequestBody defines body for UpdateServiceIdentity for application/json ContentType.
+type UpdateServiceIdentityJSONRequestBody = DisplayNameUpdate
 
 // CreateServiceTokenJSONRequestBody defines body for CreateServiceToken for application/json ContentType.
 type CreateServiceTokenJSONRequestBody = ApiTokenRequest
@@ -10968,8 +11095,17 @@ type SetTopologyPlanJSONRequestBody = TopologyPlan
 // CreateTeamJSONRequestBody defines body for CreateTeam for application/json ContentType.
 type CreateTeamJSONRequestBody = TeamCreate
 
+// UpdateTeamJSONRequestBody defines body for UpdateTeam for application/json ContentType.
+type UpdateTeamJSONRequestBody = TeamCreate
+
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate
+
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody = DisplayNameUpdate
+
+// SetUserStateJSONRequestBody defines body for SetUserState for application/json ContentType.
+type SetUserStateJSONRequestBody = EnabledState
 
 // CreateWorkerPoolJSONRequestBody defines body for CreateWorkerPool for application/json ContentType.
 type CreateWorkerPoolJSONRequestBody = WorkerPoolCreate
@@ -11693,6 +11829,11 @@ type ClientInterface interface {
 	// Providers start disabled; test, then enable.
 	CreateIdentityProvider(ctx context.Context, params *CreateIdentityProviderParams, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteIdentityProvider performs a DELETE /identity-providers/{providerId} (the `DeleteIdentityProvider` operationId) request.
+	//
+	// Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead.
+	DeleteIdentityProvider(ctx context.Context, providerId Id, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpdateIdentityProviderWithBody performs a PUT /identity-providers/{providerId} (the `UpdateIdentityProvider` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -11881,6 +12022,18 @@ type ClientInterface interface {
 	// GetMe performs a GET /me (the `GetMe` operationId) request.
 	GetMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UpdateMeWithBody performs a PATCH /me (the `UpdateMe` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+	UpdateMeWithBody(ctx context.Context, params *UpdateMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateMe performs a PATCH /me (the `UpdateMe` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+	UpdateMe(ctx context.Context, params *UpdateMeParams, body UpdateMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListApiTokens performs a GET /me/api-tokens (the `ListApiTokens` operationId) request.
 	ListApiTokens(ctx context.Context, params *ListApiTokensParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11894,6 +12047,18 @@ type ClientInterface interface {
 
 	// RevokeApiToken performs a POST /me/api-tokens/{tokenId}/revoke (the `RevokeApiToken` operationId) request.
 	RevokeApiToken(ctx context.Context, tokenId Id, params *RevokeApiTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChangePasswordWithBody performs a POST /me/password (the `ChangePassword` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+	ChangePasswordWithBody(ctx context.Context, params *ChangePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChangePassword performs a POST /me/password (the `ChangePassword` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+	ChangePassword(ctx context.Context, params *ChangePasswordParams, body ChangePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RotateMirrorTokenKey performs a POST /mirror-token-keys/rotations (the `RotateMirrorTokenKey` operationId) request.
 	//
@@ -12604,6 +12769,18 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	CreateRoleBinding(ctx context.Context, params *CreateRoleBindingParams, body CreateRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ChangeRoleBindingWithBody performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+	ChangeRoleBindingWithBody(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChangeRoleBinding performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+	ChangeRoleBinding(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, body ChangeRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RevokeRoleBinding performs a POST /role-bindings/{bindingId}/revoke (the `RevokeRoleBinding` operationId) request.
 	RevokeRoleBinding(ctx context.Context, bindingId Id, params *RevokeRoleBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -12674,6 +12851,18 @@ type ClientInterface interface {
 	// CreateServiceIdentity performs a POST /service-identities (the `CreateServiceIdentity` operationId) request.
 	// Takes a body of the `application/json` content type.
 	CreateServiceIdentity(ctx context.Context, params *CreateServiceIdentityParams, body CreateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateServiceIdentityWithBody performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+	UpdateServiceIdentityWithBody(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateServiceIdentity performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+	UpdateServiceIdentity(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, body UpdateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateServiceTokenWithBody performs a POST /service-identities/{identityId}/api-tokens (the `CreateServiceToken` operationId) request,
 	// with any type of body and a specified content type.
@@ -12994,6 +13183,23 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	CreateTeam(ctx context.Context, params *CreateTeamParams, body CreateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteTeam performs a DELETE /teams/{teamId} (the `DeleteTeam` operationId) request.
+	//
+	// Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them.
+	DeleteTeam(ctx context.Context, teamId Id, params *DeleteTeamParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateTeamWithBody performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Renames a team under the same name rules as creation.
+	UpdateTeamWithBody(ctx context.Context, teamId Id, params *UpdateTeamParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateTeam performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Renames a team under the same name rules as creation.
+	UpdateTeam(ctx context.Context, teamId Id, params *UpdateTeamParams, body UpdateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUploadPolicy performs a GET /upload-policy (the `GetUploadPolicy` operationId) request.
 	GetUploadPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -13017,6 +13223,35 @@ type ClientInterface interface {
 	// CreateUser performs a POST /users (the `CreateUser` operationId) request.
 	// Takes a body of the `application/json` content type.
 	CreateUser(ctx context.Context, params *CreateUserParams, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateUserWithBody performs a PATCH /users/{userId} (the `UpdateUser` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+	UpdateUserWithBody(ctx context.Context, userId Id, params *UpdateUserParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateUser performs a PATCH /users/{userId} (the `UpdateUser` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+	UpdateUser(ctx context.Context, userId Id, params *UpdateUserParams, body UpdateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResetUserPassword performs a POST /users/{userId}/password-reset (the `ResetUserPassword` operationId) request.
+	//
+	// Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409).
+	ResetUserPassword(ctx context.Context, userId Id, params *ResetUserPasswordParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetUserStateWithBody performs a POST /users/{userId}/state (the `SetUserState` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+	SetUserStateWithBody(ctx context.Context, userId Id, params *SetUserStateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetUserState performs a POST /users/{userId}/state (the `SetUserState` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+	SetUserState(ctx context.Context, userId Id, params *SetUserStateParams, body SetUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetValidation performs a GET /validations/{validationId} (the `GetValidation` operationId) request.
 	GetValidation(ctx context.Context, validationId Id, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14700,6 +14935,21 @@ func (c *Client) CreateIdentityProvider(ctx context.Context, params *CreateIdent
 	return c.Client.Do(req)
 }
 
+// DeleteIdentityProvider performs a DELETE /identity-providers/{providerId} (the `DeleteIdentityProvider` operationId) request.
+//
+// Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead.
+func (c *Client) DeleteIdentityProvider(ctx context.Context, providerId Id, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteIdentityProviderRequest(c.Server, providerId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // UpdateIdentityProviderWithBody performs a PUT /identity-providers/{providerId} (the `UpdateIdentityProvider` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -15288,6 +15538,38 @@ func (c *Client) GetMe(ctx context.Context, reqEditors ...RequestEditorFn) (*htt
 	return c.Client.Do(req)
 }
 
+// UpdateMeWithBody performs a PATCH /me (the `UpdateMe` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+func (c *Client) UpdateMeWithBody(ctx context.Context, params *UpdateMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMeRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateMe performs a PATCH /me (the `UpdateMe` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+func (c *Client) UpdateMe(ctx context.Context, params *UpdateMeParams, body UpdateMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMeRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListApiTokens performs a GET /me/api-tokens (the `ListApiTokens` operationId) request.
 func (c *Client) ListApiTokens(ctx context.Context, params *ListApiTokensParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListApiTokensRequest(c.Server, params)
@@ -15332,6 +15614,38 @@ func (c *Client) CreateApiToken(ctx context.Context, params *CreateApiTokenParam
 // RevokeApiToken performs a POST /me/api-tokens/{tokenId}/revoke (the `RevokeApiToken` operationId) request.
 func (c *Client) RevokeApiToken(ctx context.Context, tokenId Id, params *RevokeApiTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevokeApiTokenRequest(c.Server, tokenId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ChangePasswordWithBody performs a POST /me/password (the `ChangePassword` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+func (c *Client) ChangePasswordWithBody(ctx context.Context, params *ChangePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangePasswordRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ChangePassword performs a POST /me/password (the `ChangePassword` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+func (c *Client) ChangePassword(ctx context.Context, params *ChangePasswordParams, body ChangePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangePasswordRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17541,6 +17855,38 @@ func (c *Client) CreateRoleBinding(ctx context.Context, params *CreateRoleBindin
 	return c.Client.Do(req)
 }
 
+// ChangeRoleBindingWithBody performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+func (c *Client) ChangeRoleBindingWithBody(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangeRoleBindingRequestWithBody(c.Server, bindingId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ChangeRoleBinding performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+func (c *Client) ChangeRoleBinding(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, body ChangeRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangeRoleBindingRequest(c.Server, bindingId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // RevokeRoleBinding performs a POST /role-bindings/{bindingId}/revoke (the `RevokeRoleBinding` operationId) request.
 func (c *Client) RevokeRoleBinding(ctx context.Context, bindingId Id, params *RevokeRoleBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevokeRoleBindingRequest(c.Server, bindingId, params)
@@ -17772,6 +18118,38 @@ func (c *Client) CreateServiceIdentityWithBody(ctx context.Context, params *Crea
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateServiceIdentity(ctx context.Context, params *CreateServiceIdentityParams, body CreateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateServiceIdentityRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateServiceIdentityWithBody performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+func (c *Client) UpdateServiceIdentityWithBody(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateServiceIdentityRequestWithBody(c.Server, identityId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateServiceIdentity performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+func (c *Client) UpdateServiceIdentity(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, body UpdateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateServiceIdentityRequest(c.Server, identityId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18781,6 +19159,53 @@ func (c *Client) CreateTeam(ctx context.Context, params *CreateTeamParams, body 
 	return c.Client.Do(req)
 }
 
+// DeleteTeam performs a DELETE /teams/{teamId} (the `DeleteTeam` operationId) request.
+//
+// Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them.
+func (c *Client) DeleteTeam(ctx context.Context, teamId Id, params *DeleteTeamParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTeamRequest(c.Server, teamId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateTeamWithBody performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request,
+// with any type of body and a specified content type.
+//
+// Renames a team under the same name rules as creation.
+func (c *Client) UpdateTeamWithBody(ctx context.Context, teamId Id, params *UpdateTeamParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTeamRequestWithBody(c.Server, teamId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateTeam performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Renames a team under the same name rules as creation.
+func (c *Client) UpdateTeam(ctx context.Context, teamId Id, params *UpdateTeamParams, body UpdateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateTeamRequest(c.Server, teamId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetUploadPolicy performs a GET /upload-policy (the `GetUploadPolicy` operationId) request.
 func (c *Client) GetUploadPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetUploadPolicyRequest(c.Server)
@@ -18865,6 +19290,85 @@ func (c *Client) CreateUserWithBody(ctx context.Context, params *CreateUserParam
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateUser(ctx context.Context, params *CreateUserParams, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateUserRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateUserWithBody performs a PATCH /users/{userId} (the `UpdateUser` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+func (c *Client) UpdateUserWithBody(ctx context.Context, userId Id, params *UpdateUserParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateUserRequestWithBody(c.Server, userId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateUser performs a PATCH /users/{userId} (the `UpdateUser` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+func (c *Client) UpdateUser(ctx context.Context, userId Id, params *UpdateUserParams, body UpdateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateUserRequest(c.Server, userId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResetUserPassword performs a POST /users/{userId}/password-reset (the `ResetUserPassword` operationId) request.
+//
+// Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409).
+func (c *Client) ResetUserPassword(ctx context.Context, userId Id, params *ResetUserPasswordParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResetUserPasswordRequest(c.Server, userId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetUserStateWithBody performs a POST /users/{userId}/state (the `SetUserState` operationId) request,
+// with any type of body and a specified content type.
+//
+// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+func (c *Client) SetUserStateWithBody(ctx context.Context, userId Id, params *SetUserStateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserStateRequestWithBody(c.Server, userId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetUserState performs a POST /users/{userId}/state (the `SetUserState` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+func (c *Client) SetUserState(ctx context.Context, userId Id, params *SetUserStateParams, body SetUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserStateRequest(c.Server, userId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -23078,6 +23582,55 @@ func NewCreateIdentityProviderRequestWithBody(server string, params *CreateIdent
 	return req, nil
 }
 
+// NewDeleteIdentityProviderRequest constructs an http.Request for the DeleteIdentityProvider method
+func NewDeleteIdentityProviderRequest(server string, providerId Id, params *DeleteIdentityProviderParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "providerId", providerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/identity-providers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewUpdateIdentityProviderRequest calls the generic UpdateIdentityProvider builder with application/json body
 func NewUpdateIdentityProviderRequest(server string, providerId Id, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -24495,6 +25048,61 @@ func NewGetMeRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewUpdateMeRequest calls the generic UpdateMe builder with application/json body
+func NewUpdateMeRequest(server string, params *UpdateMeParams, body UpdateMeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateMeRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewUpdateMeRequestWithBody constructs an http.Request for the UpdateMe method, with any body, and a specified content type
+func NewUpdateMeRequestWithBody(server string, params *UpdateMeParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListApiTokensRequest constructs an http.Request for the ListApiTokens method
 func NewListApiTokensRequest(server string, params *ListApiTokensParams) (*http.Request, error) {
 	var err error
@@ -24646,6 +25254,61 @@ func NewRevokeApiTokenRequest(server string, tokenId Id, params *RevokeApiTokenP
 	if err != nil {
 		return nil, err
 	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewChangePasswordRequest calls the generic ChangePassword builder with application/json body
+func NewChangePasswordRequest(server string, params *ChangePasswordParams, body ChangePasswordJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewChangePasswordRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewChangePasswordRequestWithBody constructs an http.Request for the ChangePassword method, with any body, and a specified content type
+func NewChangePasswordRequestWithBody(server string, params *ChangePasswordParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/me/password")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -30135,6 +30798,68 @@ func NewCreateRoleBindingRequestWithBody(server string, params *CreateRoleBindin
 	return req, nil
 }
 
+// NewChangeRoleBindingRequest calls the generic ChangeRoleBinding builder with application/json body
+func NewChangeRoleBindingRequest(server string, bindingId Id, params *ChangeRoleBindingParams, body ChangeRoleBindingJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewChangeRoleBindingRequestWithBody(server, bindingId, params, "application/json", bodyReader)
+}
+
+// NewChangeRoleBindingRequestWithBody constructs an http.Request for the ChangeRoleBinding method, with any body, and a specified content type
+func NewChangeRoleBindingRequestWithBody(server string, bindingId Id, params *ChangeRoleBindingParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "bindingId", bindingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/role-bindings/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewRevokeRoleBindingRequest constructs an http.Request for the RevokeRoleBinding method
 func NewRevokeRoleBindingRequest(server string, bindingId Id, params *RevokeRoleBindingParams) (*http.Request, error) {
 	var err error
@@ -30716,6 +31441,68 @@ func NewCreateServiceIdentityRequestWithBody(server string, params *CreateServic
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateServiceIdentityRequest calls the generic UpdateServiceIdentity builder with application/json body
+func NewUpdateServiceIdentityRequest(server string, identityId Id, params *UpdateServiceIdentityParams, body UpdateServiceIdentityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateServiceIdentityRequestWithBody(server, identityId, params, "application/json", bodyReader)
+}
+
+// NewUpdateServiceIdentityRequestWithBody constructs an http.Request for the UpdateServiceIdentity method, with any body, and a specified content type
+func NewUpdateServiceIdentityRequestWithBody(server string, identityId Id, params *UpdateServiceIdentityParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identityId", identityId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/service-identities/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -33137,6 +33924,117 @@ func NewCreateTeamRequestWithBody(server string, params *CreateTeamParams, conte
 	return req, nil
 }
 
+// NewDeleteTeamRequest constructs an http.Request for the DeleteTeam method
+func NewDeleteTeamRequest(server string, teamId Id, params *DeleteTeamParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "teamId", teamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/teams/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateTeamRequest calls the generic UpdateTeam builder with application/json body
+func NewUpdateTeamRequest(server string, teamId Id, params *UpdateTeamParams, body UpdateTeamJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateTeamRequestWithBody(server, teamId, params, "application/json", bodyReader)
+}
+
+// NewUpdateTeamRequestWithBody constructs an http.Request for the UpdateTeam method, with any body, and a specified content type
+func NewUpdateTeamRequestWithBody(server string, teamId Id, params *UpdateTeamParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "teamId", teamId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/teams/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewGetUploadPolicyRequest constructs an http.Request for the GetUploadPolicy method
 func NewGetUploadPolicyRequest(server string) (*http.Request, error) {
 	var err error
@@ -33362,6 +34260,179 @@ func NewCreateUserRequestWithBody(server string, params *CreateUserParams, conte
 	}
 
 	operationPath := fmt.Sprintf("/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateUserRequest calls the generic UpdateUser builder with application/json body
+func NewUpdateUserRequest(server string, userId Id, params *UpdateUserParams, body UpdateUserJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateUserRequestWithBody(server, userId, params, "application/json", bodyReader)
+}
+
+// NewUpdateUserRequestWithBody constructs an http.Request for the UpdateUser method, with any body, and a specified content type
+func NewUpdateUserRequestWithBody(server string, userId Id, params *UpdateUserParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewResetUserPasswordRequest constructs an http.Request for the ResetUserPassword method
+func NewResetUserPasswordRequest(server string, userId Id, params *ResetUserPasswordParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s/password-reset", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewSetUserStateRequest calls the generic SetUserState builder with application/json body
+func NewSetUserStateRequest(server string, userId Id, params *SetUserStateParams, body SetUserStateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetUserStateRequestWithBody(server, userId, params, "application/json", bodyReader)
+}
+
+// NewSetUserStateRequestWithBody constructs an http.Request for the SetUserState method, with any body, and a specified content type
+func NewSetUserStateRequestWithBody(server string, userId Id, params *SetUserStateParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s/state", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -34740,6 +35811,13 @@ type ClientWithResponsesInterface interface {
 	// Providers start disabled; test, then enable.
 	CreateIdentityProviderWithResponse(ctx context.Context, params *CreateIdentityProviderParams, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdentityProviderResponse, error)
 
+	// DeleteIdentityProviderWithResponse performs a DELETE /identity-providers/{providerId} (the `DeleteIdentityProvider` operationId) request.
+	//
+	// Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteIdentityProviderWithResponse(ctx context.Context, providerId Id, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*DeleteIdentityProviderResponse, error)
+
 	// UpdateIdentityProviderWithBodyWithResponse performs a PUT /identity-providers/{providerId} (the `UpdateIdentityProvider` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -34986,6 +36064,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetMeResponse, error)
 
+	// UpdateMeWithBodyWithResponse performs a PATCH /me (the `UpdateMe` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateMeWithBodyWithResponse(ctx context.Context, params *UpdateMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMeResponse, error)
+
+	// UpdateMeWithResponse performs a PATCH /me (the `UpdateMe` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+	UpdateMeWithResponse(ctx context.Context, params *UpdateMeParams, body UpdateMeJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMeResponse, error)
+
 	// ListApiTokensWithResponse performs a GET /me/api-tokens (the `ListApiTokens` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -35005,6 +36097,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	RevokeApiTokenWithResponse(ctx context.Context, tokenId Id, params *RevokeApiTokenParams, reqEditors ...RequestEditorFn) (*RevokeApiTokenResponse, error)
+
+	// ChangePasswordWithBodyWithResponse performs a POST /me/password (the `ChangePassword` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ChangePasswordWithBodyWithResponse(ctx context.Context, params *ChangePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangePasswordResponse, error)
+
+	// ChangePasswordWithResponse performs a POST /me/password (the `ChangePassword` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+	ChangePasswordWithResponse(ctx context.Context, params *ChangePasswordParams, body ChangePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangePasswordResponse, error)
 
 	// RotateMirrorTokenKeyWithResponse performs a POST /mirror-token-keys/rotations (the `RotateMirrorTokenKey` operationId) request.
 	//
@@ -35919,6 +37025,20 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateRoleBindingWithResponse(ctx context.Context, params *CreateRoleBindingParams, body CreateRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleBindingResponse, error)
 
+	// ChangeRoleBindingWithBodyWithResponse performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ChangeRoleBindingWithBodyWithResponse(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeRoleBindingResponse, error)
+
+	// ChangeRoleBindingWithResponse performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+	ChangeRoleBindingWithResponse(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, body ChangeRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeRoleBindingResponse, error)
+
 	// RevokeRoleBindingWithResponse performs a POST /role-bindings/{bindingId}/revoke (the `RevokeRoleBinding` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -36013,6 +37133,20 @@ type ClientWithResponsesInterface interface {
 	// CreateServiceIdentityWithResponse performs a POST /service-identities (the `CreateServiceIdentity` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateServiceIdentityWithResponse(ctx context.Context, params *CreateServiceIdentityParams, body CreateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateServiceIdentityResponse, error)
+
+	// UpdateServiceIdentityWithBodyWithResponse performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateServiceIdentityWithBodyWithResponse(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServiceIdentityResponse, error)
+
+	// UpdateServiceIdentityWithResponse performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+	UpdateServiceIdentityWithResponse(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, body UpdateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServiceIdentityResponse, error)
 
 	// CreateServiceTokenWithBodyWithResponse performs a POST /service-identities/{identityId}/api-tokens (the `CreateServiceToken` operationId) request,
 	// with any type of body and a specified content type.
@@ -36441,6 +37575,27 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateTeamWithResponse(ctx context.Context, params *CreateTeamParams, body CreateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTeamResponse, error)
 
+	// DeleteTeamWithResponse performs a DELETE /teams/{teamId} (the `DeleteTeam` operationId) request.
+	//
+	// Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteTeamWithResponse(ctx context.Context, teamId Id, params *DeleteTeamParams, reqEditors ...RequestEditorFn) (*DeleteTeamResponse, error)
+
+	// UpdateTeamWithBodyWithResponse performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Renames a team under the same name rules as creation.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateTeamWithBodyWithResponse(ctx context.Context, teamId Id, params *UpdateTeamParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTeamResponse, error)
+
+	// UpdateTeamWithResponse performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Renames a team under the same name rules as creation.
+	UpdateTeamWithResponse(ctx context.Context, teamId Id, params *UpdateTeamParams, body UpdateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTeamResponse, error)
+
 	// GetUploadPolicyWithResponse performs a GET /upload-policy (the `GetUploadPolicy` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -36476,6 +37631,41 @@ type ClientWithResponsesInterface interface {
 	// CreateUserWithResponse performs a POST /users (the `CreateUser` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateUserWithResponse(ctx context.Context, params *CreateUserParams, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
+
+	// UpdateUserWithBodyWithResponse performs a PATCH /users/{userId} (the `UpdateUser` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateUserWithBodyWithResponse(ctx context.Context, userId Id, params *UpdateUserParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateUserResponse, error)
+
+	// UpdateUserWithResponse performs a PATCH /users/{userId} (the `UpdateUser` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+	UpdateUserWithResponse(ctx context.Context, userId Id, params *UpdateUserParams, body UpdateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateUserResponse, error)
+
+	// ResetUserPasswordWithResponse performs a POST /users/{userId}/password-reset (the `ResetUserPassword` operationId) request.
+	//
+	// Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ResetUserPasswordWithResponse(ctx context.Context, userId Id, params *ResetUserPasswordParams, reqEditors ...RequestEditorFn) (*ResetUserPasswordResponse, error)
+
+	// SetUserStateWithBodyWithResponse performs a POST /users/{userId}/state (the `SetUserState` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SetUserStateWithBodyWithResponse(ctx context.Context, userId Id, params *SetUserStateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserStateResponse, error)
+
+	// SetUserStateWithResponse performs a POST /users/{userId}/state (the `SetUserState` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+	SetUserStateWithResponse(ctx context.Context, userId Id, params *SetUserStateParams, body SetUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserStateResponse, error)
 
 	// GetValidationWithResponse performs a GET /validations/{validationId} (the `GetValidation` operationId) request.
 	//
@@ -37583,15 +38773,29 @@ func (r SetAuditPolicyResponse) ContentType() string {
 type LoginResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
 	// JSON401 the response for an HTTP 401 `application/json` response
 	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
 	// JSON429 the response for an HTTP 429 `application/json` response
 	JSON429 *Problem
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r LoginResponse) GetJSON400() *Problem {
+	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
 func (r LoginResponse) GetJSON401() *Problem {
 	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r LoginResponse) GetJSON403() *Problem {
+	return r.JSON403
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
@@ -40283,6 +41487,54 @@ func (r CreateIdentityProviderResponse) ContentType() string {
 	return ""
 }
 
+type DeleteIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UpdateIdentityProviderResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -41741,6 +42993,54 @@ func (r GetMeResponse) ContentType() string {
 	return ""
 }
 
+type UpdateMeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateMeResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateMeResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateMeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateMeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateMeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateMeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListApiTokensResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -41858,6 +43158,68 @@ func (r RevokeApiTokenResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RevokeApiTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ChangePasswordResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Problem
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ChangePasswordResponse) GetJSON400() *Problem {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ChangePasswordResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ChangePasswordResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ChangePasswordResponse) GetJSON429() *Problem {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r ChangePasswordResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ChangePasswordResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ChangePasswordResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ChangePasswordResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -46911,6 +48273,61 @@ func (r CreateRoleBindingResponse) ContentType() string {
 	return ""
 }
 
+type ChangeRoleBindingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RoleBinding
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ChangeRoleBindingResponse) GetJSON200() *RoleBinding {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ChangeRoleBindingResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ChangeRoleBindingResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r ChangeRoleBindingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ChangeRoleBindingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ChangeRoleBindingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ChangeRoleBindingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type RevokeRoleBindingResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -47418,6 +48835,61 @@ func (r CreateServiceIdentityResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateServiceIdentityResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateServiceIdentityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ServiceIdentity
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateServiceIdentityResponse) GetJSON200() *ServiceIdentity {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateServiceIdentityResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateServiceIdentityResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateServiceIdentityResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateServiceIdentityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateServiceIdentityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateServiceIdentityResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -49959,6 +51431,109 @@ func (r CreateTeamResponse) ContentType() string {
 	return ""
 }
 
+type DeleteTeamResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteTeamResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteTeamResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteTeamResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteTeamResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteTeamResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteTeamResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateTeamResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Team
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateTeamResponse) GetJSON200() *Team {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateTeamResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateTeamResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateTeamResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateTeamResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateTeamResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateTeamResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetUploadPolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -50262,6 +51837,157 @@ func (r CreateUserResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateUserResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateUserResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ResetUserPasswordResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TemporaryPassword
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ResetUserPasswordResponse) GetJSON200() *TemporaryPassword {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ResetUserPasswordResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResetUserPasswordResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r ResetUserPasswordResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ResetUserPasswordResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResetUserPasswordResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResetUserPasswordResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetUserStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SetUserStateResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetUserStateResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r SetUserStateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetUserStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetUserStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetUserStateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -52169,6 +53895,19 @@ func (c *ClientWithResponses) CreateIdentityProviderWithResponse(ctx context.Con
 	return ParseCreateIdentityProviderResponse(rsp)
 }
 
+// DeleteIdentityProviderWithResponse performs a DELETE /identity-providers/{providerId} (the `DeleteIdentityProvider` operationId) request.
+//
+// Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteIdentityProviderWithResponse(ctx context.Context, providerId Id, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*DeleteIdentityProviderResponse, error) {
+	rsp, err := c.DeleteIdentityProvider(ctx, providerId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteIdentityProviderResponse(rsp)
+}
+
 // UpdateIdentityProviderWithBodyWithResponse performs a PUT /identity-providers/{providerId} (the `UpdateIdentityProvider` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -52655,6 +54394,32 @@ func (c *ClientWithResponses) GetMeWithResponse(ctx context.Context, reqEditors 
 	return ParseGetMeResponse(rsp)
 }
 
+// UpdateMeWithBodyWithResponse performs a PATCH /me (the `UpdateMe` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateMeWithBodyWithResponse(ctx context.Context, params *UpdateMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMeResponse, error) {
+	rsp, err := c.UpdateMeWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMeResponse(rsp)
+}
+
+// UpdateMeWithResponse performs a PATCH /me (the `UpdateMe` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+func (c *ClientWithResponses) UpdateMeWithResponse(ctx context.Context, params *UpdateMeParams, body UpdateMeJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMeResponse, error) {
+	rsp, err := c.UpdateMe(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMeResponse(rsp)
+}
+
 // ListApiTokensWithResponse performs a GET /me/api-tokens (the `ListApiTokens` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -52697,6 +54462,32 @@ func (c *ClientWithResponses) RevokeApiTokenWithResponse(ctx context.Context, to
 		return nil, err
 	}
 	return ParseRevokeApiTokenResponse(rsp)
+}
+
+// ChangePasswordWithBodyWithResponse performs a POST /me/password (the `ChangePassword` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ChangePasswordWithBodyWithResponse(ctx context.Context, params *ChangePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangePasswordResponse, error) {
+	rsp, err := c.ChangePasswordWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangePasswordResponse(rsp)
+}
+
+// ChangePasswordWithResponse performs a POST /me/password (the `ChangePassword` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+func (c *ClientWithResponses) ChangePasswordWithResponse(ctx context.Context, params *ChangePasswordParams, body ChangePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangePasswordResponse, error) {
+	rsp, err := c.ChangePassword(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangePasswordResponse(rsp)
 }
 
 // RotateMirrorTokenKeyWithResponse performs a POST /mirror-token-keys/rotations (the `RotateMirrorTokenKey` operationId) request.
@@ -54506,6 +56297,32 @@ func (c *ClientWithResponses) CreateRoleBindingWithResponse(ctx context.Context,
 	return ParseCreateRoleBindingResponse(rsp)
 }
 
+// ChangeRoleBindingWithBodyWithResponse performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ChangeRoleBindingWithBodyWithResponse(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeRoleBindingResponse, error) {
+	rsp, err := c.ChangeRoleBindingWithBody(ctx, bindingId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangeRoleBindingResponse(rsp)
+}
+
+// ChangeRoleBindingWithResponse performs a PATCH /role-bindings/{bindingId} (the `ChangeRoleBinding` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+func (c *ClientWithResponses) ChangeRoleBindingWithResponse(ctx context.Context, bindingId Id, params *ChangeRoleBindingParams, body ChangeRoleBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeRoleBindingResponse, error) {
+	rsp, err := c.ChangeRoleBinding(ctx, bindingId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangeRoleBindingResponse(rsp)
+}
+
 // RevokeRoleBindingWithResponse performs a POST /role-bindings/{bindingId}/revoke (the `RevokeRoleBinding` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -54701,6 +56518,32 @@ func (c *ClientWithResponses) CreateServiceIdentityWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseCreateServiceIdentityResponse(rsp)
+}
+
+// UpdateServiceIdentityWithBodyWithResponse performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateServiceIdentityWithBodyWithResponse(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServiceIdentityResponse, error) {
+	rsp, err := c.UpdateServiceIdentityWithBody(ctx, identityId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateServiceIdentityResponse(rsp)
+}
+
+// UpdateServiceIdentityWithResponse performs a PATCH /service-identities/{identityId} (the `UpdateServiceIdentity` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+func (c *ClientWithResponses) UpdateServiceIdentityWithResponse(ctx context.Context, identityId Id, params *UpdateServiceIdentityParams, body UpdateServiceIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServiceIdentityResponse, error) {
+	rsp, err := c.UpdateServiceIdentity(ctx, identityId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateServiceIdentityResponse(rsp)
 }
 
 // CreateServiceTokenWithBodyWithResponse performs a POST /service-identities/{identityId}/api-tokens (the `CreateServiceToken` operationId) request,
@@ -55538,6 +57381,45 @@ func (c *ClientWithResponses) CreateTeamWithResponse(ctx context.Context, params
 	return ParseCreateTeamResponse(rsp)
 }
 
+// DeleteTeamWithResponse performs a DELETE /teams/{teamId} (the `DeleteTeam` operationId) request.
+//
+// Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteTeamWithResponse(ctx context.Context, teamId Id, params *DeleteTeamParams, reqEditors ...RequestEditorFn) (*DeleteTeamResponse, error) {
+	rsp, err := c.DeleteTeam(ctx, teamId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteTeamResponse(rsp)
+}
+
+// UpdateTeamWithBodyWithResponse performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request,
+// with any type of body and a specified content type.
+//
+// Renames a team under the same name rules as creation.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateTeamWithBodyWithResponse(ctx context.Context, teamId Id, params *UpdateTeamParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTeamResponse, error) {
+	rsp, err := c.UpdateTeamWithBody(ctx, teamId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateTeamResponse(rsp)
+}
+
+// UpdateTeamWithResponse performs a PATCH /teams/{teamId} (the `UpdateTeam` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Renames a team under the same name rules as creation.
+func (c *ClientWithResponses) UpdateTeamWithResponse(ctx context.Context, teamId Id, params *UpdateTeamParams, body UpdateTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTeamResponse, error) {
+	rsp, err := c.UpdateTeam(ctx, teamId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateTeamResponse(rsp)
+}
+
 // GetUploadPolicyWithResponse performs a GET /upload-policy (the `GetUploadPolicy` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -55614,6 +57496,71 @@ func (c *ClientWithResponses) CreateUserWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseCreateUserResponse(rsp)
+}
+
+// UpdateUserWithBodyWithResponse performs a PATCH /users/{userId} (the `UpdateUser` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateUserWithBodyWithResponse(ctx context.Context, userId Id, params *UpdateUserParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateUserResponse, error) {
+	rsp, err := c.UpdateUserWithBody(ctx, userId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateUserResponse(rsp)
+}
+
+// UpdateUserWithResponse performs a PATCH /users/{userId} (the `UpdateUser` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+func (c *ClientWithResponses) UpdateUserWithResponse(ctx context.Context, userId Id, params *UpdateUserParams, body UpdateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateUserResponse, error) {
+	rsp, err := c.UpdateUser(ctx, userId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateUserResponse(rsp)
+}
+
+// ResetUserPasswordWithResponse performs a POST /users/{userId}/password-reset (the `ResetUserPassword` operationId) request.
+//
+// Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ResetUserPasswordWithResponse(ctx context.Context, userId Id, params *ResetUserPasswordParams, reqEditors ...RequestEditorFn) (*ResetUserPasswordResponse, error) {
+	rsp, err := c.ResetUserPassword(ctx, userId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResetUserPasswordResponse(rsp)
+}
+
+// SetUserStateWithBodyWithResponse performs a POST /users/{userId}/state (the `SetUserState` operationId) request,
+// with any type of body and a specified content type.
+//
+// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetUserStateWithBodyWithResponse(ctx context.Context, userId Id, params *SetUserStateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserStateResponse, error) {
+	rsp, err := c.SetUserStateWithBody(ctx, userId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserStateResponse(rsp)
+}
+
+// SetUserStateWithResponse performs a POST /users/{userId}/state (the `SetUserState` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+func (c *ClientWithResponses) SetUserStateWithResponse(ctx context.Context, userId Id, params *SetUserStateParams, body SetUserStateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserStateResponse, error) {
+	rsp, err := c.SetUserState(ctx, userId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserStateResponse(rsp)
 }
 
 // GetValidationWithResponse performs a GET /validations/{validationId} (the `GetValidation` operationId) request.
@@ -56519,12 +58466,26 @@ func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
 	case rsp.StatusCode == 204:
 		break // No content-type
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest Problem
@@ -58354,6 +60315,42 @@ func ParseCreateIdentityProviderResponse(rsp *http.Response) (*CreateIdentityPro
 	return response, nil
 }
 
+// ParseDeleteIdentityProviderResponse parses an HTTP response from a DeleteIdentityProviderWithResponse call
+func ParseDeleteIdentityProviderResponse(rsp *http.Response) (*DeleteIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseUpdateIdentityProviderResponse parses an HTTP response from a UpdateIdentityProviderWithResponse call
 func ParseUpdateIdentityProviderResponse(rsp *http.Response) (*UpdateIdentityProviderResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -59387,6 +61384,42 @@ func ParseGetMeResponse(rsp *http.Response) (*GetMeResponse, error) {
 	return response, nil
 }
 
+// ParseUpdateMeResponse parses an HTTP response from a UpdateMeWithResponse call
+func ParseUpdateMeResponse(rsp *http.Response) (*UpdateMeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateMeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListApiTokensResponse parses an HTTP response from a ListApiTokensWithResponse call
 func ParseListApiTokensResponse(rsp *http.Response) (*ListApiTokensResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -59462,6 +61495,56 @@ func ParseRevokeApiTokenResponse(rsp *http.Response) (*RevokeApiTokenResponse, e
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseChangePasswordResponse parses an HTTP response from a ChangePasswordWithResponse call
+func ParseChangePasswordResponse(rsp *http.Response) (*ChangePasswordResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ChangePasswordResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 
@@ -63022,6 +65105,46 @@ func ParseCreateRoleBindingResponse(rsp *http.Response) (*CreateRoleBindingRespo
 	return response, nil
 }
 
+// ParseChangeRoleBindingResponse parses an HTTP response from a ChangeRoleBindingWithResponse call
+func ParseChangeRoleBindingResponse(rsp *http.Response) (*ChangeRoleBindingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ChangeRoleBindingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoleBinding
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRevokeRoleBindingResponse parses an HTTP response from a RevokeRoleBindingWithResponse call
 func ParseRevokeRoleBindingResponse(rsp *http.Response) (*RevokeRoleBindingResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -63345,6 +65468,46 @@ func ParseCreateServiceIdentityResponse(rsp *http.Response) (*CreateServiceIdent
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateServiceIdentityResponse parses an HTTP response from a UpdateServiceIdentityWithResponse call
+func ParseUpdateServiceIdentityResponse(rsp *http.Response) (*UpdateServiceIdentityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateServiceIdentityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceIdentity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
 		var dest Problem
@@ -65113,6 +67276,82 @@ func ParseCreateTeamResponse(rsp *http.Response) (*CreateTeamResponse, error) {
 	return response, nil
 }
 
+// ParseDeleteTeamResponse parses an HTTP response from a DeleteTeamWithResponse call
+func ParseDeleteTeamResponse(rsp *http.Response) (*DeleteTeamResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteTeamResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateTeamResponse parses an HTTP response from a UpdateTeamWithResponse call
+func ParseUpdateTeamResponse(rsp *http.Response) (*UpdateTeamResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateTeamResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Team
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetUploadPolicyResponse parses an HTTP response from a GetUploadPolicyWithResponse call
 func ParseGetUploadPolicyResponse(rsp *http.Response) (*GetUploadPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -65322,6 +67561,118 @@ func ParseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateUserResponse parses an HTTP response from a UpdateUserWithResponse call
+func ParseUpdateUserResponse(rsp *http.Response) (*UpdateUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResetUserPasswordResponse parses an HTTP response from a ResetUserPasswordWithResponse call
+func ParseResetUserPasswordResponse(rsp *http.Response) (*ResetUserPasswordResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResetUserPasswordResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TemporaryPassword
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetUserStateResponse parses an HTTP response from a SetUserStateWithResponse call
+func ParseSetUserStateResponse(rsp *http.Response) (*SetUserStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetUserStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Problem

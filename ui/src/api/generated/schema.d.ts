@@ -884,7 +884,8 @@ export interface paths {
         /** @description Replaces the label and settings. Kind and name stay fixed; without secretId the stored secret is kept. */
         put: operations["updateIdentityProvider"];
         post?: never;
-        delete?: never;
+        /** @description Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead. */
+        delete: operations["deleteIdentityProvider"];
         options?: never;
         head?: never;
         patch?: never;
@@ -995,6 +996,25 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/service-identities/{identityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identityId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners. */
+        patch: operations["updateServiceIdentity"];
         trace?: never;
     };
     "/service-identities/{identityId}/state": {
@@ -1184,6 +1204,24 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** @description Changes the caller's own display name. People only; service identities are relabelled by an administrator. */
+        patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends. */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -1237,6 +1275,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teams/{teamId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them. */
+        delete: operations["deleteTeam"];
+        options?: never;
+        head?: never;
+        /** @description Renames a team under the same name rules as creation. */
+        patch: operations["updateTeam"];
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -1247,6 +1305,63 @@ export interface paths {
         get: operations["listUsers"];
         put?: never;
         post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead. */
+        patch: operations["updateUser"];
+        trace?: never;
+    };
+    "/users/{userId}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409. */
+        post: operations["setUserState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{userId}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409). */
+        post: operations["resetUserPassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1267,6 +1382,25 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/role-bindings/{bindingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bindingId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409. */
+        patch: operations["changeRoleBinding"];
         trace?: never;
     };
     "/role-bindings/{bindingId}/revoke": {
@@ -4133,6 +4267,11 @@ export interface components {
             /** Format: password */
             password: string;
             providerId?: components["schemas"]["Id"];
+            /**
+             * Format: password
+             * @description Replaces a temporary password set by an administrator. Signing in with a temporary password and no newPassword fails with 403 password_change_required; ignored for any other account.
+             */
+            newPassword?: string;
         };
         SignInProviderList: {
             items: {
@@ -4412,6 +4551,8 @@ export interface components {
         Me: {
             principal: components["schemas"]["Principal"];
             displayName?: string;
+            /** @description The caller has a Samuori password and may change it from Account */
+            localPassword?: boolean;
             /** @description The organization lets developers download validated images (publication policy, ADR 0053). */
             developerDownloads?: boolean;
             roles: {
@@ -4470,7 +4611,32 @@ export interface components {
             disabled: boolean;
             /** @description The identity provider that created the user; absent for local accounts */
             source?: string;
+            /**
+             * @description service for service identities, which are managed on the Identity page
+             * @enum {string}
+             */
+            kind?: "user" | "service";
             roles: components["schemas"]["RoleBinding"][];
+        };
+        DisplayNameUpdate: {
+            displayName: string;
+        };
+        PasswordChange: {
+            /** Format: password */
+            currentPassword: string;
+            /**
+             * Format: password
+             * @description At least 12 characters and not containing the username; the server enforces the policy
+             */
+            newPassword: string;
+        };
+        TemporaryPassword: {
+            /** @description Shown once; give it to the user over a secure channel */
+            temporaryPassword: string;
+            expiresAt: components["schemas"]["Timestamp"];
+        };
+        RoleBindingChange: {
+            role: components["schemas"]["Role"];
         };
         UserList: {
             items: components["schemas"]["User"][];
@@ -8820,7 +8986,9 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             429: components["responses"]["Problem"];
         };
     };
@@ -8966,6 +9134,31 @@ export interface operations {
             };
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    deleteIdentityProvider: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                providerId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     setIdentityProviderState: {
@@ -9197,6 +9390,37 @@ export interface operations {
                 };
             };
             409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    updateServiceIdentity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                identityId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisplayNameUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceIdentity"];
+                };
+            };
+            404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
         };
     };
@@ -9458,6 +9682,62 @@ export interface operations {
             };
         };
     };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisplayNameUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Changed and audited; other sessions ended */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
     listApiTokens: {
         parameters: {
             query?: {
@@ -9583,6 +9863,62 @@ export interface operations {
             409: components["responses"]["Problem"];
         };
     };
+    deleteTeam: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                teamId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                teamId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamCreate"];
+            };
+        };
+        responses: {
+            /** @description Renamed and audited */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
     listUsers: {
         parameters: {
             query?: never;
@@ -9632,6 +9968,91 @@ export interface operations {
             409: components["responses"]["Problem"];
         };
     };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisplayNameUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    setUserState: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnabledState"];
+            };
+        };
+        responses: {
+            /** @description Updated and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    resetUserPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                userId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The temporary password, shown once and stored only as a hash */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryPassword"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
     createRoleBinding: {
         parameters: {
             query?: never;
@@ -9650,6 +10071,37 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleBinding"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    changeRoleBinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                bindingId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleBindingChange"];
+            };
+        };
+        responses: {
+            /** @description Changed and audited */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

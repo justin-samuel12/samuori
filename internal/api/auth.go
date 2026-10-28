@@ -55,9 +55,21 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 	if body.ProviderId != nil {
 		provider = *body.ProviderId
 	}
-	s, err := a.auth.Login(r.Context(), provider, body.Username, *body.Password, auth.ClientIP(r), w.Header().Get("X-Request-ID"))
+	var s auth.Session
+	var err error
+	if body.NewPassword != nil && *body.NewPassword != "" && provider == "" {
+		s, err = a.auth.LoginReplacingTemporary(r.Context(), body.Username, *body.Password, *body.NewPassword, auth.ClientIP(r), w.Header().Get("X-Request-ID"))
+	} else {
+		s, err = a.auth.Login(r.Context(), provider, body.Username, *body.Password, auth.ClientIP(r), w.Header().Get("X-Request-ID"))
+	}
 	switch {
 	case err == nil:
+	case errors.Is(err, auth.ErrPasswordChangeRequired):
+		apigen.WriteProblem(w, http.StatusForbidden, "password_change_required", err.Error())
+		return
+	case errors.Is(err, auth.ErrWeakPassword), errors.Is(err, auth.ErrSamePassword):
+		apigen.WriteProblem(w, http.StatusBadRequest, "weak_password", err.Error())
+		return
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		apigen.WriteProblem(w, http.StatusUnauthorized, "invalid_credentials", err.Error())
 		return

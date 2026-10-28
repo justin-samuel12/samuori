@@ -890,6 +890,8 @@ paths:
         "204":
           description: Session established; sets httpOnly session and CSRF cookies
         "401": { $ref: "#/components/responses/Problem" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
         "429": { $ref: "#/components/responses/Problem" }
 
   /auth/providers:
@@ -985,6 +987,17 @@ paths:
               schema: { $ref: "#/components/schemas/IdentityProvider" }
         "404": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
+
+    delete:
+      tags: [identity]
+      operationId: deleteIdentityProvider
+      description: Deletes a provider that never signed anyone in, with its group mappings. A provider whose users exist is refused with 409 provider_in_use; disable it instead.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /identity-providers/{providerId}/state:
     parameters: [{ name: providerId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
@@ -1125,6 +1138,28 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ServiceIdentity" }
         "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /service-identities/{identityId}:
+    parameters: [{ name: identityId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    patch:
+      tags: [identity]
+      operationId: updateServiceIdentity
+      description: Changes the display name. The username stays fixed; service identities are never deleted, because pipelines name them as owners.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DisplayNameUpdate" }
+      responses:
+        "200":
+          description: Updated and audited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceIdentity" }
+        "404": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
 
   /service-identities/{identityId}/state:
@@ -1286,6 +1321,41 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Me" }
 
+    patch:
+      tags: [identity]
+      operationId: updateMe
+      description: Changes the caller's own display name. People only; service identities are relabelled by an administrator.
+      x-samuori-roles: [any]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DisplayNameUpdate" }
+      responses:
+        "204": { description: Updated and audited }
+        "403": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /me/password:
+    post:
+      tags: [identity]
+      operationId: changePassword
+      description: Changes the caller's own local password from a browser session. The current password is required and checked under the sign-in rate limit and lockout; every other session of the user ends.
+      x-samuori-roles: [any]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PasswordChange" }
+      responses:
+        "204": { description: Changed and audited; other sessions ended }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+
   /me/api-tokens:
     get:
       tags: [identity]
@@ -1356,6 +1426,38 @@ paths:
               schema: { $ref: "#/components/schemas/Team" }
         "409": { $ref: "#/components/responses/Problem" }
 
+  /teams/{teamId}:
+    parameters: [{ name: teamId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    patch:
+      tags: [tenancy]
+      operationId: updateTeam
+      description: Renames a team under the same name rules as creation.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamCreate" }
+      responses:
+        "200":
+          description: Renamed and audited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [tenancy]
+      operationId: deleteTeam
+      description: Deletes a team nothing refers to. Projects in any state (purged projects keep their records), role bindings, group mappings, notification rules and image sources refuse it with 409 team_in_use, naming them.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
   /users:
     get:
       tags: [identity]
@@ -1386,6 +1488,59 @@ paths:
         "400": { $ref: "#/components/responses/Problem" }
         "409": { $ref: "#/components/responses/Problem" }
 
+  /users/{userId}:
+    parameters: [{ name: userId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    patch:
+      tags: [identity]
+      operationId: updateUser
+      description: Changes a person's display name. Users are never deleted, so audit records keep naming them; disable instead.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DisplayNameUpdate" }
+      responses:
+        "204": { description: Updated and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /users/{userId}/state:
+    parameters: [{ name: userId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    post:
+      tags: [identity]
+      operationId: setUserState
+      description: Disables or re-enables a person (ADR 0065). Disabling stops sign-in through every provider and revokes the user's sessions and API tokens at once. Disabling yourself, the last enabled organization administrator or the last enabled local administrator is refused with 409.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnabledState" }
+      responses:
+        "204": { description: Updated and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /users/{userId}/password-reset:
+    parameters: [{ name: userId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    post:
+      tags: [identity]
+      operationId: resetUserPassword
+      description: Gives a local user a random temporary password, returned once, that must be replaced at the next sign-in within 24 hours (ADR 0065). The user's sessions end. Your own password is changed from Account instead (409).
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "200":
+          description: The temporary password, shown once and stored only as a hash
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemporaryPassword" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
   /role-bindings:
     post:
       tags: [identity]
@@ -1400,6 +1555,28 @@ paths:
       responses:
         "201":
           description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoleBinding" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /role-bindings/{bindingId}:
+    parameters: [{ name: bindingId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    patch:
+      tags: [identity]
+      operationId: changeRoleBinding
+      description: Replaces the binding's role and keeps its scope, in one step audited with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings are refused with 409.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoleBindingChange" }
+      responses:
+        "200":
+          description: Changed and audited
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RoleBinding" }
@@ -5027,6 +5204,7 @@ components:
         username: { type: string, maxLength: 256 }
         password: { type: string, format: password, writeOnly: true, maxLength: 1024 }
         providerId: { $ref: "#/components/schemas/Id" }
+        newPassword: { type: string, format: password, writeOnly: true, maxLength: 1024, description: "Replaces a temporary password set by an administrator. Signing in with a temporary password and no newPassword fails with 403 password_change_required; ignored for any other account." }
     SignInProviderList:
       type: object
       required: [items]
@@ -5346,6 +5524,7 @@ components:
       properties:
         principal: { $ref: "#/components/schemas/Principal" }
         displayName: { type: string }
+        localPassword: { type: boolean, description: "The caller has a Samuori password and may change it from Account" }
         developerDownloads:
           type: boolean
           description: The organization lets developers download validated images (publication policy, ADR 0053).
@@ -5426,7 +5605,33 @@ components:
         displayName: { type: string }
         disabled: { type: boolean }
         source: { type: string, description: "The identity provider that created the user; absent for local accounts" }
+        kind: { type: string, enum: [user, service], description: "service for service identities, which are managed on the Identity page" }
         roles: { type: array, items: { $ref: "#/components/schemas/RoleBinding" } }
+    DisplayNameUpdate:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 128 }
+    PasswordChange:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, format: password, writeOnly: true, minLength: 1, maxLength: 1024 }
+        newPassword: { type: string, format: password, writeOnly: true, minLength: 1, maxLength: 1024, description: "At least 12 characters and not containing the username; the server enforces the policy" }
+    TemporaryPassword:
+      type: object
+      required: [temporaryPassword, expiresAt]
+      properties:
+        temporaryPassword: { type: string, description: "Shown once; give it to the user over a secure channel" }
+        expiresAt: { $ref: "#/components/schemas/Timestamp" }
+    RoleBindingChange:
+      type: object
+      additionalProperties: false
+      required: [role]
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
     UserList:
       type: object
       required: [items]

@@ -159,6 +159,7 @@ Test IDs are defined in the security test catalog.
 | TM-01 | S | Session theft or fixation | httpOnly, Secure, SameSite cookies; rotation at login; idle and absolute timeouts that reads and polling never renew and extension never passes | SEC-AUTH-01, SEC-AUTH-11 |
 | TM-02 | T | Cross-site request forgery | CSRF token on state changes; strict CORS; JSON-only APIs | SEC-AUTH-02 |
 | TM-03 | S | Password guessing | argon2id; per-account and per-IP rate limits; audited lockout | SEC-AUTH-03 |
+| TM-131 | S/E | A leaver, a stolen session or a reset password keeps access | Disabling a user revokes their sessions and API tokens in one transaction; administrator resets give a shown-once temporary password, valid 24 hours, that only lets the user choose a new one, and end their sessions; a password change needs the current password under the sign-in limits and ends other sessions; the last enabled administrator and local administrator cannot be disabled (ADR 0065) | SEC-AUTH-12 |
 | TM-07 | I | XSS via file names, logs, detector output or YAML | No raw HTML rendering; strict CSP; ANSI stripped from logs | SEC-UI-01 |
 | TM-08 | T | OIDC or LDAP login manipulation | OIDC state, nonce, PKCE, issuer and audience checks; LDAP filter escaping | SEC-AUTH-05, SEC-AUTH-06 |
 | TM-09 | D | Request or upload flooding | Per-user and per-team rate limits, size limits, quotas, pagination caps | SEC-DOS-01 |

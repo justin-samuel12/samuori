@@ -112,6 +112,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | identity | GET | `/identity-providers` | `listIdentityProviders` | administrator |
 | identity | POST | `/identity-providers` | `createIdentityProvider` | administrator |
 | identity | POST | `/identity-providers/{providerId}/state` | `setIdentityProviderState` | administrator |
+| identity | DELETE | `/identity-providers/{providerId}` | `deleteIdentityProvider` | administrator (409 `provider_in_use` once anyone signed in through it) |
 | identity | POST | `/identity-providers/{providerId}/test` | `testIdentityProvider` | administrator |
 | identity | GET | `/identity-providers/{providerId}/group-mappings` | `listGroupMappings` | administrator |
 | identity | POST | `/identity-providers/{providerId}/group-mappings` | `createGroupMapping` | administrator |
@@ -121,12 +122,21 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | identity | GET | `/service-identities` | `listServiceIdentities` | administrator |
 | identity | POST | `/service-identities` | `createServiceIdentity` | administrator |
 | identity | POST | `/service-identities/{identityId}/state` | `setServiceIdentityState` | administrator |
+| identity | PATCH | `/service-identities/{identityId}` | `updateServiceIdentity` | administrator (display name only) |
 | identity | POST | `/service-identities/{identityId}/api-tokens` | `createServiceToken` | administrator |
 | identity | DELETE | `/service-identities/{identityId}/api-tokens/{tokenId}` | `revokeServiceToken` | administrator |
 | identity | GET | `/me` | `getMe` | any |
+| identity | PATCH | `/me` | `updateMe` | any person (own display name) |
+| identity | POST | `/me/password` | `changePassword` | any person with a local password, browser session only (ADR 0065) |
 | identity | GET | `/me/api-tokens` | `listApiTokens` | any |
 | identity | POST | `/me/api-tokens` | `createApiToken` | any |
 | tenancy | GET | `/teams` | `listTeams` | any |
+| tenancy | PATCH | `/teams/{teamId}` | `updateTeam` | administrator (organization) |
+| tenancy | DELETE | `/teams/{teamId}` | `deleteTeam` | administrator (organization; 409 `team_in_use`) |
+| identity | PATCH | `/users/{userId}` | `updateUser` | administrator (organization) |
+| identity | POST | `/users/{userId}/state` | `setUserState` | administrator (organization; ADR 0065) |
+| identity | POST | `/users/{userId}/password-reset` | `resetUserPassword` | administrator (organization; local users; ADR 0065) |
+| identity | PATCH | `/role-bindings/{bindingId}` | `changeRoleBinding` | administrator (organization) |
 | tenancy | GET | `/projects` | `listProjects` | developer, maintainer, publisher, security-reviewer, administrator |
 | tenancy | POST | `/projects` | `createProject` | maintainer, administrator |
 | tenancy | GET | `/projects/{projectId}` | `getProject` | developer, maintainer, publisher, security-reviewer, administrator |

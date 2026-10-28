@@ -70,3 +70,4 @@ owner approval.
 | [0061](0061-deployment-files-for-a-project.md) | Deployment files for a project | Accepted (provisional) |
 | [0062](0062-editing-withdrawing-and-deleting.md) | Renaming, withdrawing requests and deleting pipelines and conversions | Accepted (provisional) |
 | [0064](0064-editing-secret-grants.md) | Editing secret grants | Accepted (provisional) |
+| [0065](0065-disabling-users-and-resetting-passwords.md) | Disabling users and resetting passwords | Accepted (provisional) |

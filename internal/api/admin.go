@@ -101,6 +101,10 @@ func toUser(u tenancy.User) apigen.User {
 	if u.Source != "" {
 		out.Source = &u.Source
 	}
+	if u.Kind != "" {
+		kind := apigen.UserKind(u.Kind)
+		out.Kind = &kind
+	}
 	for _, rb := range u.Roles {
 		out.Roles = append(out.Roles, toRoleBinding(rb))
 	}

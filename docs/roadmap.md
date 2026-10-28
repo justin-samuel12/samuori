@@ -21,6 +21,12 @@ independently testable, not scope cuts. Update task status in the same PR that d
   (runs kept); conversions are renamed and deleted (creator or maintainer; not while a run is active). Migration
   00070. Runnable: API and UI; focused API and service tests pass on SQLite. Not yet run: PostgreSQL and a browser
   check.
+- **Editable people and access (2026-10-28, owner request, ADR 0065).** Administrators rename and delete unused
+  teams, edit display names, disable and re-enable users (sessions and tokens revoked), reset local passwords to a
+  shown-once temporary password the user must replace at sign-in, change a role in one step, rename service
+  identities and delete identity providers nobody signed in through; people edit their own name and change their own
+  password from Account. Runnable: API and UI; `internal/api/people_test.go` (SEC-AUTH-12) passes on SQLite. Not yet
+  run: PostgreSQL and a browser check of the new dialogs and the forced password change.
 - **Project archive, restore and purge (2026-10-28, owner decision, ADR 0058).** Maintainers and administrators
   archive a project (hidden from lists, new work refused with 409, grants revoked and audited, queued and running
   builds cancelled) and restore it without its grants; administrators purge an archived project with its typed name,

@@ -119,6 +119,35 @@ Samuori keeps one local administrator: revoking the organization administrator r
 organization stays reachable when every provider fails. The Users page shows each user's source and which roles
 come from group mappings.
 
+## Managing people and teams
+
+All of these are for organization administrators only, checked on the server, and audited (ADR 0065).
+
+- **Display names:** `PATCH /users/{id}`; people change their own with `PATCH /me` (Account page). Usernames never
+  change. Audited `user.update`.
+- **Disable, never delete:** users stay so the audit log, uploads and approvals keep naming them.
+  `POST /users/{id}/state` with `enabled: false` revokes every session and API token of the user in the same
+  transaction, and sign-in through any provider is refused. Refused with 409: your own account, the last enabled
+  organization administrator and the last enabled local administrator. Re-enabling restores sign-in, not the
+  revoked tokens.
+- **Password reset** (local users, not yourself): `POST /users/{id}/password-reset` returns a random temporary
+  password once (`Cache-Control: no-store`) and ends the user's sessions. It is valid for 24 hours and only to choose
+  a new password: signing in with it answers `403 password_change_required` until the request also carries
+  `newPassword`, which must meet the policy. API tokens are kept.
+- **Own password** (`POST /me/password`, from a browser session): needs the current password, checked under the
+  sign-in rate limit and lockout. Every other session ends; tokens are kept.
+- **Change role:** `PATCH /role-bindings/{id}` replaces the role and keeps the scope, in one transaction audited
+  `role.change` with the old and new role. The last-administrator rules of revoke apply; bindings from group mappings
+  are refused (change the mapping).
+- **Teams:** `PATCH /teams/{id}` renames under the creation rules (unique, lower-case with dashes); `DELETE
+  /teams/{id}` succeeds only when no project (active, archived or purged), role binding, group mapping, notification
+  rule or image source refers to the team, and otherwise answers `409 team_in_use` naming what does.
+- **Identity providers:** `DELETE /identity-providers/{id}` removes a provider that never signed anyone in, with its
+  group mappings; once a user is linked to it the answer is `409 provider_in_use` and the provider can only be
+  disabled.
+- **Service identities:** `PATCH /service-identities/{id}` changes the display name; they are never deleted because
+  pipelines name them as owners.
+
 ## Service identities
 
 `/service-identities` are accounts for automation. They have no password and no provider, so they cannot sign in.
@@ -126,7 +155,8 @@ come from group mappings.
 - An administrator issues them expiring API tokens: read-only or read-write, for at most a year. The value is shown
   once and stored as a hash.
 - Roles are ordinary role bindings.
-- Disabling an identity stops its tokens at once. Creation, token issue and revocation, and disabling are audited.
+- Disabling an identity stops its tokens at once; re-enabling makes them work again. Creation, renaming, token issue
+  and revocation, and disabling are audited.
 - Requests made with their tokens carry the `service` principal kind.
 
 ## Evidence
@@ -161,6 +191,17 @@ come from group mappings.
   leave the idle deadline alone; extending stops at the absolute deadline; expired sessions cannot be extended or
   used; only administrators change the timeouts; out-of-bounds values are refused; a shorter idle timeout applies to
   existing sessions.
+
+- `internal/api/people_test.go` (**SEC-AUTH-12**), over HTTP with real sessions on SQLite: disabling a user ends
+  their session and API token at once and refuses sign-in, re-enabling does not revive the token, and disabling
+  yourself or the last local administrator is refused; an administrator reset ends the user's session, the old
+  password stops working, the temporary password alone gets `password_change_required`, a weak replacement is
+  refused, a good one signs in and the temporary password cannot be reused, an expired one is refused, and the
+  response is `no-store`; changing your own password needs the current one, ends the other session but not this
+  one, is refused with an API token and locks after five wrong attempts; role change keeps the scope and is audited
+  with both roles, and the last administrator cannot be demoted; team rename and delete, including 409 for a role
+  binding and for a purged project; provider delete with 409 once a user is linked; and 403 for a team-scoped
+  administrator on every one of these operations.
 
 ## Limitations
 

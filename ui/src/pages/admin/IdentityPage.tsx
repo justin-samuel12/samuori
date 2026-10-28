@@ -27,6 +27,8 @@ export function IdentityPage() {
   const [mapping, setMapping] = useState<Provider>();
   const [editing, setEditing] = useState<Provider>();
   const [issuing, setIssuing] = useState<ServiceIdentity>();
+  const [deleting, setDeleting] = useState<Provider>();
+  const [relabelling, setRelabelling] = useState<ServiceIdentity>();
   const [testing, setTesting] = useState<string>();
   const [tested, setTested] = useState<Record<string, Message | undefined>>({});
 
@@ -226,6 +228,9 @@ export function IdentityPage() {
                   >
                     {p.enabled ? "Disable" : "Enable"} {p.displayName}
                   </Button>
+                  <Button variant="quiet" onPress={() => setDeleting(p)}>
+                    Delete {p.displayName}
+                  </Button>
                 </div>
               ),
             },
@@ -294,6 +299,9 @@ export function IdentityPage() {
                   <Button variant="quiet" onPress={() => setIssuing(s)}>
                     Issue token for {s.username}
                   </Button>
+                  <Button variant="quiet" onPress={() => setRelabelling(s)}>
+                    Edit name of {s.username}
+                  </Button>
                   <Button
                     variant="quiet"
                     onPress={() => void setServiceEnabled(s, s.disabled)}
@@ -347,6 +355,26 @@ export function IdentityPage() {
         <MappingDialog
           provider={mapping}
           onClose={() => setMapping(undefined)}
+        />
+      )}
+      {deleting && (
+        <DeleteProviderDialog
+          provider={deleting}
+          onClose={() => setDeleting(undefined)}
+          onDeleted={() => {
+            report(undefined, `${deleting.displayName} deleted.`);
+            setDeleting(undefined);
+          }}
+        />
+      )}
+      {relabelling && (
+        <ServiceNameDialog
+          service={relabelling}
+          onClose={() => setRelabelling(undefined)}
+          onSaved={() => {
+            report(undefined, `${relabelling.username} renamed.`);
+            setRelabelling(undefined);
+          }}
         />
       )}
       {issuing && (
@@ -1002,5 +1030,94 @@ function SessionSettings({
         </Button>
       </Form>
     </section>
+  );
+}
+
+function DeleteProviderDialog({
+  provider,
+  onClose,
+  onDeleted,
+}: {
+  provider: Provider;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const [error, setError] = useState<string>();
+  async function remove() {
+    const { error } = await api.DELETE("/identity-providers/{providerId}", {
+      params: { path: { providerId: provider.id } },
+    });
+    if (error) setError(describeError(error));
+    else onDeleted();
+  }
+  return (
+    <Dialog
+      title={`Delete ${provider.displayName}?`}
+      size="confirm"
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      {error && <Alert>{error}</Alert>}
+      <p>
+        Only a provider that has never signed anyone in can be deleted, with its
+        group mappings. Once people have signed in through it, their accounts
+        stay linked to it: disable it instead.
+      </p>
+      <div className="samuori-actions">
+        <Button variant="secondary" onPress={onClose}>
+          Cancel
+        </Button>
+        <Button variant="danger" onPress={() => void remove()}>
+          Delete provider
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+
+function ServiceNameDialog({
+  service,
+  onClose,
+  onSaved,
+}: {
+  service: ServiceIdentity;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [display, setDisplay] = useState(service.displayName);
+  const [error, setError] = useState<string>();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const { error } = await api.PATCH("/service-identities/{identityId}", {
+      params: { path: { identityId: service.id } },
+      body: { displayName: display.trim() },
+    });
+    if (error) setError(describeError(error));
+    else onSaved();
+  }
+  return (
+    <Dialog
+      title={`Edit name of ${service.username}`}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <Form onSubmit={submit} className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <TextField
+          label="Display name"
+          value={display}
+          onChange={setDisplay}
+          isRequired
+          maxLength={128}
+          description="The name pipelines use as owner stays the same. Service identities are never deleted; disable one to stop its tokens."
+        />
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Save</Button>
+        </div>
+      </Form>
+    </Dialog>
   );
 }

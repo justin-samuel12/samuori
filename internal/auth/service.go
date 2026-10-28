@@ -83,6 +83,17 @@ func (s *Service) UseDirectory(f DirectoryLogin) { s.directory = f }
 // Login verifies credentials and always issues a fresh session; any session the client presented is ignored. With a
 // provider ID the password is checked by that directory, under the same rate limits and lockout.
 func (s *Service) Login(ctx context.Context, providerID, username, password, clientIP, requestID string) (Session, error) {
+	return s.login(ctx, providerID, username, password, "", clientIP, requestID)
+}
+
+// LoginReplacingTemporary is Login for a local account whose password an administrator reset: the temporary password
+// is checked under the same limits and replaced by newPassword before the session is issued (ADR 0065). For any
+// other account newPassword is ignored.
+func (s *Service) LoginReplacingTemporary(ctx context.Context, username, password, newPassword, clientIP, requestID string) (Session, error) {
+	return s.login(ctx, "", username, password, newPassword, clientIP, requestID)
+}
+
+func (s *Service) login(ctx context.Context, providerID, username, password, newPassword, clientIP, requestID string) (Session, error) {
 	now := s.now()
 	if !s.allowIP(clientIP, now) {
 		return Session{}, ErrRateLimited
@@ -113,8 +124,9 @@ func (s *Service) Login(ctx context.Context, providerID, username, password, cli
 	}
 	var userID, orgID, hash string
 	var disabled bool
-	err = s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT u.id, u.org_id, u.disabled, c.password_hash FROM users u JOIN user_credentials c ON c.user_id = u.id WHERE u.username = ?`), username).
-		Scan(&userID, &orgID, &disabled, &hash)
+	var temporary sql.NullTime
+	err = s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT u.id, u.org_id, u.disabled, c.password_hash, c.temporary_until FROM users u JOIN user_credentials c ON c.user_id = u.id WHERE u.username = ?`), username).
+		Scan(&userID, &orgID, &disabled, &hash, &temporary)
 	if errors.Is(err, sql.ErrNoRows) {
 		VerifyPassword(dummyHash, password)
 		s.fail(ctx, key, now)
@@ -136,6 +148,27 @@ func (s *Service) Login(ctx context.Context, providerID, username, password, cli
 	if recovery == restrictedDenied {
 		s.auditLogin(ctx, orgID, username, "denied", "local passwords are limited to administrators; use the identity provider", requestID)
 		return Session{}, ErrInvalidCredentials
+	}
+	if temporary.Valid {
+		if !now.Before(temporary.Time) {
+			s.auditLogin(ctx, orgID, username, "denied", "the temporary password has expired", requestID)
+			return Session{}, ErrInvalidCredentials
+		}
+		if newPassword == "" {
+			s.clearFailures(ctx, key)
+			s.auditLogin(ctx, orgID, username, "denied", "temporary password; a new password is required", requestID)
+			return Session{}, ErrPasswordChangeRequired
+		}
+		if newPassword == password {
+			return Session{}, ErrSamePassword
+		}
+		if err := s.checkPassword(username, newPassword); err != nil {
+			return Session{}, err
+		}
+		p := authz.Principal{ID: userID, OrgID: orgID, Kind: authz.User}
+		if err := s.setPassword(ctx, p, userID, newPassword, "", "user.password-change", requestID); err != nil {
+			return Session{}, err
+		}
 	}
 	s.clearFailures(ctx, key)
 	reason := ""
