@@ -316,6 +316,39 @@ Implemented in `internal/buildspec` (`Canonical`, `Digest`).
   finds that spec (`GET /projects/{id}/specs?name=`) and offers to save the work as its next revision, which goes
   through the same revision endpoint, role check, `If-Match` and `spec.revision` audit event as any other edit.
 
+## Suggested specs
+
+`GET /snapshots/{snapshotId}/spec-suggestions` (`listSpecSuggestions`, developer or maintainer of the snapshot's
+project; another team's snapshot is 404) turns the snapshot's newest completed discovery into starting specs, so the
+CLI (`samuori spec init --snapshot`) and scripts start where the web wizard does. It reads the stored discovery
+result only: nothing in the upload runs, nothing is saved, and `409 discovery_required` (or `discovery_running`) means
+discovery must finish first. Each suggestion is rendered by the same `specs.Render` as `/spec-documents/validate`
+(canonical YAML, normalized JSON, digest, schema and semantic issues) and carries its method, a title, the reasons for
+its choices and warnings. The list holds, in this order, at most 20 items:
+
+- a **recipe** spec per detected application whose language and application type an approved recipe covers (first
+  match in the catalogue order of `GET /recipes`), with type, runtime, version constraint, commands and folder from
+  the finding and the validation profile for the type. An application without an approved recipe gets a `no-recipe`
+  note in the list's `warnings` instead;
+- a **frontend and backend** recipe spec for each Node.js static site and HTTP service in separate folders (ADR 0055):
+  port 8080 for the image, the application on 8000 behind `/api`;
+- a **dockerfile** spec per analysed Dockerfile: built as written, stopping at the last stage, with the type and
+  runtime of the application found in its folder and the port when it exposes exactly one;
+- **railpack** and **buildpacks** specs for the first application, building its folder.
+
+Methods the project may not use (`GET /projects/{id}/build-methods`) are left out. The item the wizard would
+recommend is marked `recommended` and listed first: the organization's default method when it fits, else the first
+Dockerfile, a recipe, then Railpack. Warnings repeat the finding's or Dockerfile's discovery warnings and readiness
+(for example `no-lockfile` or `install-scripts`). Discovery finds neither listening ports nor health paths, so when the
+`http-startup` check needs a port and none is known, the suggestion assumes 3000 for Node.js, 8000 for Python and 8080
+otherwise and says so with a `port-assumed` warning; no health path is set.
+
+The derivation is in `internal/specs/suggest.go` and mirrors the wizard's `fromFinding`, `pickRecipe`, `appName`,
+`withFrontend` and `frontendBackendPairs` (`ui/src/spec/model.ts`). The two are kept in step by one fixture,
+`internal/specs/testdata/suggestions.json`, that both `TestSuggestMatchesWizard` and `model.test.ts` check. The only
+deliberate differences are the assumed port and that Railpack and Buildpacks suggestions build the application's
+folder rather than the upload's root.
+
 ## Versioning and migration
 
 - Every stored revision keeps the `apiVersion` it was written with. Revisions are immutable and never rewritten in

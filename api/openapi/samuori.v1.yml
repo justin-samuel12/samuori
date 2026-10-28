@@ -1993,6 +1993,30 @@ paths:
               schema: { $ref: "#/components/schemas/DiscoveryList" }
         "404": { $ref: "#/components/responses/Problem" }
 
+  /snapshots/{snapshotId}/spec-suggestions:
+    parameters: [{ $ref: "#/components/parameters/SnapshotId" }]
+    get:
+      tags: [discovery]
+      operationId: listSpecSuggestions
+      description: "Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs."
+      x-samuori-roles: [developer, maintainer]
+      parameters:
+        - { name: name, in: query, description: "metadata.name for every suggestion, instead of one derived from the folder or project", schema: { type: string, pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$" } }
+      responses:
+        "200":
+          description: Suggestions, recommended first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpecSuggestionList" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409":
+          description: "The snapshot has no completed discovery yet (code discovery_required, or discovery_running while one runs); start one with startDiscovery"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Problem" }
+
   /discoveries/{discoveryId}:
     parameters: [{ name: discoveryId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
     get:
@@ -8129,6 +8153,29 @@ components:
       properties:
         valid: { type: boolean }
         document: { type: object, description: "Normalized document (JSON form of the canonical YAML)" }
+        canonicalYaml: { type: string }
+        digest: { $ref: "#/components/schemas/Digest" }
+        schemaErrors: { type: array, items: { $ref: "#/components/schemas/ProblemDetail" } }
+        semanticErrors: { type: array, items: { $ref: "#/components/schemas/ProblemDetail" } }
+    SpecSuggestionList:
+      type: object
+      required: [discoveryId, items, warnings]
+      properties:
+        discoveryId: { $ref: "#/components/schemas/Id" }
+        items: { type: array, maxItems: 20, items: { $ref: "#/components/schemas/SpecSuggestion" } }
+        warnings: { type: array, description: "Why an application has no suggestion, for example no approved recipe for its language", items: { $ref: "#/components/schemas/Warning" } }
+    SpecSuggestion:
+      type: object
+      required: [method, title, sourceSubpath, recommended, reasons, warnings, valid, document, canonicalYaml, schemaErrors, semanticErrors]
+      properties:
+        method: { type: string, enum: [recipe, dockerfile, railpack, buildpacks] }
+        title: { type: string }
+        sourceSubpath: { type: string, description: "The application's folder in the upload" }
+        recommended: { type: boolean, description: "What the wizard recommends: the organization's default when it fits, else the first Dockerfile, a recipe, then Railpack" }
+        reasons: { type: array, items: { type: string }, description: Why each part of the suggestion was chosen }
+        warnings: { type: array, description: "Discovery's warnings and readiness for this application, and values Samuori assumed (code port-assumed)", items: { $ref: "#/components/schemas/Warning" } }
+        valid: { type: boolean }
+        document: { $ref: "#/components/schemas/BuildSpecDocument" }
         canonicalYaml: { type: string }
         digest: { $ref: "#/components/schemas/Digest" }
         schemaErrors: { type: array, items: { $ref: "#/components/schemas/ProblemDetail" } }

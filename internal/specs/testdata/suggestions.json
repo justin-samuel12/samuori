@@ -1,0 +1,97 @@
+{
+  "recipes": [
+    { "id": "node-legacy", "version": "0.9.0", "languages": ["nodejs"], "applicationTypes": ["http-service"], "status": "withdrawn" },
+    { "id": "node-service", "version": "1.0.0", "languages": ["javascript", "typescript", "nodejs"], "applicationTypes": ["http-service", "worker", "cli-task"], "status": "approved" },
+    { "id": "python-service", "version": "1.0.0", "languages": ["python"], "applicationTypes": ["http-service", "worker", "cli-task"], "status": "approved" },
+    { "id": "static-site", "version": "1.0.0", "languages": ["javascript", "typescript", "nodejs"], "applicationTypes": ["static-site"], "status": "approved" }
+  ],
+  "cases": [
+    {
+      "name": "a Node.js web service at the upload's root",
+      "project": "Shop",
+      "findings": [
+        {
+          "detectorId": "node", "detectorVersion": "1.0.0", "sourceSubpath": ".", "language": "javascript", "framework": "express",
+          "applicationKind": "http-service", "runtimeConstraints": { "node": ">=20" }, "packageManager": "npm",
+          "suggestedCommands": { "install": "npm ci", "start": "npm start" }, "evidence": [], "confidence": "high"
+        }
+      ],
+      "want": [
+        {
+          "app": ".",
+          "document": {
+            "apiVersion": "samuori.invalid/v1alpha1", "kind": "ImageBuild", "metadata": { "name": "shop" },
+            "spec": {
+              "application": { "type": "http-service", "runtime": { "language": "nodejs", "framework": "express", "versionConstraint": ">=20" } },
+              "build": { "method": "recipe", "recipe": { "install": "npm ci", "start": "npm start", "id": "node-service", "version": "1.0.0" } },
+              "validation": { "profile": "http-startup" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a TypeScript frontend and a Python API in separate folders",
+      "project": "store",
+      "findings": [
+        {
+          "detectorId": "node", "detectorVersion": "1.0.0", "sourceSubpath": "web", "language": "typescript", "framework": "vite",
+          "applicationKind": "static-site", "packageManager": "npm",
+          "suggestedCommands": { "install": "npm ci", "build": "npm run build" }, "evidence": [], "confidence": "high"
+        },
+        {
+          "detectorId": "python", "detectorVersion": "1.0.0", "sourceSubpath": "services/api", "language": "python", "framework": "fastapi",
+          "applicationKind": "http-service", "runtimeConstraints": { "python": ">=3.12" }, "packageManager": "pip",
+          "suggestedCommands": { "install": "pip install -r requirements.txt", "start": "uvicorn main:app --host 0.0.0.0 --port 8000" },
+          "evidence": [], "confidence": "medium"
+        }
+      ],
+      "want": [
+        {
+          "app": "web",
+          "document": {
+            "apiVersion": "samuori.invalid/v1alpha1", "kind": "ImageBuild", "metadata": { "name": "web" },
+            "spec": {
+              "application": { "type": "static-site", "runtime": { "language": "nodejs", "framework": "vite" } },
+              "build": { "method": "recipe", "recipe": { "install": "npm ci", "build": "npm run build", "path": "web", "id": "static-site", "version": "1.0.0" } },
+              "validation": { "profile": "static-serve" }
+            }
+          }
+        },
+        {
+          "app": "services/api",
+          "document": {
+            "apiVersion": "samuori.invalid/v1alpha1", "kind": "ImageBuild", "metadata": { "name": "api" },
+            "spec": {
+              "application": { "type": "http-service", "runtime": { "language": "python", "framework": "fastapi", "versionConstraint": ">=3.12" } },
+              "build": {
+                "method": "recipe",
+                "recipe": { "install": "pip install -r requirements.txt", "start": "uvicorn main:app --host 0.0.0.0 --port 8000", "path": "services/api", "id": "python-service", "version": "1.0.0" }
+              },
+              "validation": { "profile": "http-startup" }
+            }
+          }
+        },
+        {
+          "app": "services/api",
+          "frontend": "web",
+          "document": {
+            "apiVersion": "samuori.invalid/v1alpha1", "kind": "ImageBuild", "metadata": { "name": "api" },
+            "spec": {
+              "application": { "type": "http-service", "port": 8080, "runtime": { "language": "python", "framework": "fastapi", "versionConstraint": ">=3.12" } },
+              "build": {
+                "method": "recipe",
+                "recipe": {
+                  "install": "pip install -r requirements.txt", "start": "uvicorn main:app --host 0.0.0.0 --port 8000", "path": "services/api",
+                  "id": "python-service", "version": "1.0.0",
+                  "frontend": { "path": "web", "install": "npm ci", "build": "npm run build", "apiPrefixes": ["/api"], "backendPort": 8000 }
+                }
+              },
+              "validation": { "profile": "http-startup" }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -20,8 +20,10 @@ import {
   comboKey,
   comboPrefix,
   findingKey,
+  appName,
   fromFinding,
   frontendBackendPairs,
+  pickRecipe,
   withFrontend,
   get,
   migrateDraft,
@@ -296,26 +298,12 @@ export function WizardPage({ projectId }: { projectId: string }) {
 
   function chooseApp(key: string, extend?: (d: Doc) => Doc, appKey = key) {
     const f = findings.find((x) => findingKey(x) === key);
-    const name = slug(
-      f && f.sourceSubpath !== "."
-        ? (f.sourceSubpath.split("/").pop() ?? "app")
-        : (project?.name ?? "app"),
+    const name = appName(f, project?.name);
+    const doc = fromFinding(
+      name,
+      f,
+      pickRecipe(recipes, fromFinding(name, f, undefined)),
     );
-    const draft = fromFinding(name, f, undefined);
-    const lang = get(draft, [
-      "spec",
-      "application",
-      "runtime",
-      "language",
-    ]) as string;
-    const kind = get(draft, ["spec", "application", "type"]) as string;
-    const recipe = recipes.find(
-      (r) =>
-        r.status === "approved" &&
-        (r.languages ?? []).includes(lang) &&
-        (!kind || (r.applicationTypes ?? []).includes(kind)),
-    );
-    const doc = fromFinding(name, f, recipe);
     update((s) => ({
       ...s,
       appKey,

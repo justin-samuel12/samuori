@@ -157,10 +157,27 @@ func TestCLI(t *testing.T) {
 		if out := expect(0, "analyze", snap); !strings.Contains(out, "Dockerfile") || !strings.Contains(out, "8080") {
 			t.Fatalf("analyze = %s", out)
 		}
-		if out := expect(0, "spec", "init", "web", "--snapshot", snap, "-o", "-"); !strings.Contains(out, "method: dockerfile") {
+		if out := expect(0, "spec", "init", "web", "--snapshot", snap, "-o", "-"); !strings.Contains(out, "method: dockerfile") || !strings.Contains(out, "suggested: Dockerfile") {
 			t.Fatalf("spec init from discovery = %s", out)
 		}
 		expect(cli.ExitError, "upload", "--project", projB, src)
+
+		nodeSrc := t.TempDir()
+		_ = os.WriteFile(filepath.Join(nodeSrc, "package.json"), []byte(`{"name":"shop","scripts":{"start":"node server.js"},"dependencies":{"express":"^4.21.0"}}`), 0o644)
+		_ = os.WriteFile(filepath.Join(nodeSrc, "package-lock.json"), []byte(`{"lockfileVersion":3,"packages":{"":{},"node_modules/express":{"version":"4.21.2"}}}`), 0o644)
+		_ = os.WriteFile(filepath.Join(nodeSrc, "server.js"), []byte("require('express')().listen(3000)\n"), 0o644)
+		_, nodeSnap, _ := run("upload", "--project", "app", nodeSrc)
+		recipeFile := filepath.Join(work, "shop.spec.yml")
+		if out := expect(0, "spec", "init", "shop", "--snapshot", nodeSnap, "-o", recipeFile); !strings.Contains(out, "port-assumed") || !strings.Contains(out, "(recipe method)") {
+			t.Fatalf("spec init for a Node.js service = %s", out)
+		}
+		if raw, _ := os.ReadFile(recipeFile); !bytes.Contains(raw, []byte("id: node-service")) || !bytes.Contains(raw, []byte("name: shop")) {
+			t.Fatalf("recipe spec =\n%s", raw)
+		}
+		expect(0, "spec", "validate", recipeFile)
+		if out := expect(0, "spec", "init", "--snapshot", nodeSnap, "--method", "dockerfile", "-o", "-"); !strings.Contains(out, "plain starter") || !strings.Contains(out, "method: dockerfile") {
+			t.Fatalf("spec init --method dockerfile without a Dockerfile = %s", out)
+		}
 	})
 
 	t.Run("builds and ci", func(t *testing.T) {

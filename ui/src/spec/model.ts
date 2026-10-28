@@ -204,6 +204,33 @@ export function fromFinding(
   return d;
 }
 
+/** The first approved recipe for the draft's language and application type, as the wizard picks one. */
+export function pickRecipe(
+  recipes: Schemas["Recipe"][],
+  draft: Doc,
+): Schemas["Recipe"] | undefined {
+  const lang = get(draft, ["spec", "application", "runtime", "language"]);
+  const kind = get(draft, ["spec", "application", "type"]);
+  return recipes.find(
+    (r) =>
+      r.status === "approved" &&
+      (r.languages ?? []).includes(lang as string) &&
+      (!kind || (r.applicationTypes ?? []).includes(kind as string)),
+  );
+}
+
+/** A spec name for an application: its folder's name, or the project's for the upload's root. */
+export function appName(
+  f: Schemas["DetectorFinding"] | undefined,
+  project: string | undefined,
+): string {
+  return slug(
+    f && f.sourceSubpath !== "."
+      ? (f.sourceSubpath.split("/").pop() ?? "app")
+      : (project ?? "app"),
+  );
+}
+
 export function defaultProfile(kind: string | undefined): string {
   return (
     {

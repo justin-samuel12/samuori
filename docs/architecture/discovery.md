@@ -56,6 +56,9 @@ build method is then suggested as `dockerfile`. The detector never executes inst
 frontends. Variable references (`$VAR`) are never expanded; they are reported as ambiguous. Frontends are approved
 only when listed, digest-pinned, in the organization's `frontends` policy (`recipes-and-policies.md`).
 
+Starting specs built from a discovery's findings and Dockerfile analyses, for the wizard and for API clients, are
+described in [buildspec.md, Suggested specs](buildspec.md#suggested-specs).
+
 ## Build readiness
 
 Discovery also predicts what a build will need and where it is likely to break (ADR 0050), with the same static

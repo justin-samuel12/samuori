@@ -30,7 +30,7 @@ var commandGroups = []struct {
 		{"analyze SNAPSHOT [--rerun] [--timeout 5m]", "summarize what discovery found in a snapshot, without running its code"},
 	}},
 	{"Build specs", []commandHelp{
-		{"spec init [NAME] [--snapshot SNAPSHOT] [--method dockerfile|railpack|buildpacks] [-o FILE] [--force]", "write a starter spec file, from discovery when --snapshot is given"},
+		{"spec init [NAME] [--snapshot SNAPSHOT] [--method recipe|dockerfile|railpack|buildpacks] [-o FILE] [--force]", "write a starting spec file; with --snapshot, the server's suggestion from discovery"},
 		{"spec list --project PROJECT", "list a project's specs"},
 		{"spec show SPEC [--project PROJECT] [--revision N]", "print a spec revision's document"},
 		{"spec validate FILE", "validate a spec file on the server without saving it"},

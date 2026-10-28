@@ -977,6 +977,10 @@ func (Unimplemented) StartDiscovery(w http.ResponseWriter, r *http.Request, _ Sn
 	NotImplemented(w, r, "StartDiscovery")
 }
 
+func (Unimplemented) ListSpecSuggestions(w http.ResponseWriter, r *http.Request, _ SnapshotId, _ ListSpecSuggestionsParams) {
+	NotImplemented(w, r, "ListSpecSuggestions")
+}
+
 func (Unimplemented) ValidateSpecDocument(w http.ResponseWriter, r *http.Request, _ ValidateSpecDocumentParams) {
 	NotImplemented(w, r, "ValidateSpecDocument")
 }

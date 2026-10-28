@@ -78,9 +78,13 @@ samuori deploy-files compose --build "$build"         # a starting compose.yml; 
 Projects and specs are named by ID or by name. A name must match exactly one project the token can see; a spec name
 is looked up in `--project`, or in every visible project when it is left out, and must match one spec.
 
-Discovery is static: `analyze` and `spec init --snapshot` never run the uploaded code. `spec init` writes a starter
-spec for the `dockerfile`, `railpack` or `buildpacks` method (from discovery, or a `Dockerfile` in the current
-directory); start recipe specs in the web wizard. `spec apply` and `spec validate` take YAML or JSON (a document, or
+Discovery is static: `analyze` and `spec init --snapshot` never run the uploaded code. With `--snapshot`, `spec init`
+runs discovery if the snapshot has none, then writes the server's recommended suggestion
+([Suggested specs](../architecture/buildspec.md#suggested-specs)), including built-in recipe specs; `--method` picks
+the first suggestion for that method instead. It explains the choice, the warnings (such as an assumed port) and the
+other suggestions on standard error. A `NAME` replaces the suggested `metadata.name`. Without `--snapshot`, or when
+the server has no suggestion for the method, it writes a plain `dockerfile`, `railpack` or `buildpacks` starter
+(`dockerfile` when the current directory has a `Dockerfile`). `spec apply` and `spec validate` take YAML or JSON (a document, or
 `{"document": …}` as the API takes it) and validate on the server. `spec apply` adds no revision when the document is
 unchanged.
 

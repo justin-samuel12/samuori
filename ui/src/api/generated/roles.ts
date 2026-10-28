@@ -209,6 +209,7 @@ export const operationAccess = {
   listSnapshotDiscoveries: ["developer", "maintainer"],
   listSnapshots: ["developer", "maintainer", "security-reviewer", "administrator"],
   listSpecRevisions: ["developer", "maintainer", "publisher", "administrator"],
+  listSpecSuggestions: ["developer", "maintainer"],
   listSpecs: ["developer", "maintainer", "publisher", "administrator"],
   listTeams: "any",
   listUsers: ["administrator"],

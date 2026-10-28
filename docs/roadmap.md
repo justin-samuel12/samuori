@@ -5,6 +5,15 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Specs suggested by the server (2026-10-28, owner request).** `GET /snapshots/{snapshotId}/spec-suggestions`
+  (developer, maintainer) derives starting specs from the newest completed discovery as the wizard does: built-in
+  recipe specs per application, frontend and backend pairs, each Dockerfile, Railpack and Buildpacks when allowed,
+  recommended first, each with canonical YAML and JSON, reasons, warnings and validation issues
+  ([Suggested specs](architecture/buildspec.md#suggested-specs)). `samuori spec init --snapshot` writes the
+  recommendation (or the first for `--method`, now including `recipe`), keeping the plain starters as fallbacks. The
+  Go derivation and the wizard's are checked against one fixture. Runnable: API and CLI; `TestSuggest`,
+  `TestSuggestMatchesWizard`, `TestSpecSuggestions`, `TestCLI` and `model.test.ts` pass on SQLite. Not yet run:
+  PostgreSQL, a real worker build of a suggested recipe spec.
 - **API usable from outside the repository (2026-10-28, owner request, ADR 0066).** The server publishes its
   contract at `GET /api/v1/openapi.yml` and `/openapi.json` to any signed-in caller (ETag, private caching); Help →
   API reference renders it with search, roles, parameters, schemas, the error format and curl examples for API

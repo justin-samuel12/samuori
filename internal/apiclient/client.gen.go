@@ -3734,6 +3734,30 @@ func (e SpecRevisionCreateEditorMode) Valid() bool {
 	}
 }
 
+// Defines values for SpecSuggestionMethod.
+const (
+	SpecSuggestionMethodBuildpacks SpecSuggestionMethod = "buildpacks"
+	SpecSuggestionMethodDockerfile SpecSuggestionMethod = "dockerfile"
+	SpecSuggestionMethodRailpack   SpecSuggestionMethod = "railpack"
+	SpecSuggestionMethodRecipe     SpecSuggestionMethod = "recipe"
+)
+
+// Valid indicates whether the value is a known member of the SpecSuggestionMethod enum.
+func (e SpecSuggestionMethod) Valid() bool {
+	switch e {
+	case SpecSuggestionMethodBuildpacks:
+		return true
+	case SpecSuggestionMethodDockerfile:
+		return true
+	case SpecSuggestionMethodRailpack:
+		return true
+	case SpecSuggestionMethodRecipe:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StorageStatusBackend.
 const (
 	StorageStatusBackendLocal StorageStatusBackend = "local"
@@ -8809,6 +8833,45 @@ type SpecRevisionList struct {
 	NextCursor *NextCursor    `json:"nextCursor,omitempty"`
 }
 
+// SpecSuggestion defines model for SpecSuggestion.
+type SpecSuggestion struct {
+	CanonicalYaml string  `json:"canonicalYaml"`
+	Digest        *Digest `json:"digest,omitempty"`
+
+	// Document Validated server-side against api/schemas/buildspec.v1alpha1.json, which OpenAPI 3.0 cannot express fully.
+	Document BuildSpecDocument    `json:"document"`
+	Method   SpecSuggestionMethod `json:"method"`
+
+	// Reasons Why each part of the suggestion was chosen
+	Reasons []string `json:"reasons"`
+
+	// Recommended What the wizard recommends: the organization's default when it fits, else the first Dockerfile, a recipe, then Railpack
+	Recommended    bool            `json:"recommended"`
+	SchemaErrors   []ProblemDetail `json:"schemaErrors"`
+	SemanticErrors []ProblemDetail `json:"semanticErrors"`
+
+	// SourceSubpath The application's folder in the upload
+	SourceSubpath string `json:"sourceSubpath"`
+	Title         string `json:"title"`
+	Valid         bool   `json:"valid"`
+
+	// Warnings Discovery's warnings and readiness for this application, and values Samuori assumed (code port-assumed)
+	Warnings []Warning `json:"warnings"`
+}
+
+// SpecSuggestionMethod defines model for SpecSuggestion.Method.
+type SpecSuggestionMethod string
+
+// SpecSuggestionList defines model for SpecSuggestionList.
+type SpecSuggestionList struct {
+	// DiscoveryId ULID
+	DiscoveryId Id               `json:"discoveryId"`
+	Items       []SpecSuggestion `json:"items"`
+
+	// Warnings Why an application has no suggestion, for example no approved recipe for its language
+	Warnings []Warning `json:"warnings"`
+}
+
 // SpecValidation defines model for SpecValidation.
 type SpecValidation struct {
 	CanonicalYaml *string `json:"canonicalYaml,omitempty"`
@@ -10490,6 +10553,12 @@ type DeleteSnapshotParams struct {
 type StartDiscoveryParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListSpecSuggestionsParams defines parameters for ListSpecSuggestions.
+type ListSpecSuggestionsParams struct {
+	// Name metadata.name for every suggestion, instead of one derived from the folder or project
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
 }
 
 // ValidateSpecDocumentParams defines parameters for ValidateSpecDocument.
@@ -12939,6 +13008,11 @@ type ClientInterface interface {
 
 	// StartDiscovery performs a POST /snapshots/{snapshotId}/discoveries (the `StartDiscovery` operationId) request.
 	StartDiscovery(ctx context.Context, snapshotId SnapshotId, params *StartDiscoveryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSpecSuggestions performs a GET /snapshots/{snapshotId}/spec-suggestions (the `ListSpecSuggestions` operationId) request.
+	//
+	// Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs.
+	ListSpecSuggestions(ctx context.Context, snapshotId SnapshotId, params *ListSpecSuggestionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ValidateSpecDocumentWithBody performs a POST /spec-documents/validate (the `ValidateSpecDocument` operationId) request,
 	// with any type of body and a specified content type.
@@ -18416,6 +18490,21 @@ func (c *Client) ListSnapshotDiscoveries(ctx context.Context, snapshotId Snapsho
 // StartDiscovery performs a POST /snapshots/{snapshotId}/discoveries (the `StartDiscovery` operationId) request.
 func (c *Client) StartDiscovery(ctx context.Context, snapshotId SnapshotId, params *StartDiscoveryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartDiscoveryRequest(c.Server, snapshotId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListSpecSuggestions performs a GET /snapshots/{snapshotId}/spec-suggestions (the `ListSpecSuggestions` operationId) request.
+//
+// Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs.
+func (c *Client) ListSpecSuggestions(ctx context.Context, snapshotId SnapshotId, params *ListSpecSuggestionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSpecSuggestionsRequest(c.Server, snapshotId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -32165,6 +32254,67 @@ func NewStartDiscoveryRequest(server string, snapshotId SnapshotId, params *Star
 	return req, nil
 }
 
+// NewListSpecSuggestionsRequest constructs an http.Request for the ListSpecSuggestions method
+func NewListSpecSuggestionsRequest(server string, snapshotId SnapshotId, params *ListSpecSuggestionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "snapshotId", snapshotId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/snapshots/%s/spec-suggestions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Name != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "name", *params.Name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewValidateSpecDocumentRequest calls the generic ValidateSpecDocument builder with application/json body
 func NewValidateSpecDocumentRequest(server string, params *ValidateSpecDocumentParams, body ValidateSpecDocumentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -37345,6 +37495,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	StartDiscoveryWithResponse(ctx context.Context, snapshotId SnapshotId, params *StartDiscoveryParams, reqEditors ...RequestEditorFn) (*StartDiscoveryResponse, error)
+
+	// ListSpecSuggestionsWithResponse performs a GET /snapshots/{snapshotId}/spec-suggestions (the `ListSpecSuggestions` operationId) request.
+	//
+	// Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListSpecSuggestionsWithResponse(ctx context.Context, snapshotId SnapshotId, params *ListSpecSuggestionsParams, reqEditors ...RequestEditorFn) (*ListSpecSuggestionsResponse, error)
 
 	// ValidateSpecDocumentWithBodyWithResponse performs a POST /spec-documents/validate (the `ValidateSpecDocument` operationId) request,
 	// with any type of body and a specified content type.
@@ -49669,6 +49826,75 @@ func (r StartDiscoveryResponse) ContentType() string {
 	return ""
 }
 
+type ListSpecSuggestionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SpecSuggestionList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON410 the response for an HTTP 410 `application/json` response
+	JSON410 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSpecSuggestionsResponse) GetJSON200() *SpecSuggestionList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListSpecSuggestionsResponse) GetJSON400() *Problem {
+	return r.JSON400
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListSpecSuggestionsResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListSpecSuggestionsResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON410 returns the response for an HTTP 410 `application/json` response
+func (r ListSpecSuggestionsResponse) GetJSON410() *Problem {
+	return r.JSON410
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSpecSuggestionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSpecSuggestionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSpecSuggestionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSpecSuggestionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ValidateSpecDocumentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -56960,6 +57186,19 @@ func (c *ClientWithResponses) StartDiscoveryWithResponse(ctx context.Context, sn
 		return nil, err
 	}
 	return ParseStartDiscoveryResponse(rsp)
+}
+
+// ListSpecSuggestionsWithResponse performs a GET /snapshots/{snapshotId}/spec-suggestions (the `ListSpecSuggestions` operationId) request.
+//
+// Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListSpecSuggestionsWithResponse(ctx context.Context, snapshotId SnapshotId, params *ListSpecSuggestionsParams, reqEditors ...RequestEditorFn) (*ListSpecSuggestionsResponse, error) {
+	rsp, err := c.ListSpecSuggestions(ctx, snapshotId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSpecSuggestionsResponse(rsp)
 }
 
 // ValidateSpecDocumentWithBodyWithResponse performs a POST /spec-documents/validate (the `ValidateSpecDocument` operationId) request,
@@ -66233,6 +66472,60 @@ func ParseStartDiscoveryResponse(rsp *http.Response) (*StartDiscoveryResponse, e
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSpecSuggestionsResponse parses an HTTP response from a ListSpecSuggestionsWithResponse call
+func ParseListSpecSuggestionsResponse(rsp *http.Response) (*ListSpecSuggestionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSpecSuggestionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SpecSuggestionList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON410 = &dest
 
 	}
 

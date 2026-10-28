@@ -9,4 +9,6 @@ nothing is stable yet.
 - Added `GET /openapi.yml` and `GET /openapi.json` (`getApiContract`, `getApiContractJson`): the contract the server
   runs, for any signed-in caller.
 - Added deprecation signalling: operations marked `deprecated: true` answer with `Deprecation` and `Sunset` headers.
+- Added `GET /snapshots/{snapshotId}/spec-suggestions` (`listSpecSuggestions`, developer and maintainer): starting
+  BuildSpecs derived from the snapshot's newest completed discovery, including built-in recipe specs. Additive.
 - No operation is deprecated.

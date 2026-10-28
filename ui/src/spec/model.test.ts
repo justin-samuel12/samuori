@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import type { Schemas } from "../api/client";
 import {
+  appName,
+  pickRecipe,
   comboKey,
   formPaths,
   fromFinding,
@@ -95,4 +99,40 @@ test("a frontend and a backend finding make one launcher image", () => {
     pairs.map((p) => comboKey(p.fe, p.be)),
     ["frontend+backend:node:frontend|python:backend"],
   );
+});
+
+// The server's spec suggestions (internal/specs/suggest.go) are checked against the same fixture.
+test("the wizard builds the documents the server suggests", () => {
+  const fx = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../internal/specs/testdata/suggestions.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ) as {
+    recipes: Schemas["Recipe"][];
+    cases: {
+      project: string;
+      findings: Schemas["DetectorFinding"][];
+      want: { app: string; frontend?: string; document: unknown }[];
+    }[];
+  };
+  for (const c of fx.cases) {
+    const find = (dir: string) =>
+      c.findings.find((f) => f.sourceSubpath === dir);
+    for (const w of c.want) {
+      const f = find(w.app);
+      const name = appName(f, c.project);
+      let doc = fromFinding(
+        name,
+        f,
+        pickRecipe(fx.recipes, fromFinding(name, f, undefined)),
+      );
+      const fe = w.frontend ? find(w.frontend) : undefined;
+      if (fe) doc = withFrontend(doc, fe);
+      assert.deepEqual(doc, w.document, `${w.app} ${w.frontend ?? ""}`);
+    }
+  }
 });

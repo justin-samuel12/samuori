@@ -1787,6 +1787,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/snapshots/{snapshotId}/spec-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshotId: components["parameters"]["SnapshotId"];
+            };
+            cookie?: never;
+        };
+        /** @description Starting BuildSpecs derived from the snapshot's newest completed discovery, as the web wizard would fill them in: a built-in recipe per detected application, frontend and backend pairs, each Dockerfile, and Railpack and Buildpacks when the project may use them. Each comes in canonical YAML and JSON with the reasons for its choices, warnings and validation issues. The recommended one is first. Nothing is saved and nothing in the upload runs. */
+        get: operations["listSpecSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discoveries/{discoveryId}": {
         parameters: {
             query?: never;
@@ -6984,6 +7003,31 @@ export interface components {
             schemaErrors: components["schemas"]["ProblemDetail"][];
             semanticErrors: components["schemas"]["ProblemDetail"][];
         };
+        SpecSuggestionList: {
+            discoveryId: components["schemas"]["Id"];
+            items: components["schemas"]["SpecSuggestion"][];
+            /** @description Why an application has no suggestion, for example no approved recipe for its language */
+            warnings: components["schemas"]["Warning"][];
+        };
+        SpecSuggestion: {
+            /** @enum {string} */
+            method: "recipe" | "dockerfile" | "railpack" | "buildpacks";
+            title: string;
+            /** @description The application's folder in the upload */
+            sourceSubpath: string;
+            /** @description What the wizard recommends: the organization's default when it fits, else the first Dockerfile, a recipe, then Railpack */
+            recommended: boolean;
+            /** @description Why each part of the suggestion was chosen */
+            reasons: string[];
+            /** @description Discovery's warnings and readiness for this application, and values Samuori assumed (code port-assumed) */
+            warnings: components["schemas"]["Warning"][];
+            valid: boolean;
+            document: components["schemas"]["BuildSpecDocument"];
+            canonicalYaml: string;
+            digest?: components["schemas"]["Digest"];
+            schemaErrors: components["schemas"]["ProblemDetail"][];
+            semanticErrors: components["schemas"]["ProblemDetail"][];
+        };
         WizardDraft: {
             version: number;
             /** @description Opaque editor state; never holds secret values */
@@ -10815,6 +10859,43 @@ export interface operations {
                 };
             };
             404: components["responses"]["Problem"];
+        };
+    };
+    listSpecSuggestions: {
+        parameters: {
+            query?: {
+                /** @description metadata.name for every suggestion, instead of one derived from the folder or project */
+                name?: string;
+            };
+            header?: never;
+            path: {
+                snapshotId: components["parameters"]["SnapshotId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggestions, recommended first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecSuggestionList"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            /** @description The snapshot has no completed discovery yet (code discovery_required, or discovery_running while one runs); start one with startDiscovery */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            410: components["responses"]["Problem"];
         };
     };
     getDiscovery: {

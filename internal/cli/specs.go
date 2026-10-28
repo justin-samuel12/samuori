@@ -203,10 +203,12 @@ func (e *env) spec(ctx context.Context, args []string) error {
 
 var nameChars = regexp.MustCompile(`[^a-z0-9-]+`)
 
+var specNamePattern = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
+
 func (e *env) specInit(ctx context.Context, args []string) error {
 	fs := flags("spec init", e)
-	snapshot := fs.String("snapshot", "", "use this snapshot's discovery to choose the build method")
-	method := fs.String("method", "", "dockerfile, railpack or buildpacks (default: from discovery or ./Dockerfile)")
+	snapshot := fs.String("snapshot", "", "start from the server's suggestions for this snapshot's discovery")
+	method := fs.String("method", "", "recipe, dockerfile, railpack or buildpacks (default: the server's recommendation, else ./Dockerfile or railpack)")
 	out := fs.String("o", "samuori.spec.yml", "file to write; - for standard output")
 	force := fs.Bool("force", false, "replace an existing file")
 	pos, err := parse(fs, args)
@@ -216,44 +218,47 @@ func (e *env) specInit(ctx context.Context, args []string) error {
 	if len(pos) > 1 {
 		return failf(ExitUsage, "usage: samuori spec init [NAME] [--snapshot SNAPSHOT] [--method M] [-o FILE]")
 	}
+	if *method != "" && !slices.Contains([]string{"recipe", "dockerfile", "railpack", "buildpacks"}, *method) {
+		return failf(ExitUsage, "--method is recipe, dockerfile, railpack or buildpacks")
+	}
 	name := ""
 	if len(pos) == 1 {
-		name = pos[0]
-	} else if wd, err := os.Getwd(); err == nil {
-		name = strings.Trim(nameChars.ReplaceAllString(strings.ToLower(filepath.Base(wd)), "-"), "-")
+		if name = pos[0]; !specNamePattern.MatchString(name) {
+			return failf(ExitUsage, "give a spec NAME of lowercase letters, digits and -")
+		}
 	}
-	if !regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`).MatchString(name) {
-		return failf(ExitUsage, "give a spec NAME of lowercase letters, digits and -")
-	}
-	dir, dockerfile := ".", "Dockerfile"
+	doc := ""
 	if *snapshot != "" {
-		d, err := e.discovery(ctx, *snapshot, false, 5*time.Minute)
+		s, err := e.suggestion(ctx, *snapshot, name, *method)
 		if err != nil {
 			return err
 		}
-		switch {
-		case d.Dockerfiles != nil && len(*d.Dockerfiles) > 0 && (*method == "" || *method == "dockerfile"):
-			p := (*d.Dockerfiles)[0].Path
-			*method, dir, dockerfile = "dockerfile", filepath.ToSlash(filepath.Dir(p)), filepath.Base(p)
-		case d.Findings != nil && len(*d.Findings) > 0:
-			dir = (*d.Findings)[0].SourceSubpath
+		if s != nil {
+			doc, *method = s.CanonicalYaml, string(s.Method)
 		}
-	} else if _, err := os.Stat("Dockerfile"); err == nil && *method == "" {
-		*method = "dockerfile"
 	}
-	if *method == "" {
-		*method = "railpack"
-	}
-	if dir == "" {
-		dir = "."
-	}
-	if !slices.Contains([]string{"dockerfile", "railpack", "buildpacks"}, *method) {
-		return failf(ExitUsage, "--method is dockerfile, railpack or buildpacks; recipe specs are easiest to start in the web wizard")
-	}
-	doc := fmt.Sprintf("apiVersion: samuori.invalid/v1alpha1\nkind: ImageBuild\nmetadata:\n  name: %s\nspec:\n  build:\n    method: %s\n    %s:\n      context: %s\n",
-		name, *method, *method, strconv.Quote(dir))
-	if *method == "dockerfile" {
-		doc += "      path: " + strconv.Quote(dockerfile) + "\n"
+	if doc == "" {
+		if *method == "recipe" {
+			return failf(ExitFailed, "no recipe spec could be suggested; upload the source and pass --snapshot, or use the web wizard")
+		}
+		if name == "" {
+			if wd, err := os.Getwd(); err == nil {
+				name = strings.Trim(nameChars.ReplaceAllString(strings.ToLower(filepath.Base(wd)), "-"), "-")
+			}
+			if !specNamePattern.MatchString(name) {
+				return failf(ExitUsage, "give a spec NAME of lowercase letters, digits and -")
+			}
+		}
+		if _, err := os.Stat("Dockerfile"); err == nil && *method == "" && *snapshot == "" {
+			*method = "dockerfile"
+		}
+		if *method == "" {
+			*method = "railpack"
+		}
+		doc = fmt.Sprintf("apiVersion: samuori.invalid/v1alpha1\nkind: ImageBuild\nmetadata:\n  name: %s\nspec:\n  build:\n    method: %s\n    %s:\n      context: \".\"\n", name, *method, *method)
+		if *method == "dockerfile" {
+			doc += "      path: \"Dockerfile\"\n"
+		}
 	}
 	if *out == "-" {
 		_, err := fmt.Fprint(e.out, doc)
@@ -276,6 +281,59 @@ func (e *env) specInit(ctx context.Context, args []string) error {
 	}
 	e.note("wrote %s (%s method); check it with samuori spec validate %s, then save it with samuori spec apply %s --project PROJECT", *out, *method, *out, *out)
 	return nil
+}
+
+// suggestion returns the server's recommended spec for the snapshot, or its first one for method, after explaining it
+// on standard error. It returns nil when the server suggests nothing that fits.
+func (e *env) suggestion(ctx context.Context, snapshot, name, method string) (*apiclient.SpecSuggestion, error) {
+	if _, err := e.discovery(ctx, snapshot, false, 5*time.Minute); err != nil {
+		return nil, err
+	}
+	params := &apiclient.ListSpecSuggestionsParams{}
+	if name != "" {
+		params.Name = &name
+	}
+	r, err := e.api.ListSpecSuggestionsWithResponse(ctx, snapshot, params)
+	if err != nil {
+		return nil, err
+	}
+	if r.JSON200 == nil {
+		return nil, problem("reading the spec suggestions", r.StatusCode(), r.Body)
+	}
+	for _, w := range r.JSON200.Warnings {
+		e.note("note %s: %s", w.Code, w.Message)
+	}
+	var pick *apiclient.SpecSuggestion
+	var others []string
+	for i, s := range r.JSON200.Items {
+		if pick == nil && (method == "" || string(s.Method) == method) {
+			pick = &r.JSON200.Items[i]
+			continue
+		}
+		others = append(others, s.Title)
+	}
+	if pick == nil {
+		if method != "" {
+			e.note("the server has no %s suggestion for this snapshot (the project may not be allowed to use it); writing a plain starter", method)
+		}
+		return nil, nil
+	}
+	e.note("suggested: %s", pick.Title)
+	for _, why := range pick.Reasons {
+		e.note("  %s", why)
+	}
+	for _, w := range pick.Warnings {
+		e.note("  warning %s: %s", w.Code, w.Message)
+	}
+	if !pick.Valid {
+		for _, d := range append(pick.SchemaErrors, pick.SemanticErrors...) {
+			e.note("  to fix %s: %s", str(d.Field), str(d.Reason))
+		}
+	}
+	if len(others) > 0 {
+		e.note("other suggestions (choose with --method): %s", strings.Join(others, "; "))
+	}
+	return pick, nil
 }
 
 func (e *env) specList(ctx context.Context, args []string) error {

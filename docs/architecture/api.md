@@ -156,6 +156,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | sources | GET | `/snapshots/{snapshotId}` | `getSnapshot` | developer, maintainer, security-reviewer, administrator |
 | discovery | POST | `/snapshots/{snapshotId}/discoveries` | `startDiscovery` | developer, maintainer |
 | discovery | GET | `/discoveries/{discoveryId}` | `getDiscovery` | developer, maintainer |
+| discovery | GET | `/snapshots/{snapshotId}/spec-suggestions` | `listSpecSuggestions` | developer, maintainer ([suggested specs](buildspec.md#suggested-specs)) |
 | specs | GET | `/projects/{projectId}/specs` | `listSpecs` | developer, maintainer, publisher, administrator |
 | specs | POST | `/projects/{projectId}/specs` | `createSpec` | developer, maintainer |
 | specs | GET | `/specs/{specId}` | `getSpec` | developer, maintainer, publisher, administrator |
