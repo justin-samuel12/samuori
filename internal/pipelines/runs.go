@@ -296,6 +296,9 @@ func (s *Service) execute(ctx context.Context, id string) error {
 		return err
 	}
 	p, err := s.load(ctx, r.PipelineID)
+	if errors.Is(err, ErrNotFound) {
+		return s.finish(ctx, r, Failed, "deleted", "the pipeline was deleted before the run started", nil)
+	}
 	if err != nil {
 		return err
 	}

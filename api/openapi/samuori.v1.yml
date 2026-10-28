@@ -1467,7 +1467,7 @@ paths:
     patch:
       tags: [tenancy]
       operationId: updateProject
-      description: Changes project settings. Automatic publication also needs the spec to ask for it.
+      description: "Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team."
       x-samuori-roles: [maintainer, administrator]
       parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
       requestBody:
@@ -1481,7 +1481,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Project" }
+        "403": { $ref: "#/components/responses/Problem" }
         "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
 
   /projects/{projectId}/archive:
     parameters: [{ $ref: "#/components/parameters/ProjectId" }]
@@ -2621,7 +2624,7 @@ paths:
       parameters:
         - { $ref: "#/components/parameters/Cursor" }
         - { $ref: "#/components/parameters/Limit" }
-        - { name: state, in: query, schema: { type: string, enum: [pending, approved, rejected, expired] } }
+        - { name: state, in: query, schema: { type: string, enum: [pending, approved, rejected, expired, withdrawn] } }
       responses:
         "200":
           description: Approvals the caller may decide or view
@@ -2647,6 +2650,29 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Approval" }
+
+  /approvals/{approvalId}/withdrawal:
+    parameters: [{ name: approvalId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
+    post:
+      tags: [approvals]
+      operationId: withdrawApproval
+      description: "Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062)."
+      x-samuori-roles: [developer, maintainer, administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalWithdrawal" }
+      responses:
+        "200":
+          description: Withdrawn
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Approval" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
 
   /workers:
     get:
@@ -4359,6 +4385,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Pipeline" }
         "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [pipelines]
+      operationId: updatePipeline
+      description: "Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PipelineUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pipeline" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [pipelines]
+      operationId: deletePipeline
+      description: "Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062)."
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /pipelines/{pipelineId}/state:
     parameters: [{ name: pipelineId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
@@ -4610,6 +4668,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/KubeConversion" }
         "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [kubernetes]
+      operationId: updateKubeConversion
+      description: "Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited."
+      x-samuori-roles: [developer, maintainer, administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KubeConversionUpdate" }
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KubeConversion" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [kubernetes]
+      operationId: deleteKubeConversion
+      description: "Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running."
+      x-samuori-roles: [developer, maintainer, administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted and audited }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /kube-conversions/{conversionId}/runs:
     parameters: [{ $ref: "#/components/parameters/ConversionId" }]
@@ -5284,8 +5374,11 @@ components:
         publicationMode: { type: string, enum: [manual, automatic], default: manual }
     ProjectUpdate:
       type: object
-      required: [publicationMode]
+      additionalProperties: false
+      minProperties: 1
+      description: A project keeps its team; it cannot move to another one.
       properties:
+        name: { type: string, pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$" }
         publicationMode: { type: string, enum: [manual, automatic] }
     ImageSummary:
       type: object
@@ -6075,16 +6168,17 @@ components:
 
     Approval:
       type: object
-      required: [id, projectId, subjectType, subjectId, state, summary, requestedBy, canDecide, createdAt, expiresAt]
+      required: [id, projectId, subjectType, subjectId, state, summary, requestedBy, canDecide, canWithdraw, createdAt, expiresAt]
       properties:
         id: { $ref: "#/components/schemas/Id" }
         projectId: { $ref: "#/components/schemas/Id" }
         subjectType: { type: string, enum: [publication, security-exception, secret-binding, repository-request, base-image-request, egress-access-request] }
         subjectId: { $ref: "#/components/schemas/Id" }
-        state: { type: string, enum: [pending, approved, rejected, expired] }
+        state: { type: string, enum: [pending, approved, rejected, expired, withdrawn] }
         summary: { type: string, maxLength: 4096 }
         requestedBy: { $ref: "#/components/schemas/Principal" }
         canDecide: { type: boolean, description: The caller may decide it; requesters never decide their own requests }
+        canWithdraw: { type: boolean, description: "The caller may withdraw it: a pending repository, base-image, egress-access or secret-binding request they made, or any on a project they maintain (ADR 0062)" }
         decidedBy: { $ref: "#/components/schemas/Principal" }
         reason: { type: string, maxLength: 2048 }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
@@ -6097,6 +6191,11 @@ components:
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/Approval" } }
         nextCursor: { $ref: "#/components/schemas/NextCursor" }
+    ApprovalWithdrawal:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string, maxLength: 2048 }
     ApprovalDecision:
       type: object
       required: [decision, reason]
@@ -7225,7 +7324,8 @@ components:
         repository: { type: string }
         justification: { type: string }
         approvalId: { $ref: "#/components/schemas/Id" }
-        state: { type: string, enum: [pending, approved, rejected, expired] }
+        state: { type: string, enum: [pending, approved, rejected, expired, withdrawn] }
+        canWithdraw: { type: boolean, description: "The caller may withdraw this request while it is pending (ADR 0062)" }
         destinationId: { $ref: "#/components/schemas/Id" }
         destinationName: { type: string }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
@@ -7250,7 +7350,8 @@ components:
         repository: { type: string }
         justification: { type: string }
         approvalId: { $ref: "#/components/schemas/Id" }
-        state: { type: string, enum: [pending, approved, rejected, expired] }
+        state: { type: string, enum: [pending, approved, rejected, expired, withdrawn] }
+        canWithdraw: { type: boolean, description: "The caller may withdraw this request while it is pending (ADR 0062)" }
         reason: { type: string, description: "The decider's reason" }
         policyVersion: { type: integer, description: "The base-images policy version that lists the repository, once approved" }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
@@ -7322,7 +7423,8 @@ components:
         justification: { type: string }
         evidence: { $ref: "#/components/schemas/EgressEvidence" }
         approvalId: { $ref: "#/components/schemas/Id" }
-        state: { type: string, enum: [pending, approved, rejected, expired] }
+        state: { type: string, enum: [pending, approved, rejected, expired, withdrawn] }
+        canWithdraw: { type: boolean, description: "The caller may withdraw this request while it is pending (ADR 0062)" }
         reason: { type: string, description: "The decider's reason" }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
     EgressAccessRequestList:
@@ -8022,6 +8124,17 @@ components:
         enabled: { type: boolean }
         hookPath: { type: string, description: "Webhook path under the API base, such as /api/v1/hooks/pipelines/{id}" }
         createdAt: { $ref: "#/components/schemas/Timestamp" }
+    PipelineUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, pattern: "^[a-z0-9][a-z0-9-]{0,62}$" }
+        specRevision: { type: integer, minimum: 0, description: "0 builds the spec's latest revision" }
+        repoUrl: { type: string, maxLength: 500, description: "https only (http only on loopback); no credentials" }
+        refs: { type: array, minItems: 1, maxItems: 20, items: { type: string, maxLength: 220 } }
+        username: { type: string, maxLength: 100, description: Empty removes the username }
+        token: { type: string, format: password, writeOnly: true, minLength: 1, maxLength: 4096, description: "Replaces the repository token; never returned" }
     PipelineCreated:
       allOf:
         - $ref: "#/components/schemas/Pipeline"
@@ -8221,6 +8334,12 @@ components:
             size: { type: string, maxLength: 32 }
             storageClass: { type: string, maxLength: 63 }
         kubernetesVersion: { type: string, maxLength: 16 }
+    KubeConversionUpdate:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$" }
     KubeConversionCreate:
       type: object
       additionalProperties: false

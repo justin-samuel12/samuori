@@ -40,10 +40,11 @@ func (e ApiTokenRequestScopes) Valid() bool {
 
 // Defines values for ApprovalState.
 const (
-	ApprovalStateApproved ApprovalState = "approved"
-	ApprovalStateExpired  ApprovalState = "expired"
-	ApprovalStatePending  ApprovalState = "pending"
-	ApprovalStateRejected ApprovalState = "rejected"
+	ApprovalStateApproved  ApprovalState = "approved"
+	ApprovalStateExpired   ApprovalState = "expired"
+	ApprovalStatePending   ApprovalState = "pending"
+	ApprovalStateRejected  ApprovalState = "rejected"
+	ApprovalStateWithdrawn ApprovalState = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the ApprovalState enum.
@@ -56,6 +57,8 @@ func (e ApprovalState) Valid() bool {
 	case ApprovalStatePending:
 		return true
 	case ApprovalStateRejected:
+		return true
+	case ApprovalStateWithdrawn:
 		return true
 	default:
 		return false
@@ -199,10 +202,11 @@ func (e BackupTrigger) Valid() bool {
 
 // Defines values for BaseImageRequestState.
 const (
-	BaseImageRequestStateApproved BaseImageRequestState = "approved"
-	BaseImageRequestStateExpired  BaseImageRequestState = "expired"
-	BaseImageRequestStatePending  BaseImageRequestState = "pending"
-	BaseImageRequestStateRejected BaseImageRequestState = "rejected"
+	BaseImageRequestStateApproved  BaseImageRequestState = "approved"
+	BaseImageRequestStateExpired   BaseImageRequestState = "expired"
+	BaseImageRequestStatePending   BaseImageRequestState = "pending"
+	BaseImageRequestStateRejected  BaseImageRequestState = "rejected"
+	BaseImageRequestStateWithdrawn BaseImageRequestState = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the BaseImageRequestState enum.
@@ -215,6 +219,8 @@ func (e BaseImageRequestState) Valid() bool {
 	case BaseImageRequestStatePending:
 		return true
 	case BaseImageRequestStateRejected:
+		return true
+	case BaseImageRequestStateWithdrawn:
 		return true
 	default:
 		return false
@@ -958,10 +964,11 @@ func (e EgressAccessRequestMethod) Valid() bool {
 
 // Defines values for EgressAccessRequestState.
 const (
-	EgressAccessRequestStateApproved EgressAccessRequestState = "approved"
-	EgressAccessRequestStateExpired  EgressAccessRequestState = "expired"
-	EgressAccessRequestStatePending  EgressAccessRequestState = "pending"
-	EgressAccessRequestStateRejected EgressAccessRequestState = "rejected"
+	EgressAccessRequestStateApproved  EgressAccessRequestState = "approved"
+	EgressAccessRequestStateExpired   EgressAccessRequestState = "expired"
+	EgressAccessRequestStatePending   EgressAccessRequestState = "pending"
+	EgressAccessRequestStateRejected  EgressAccessRequestState = "rejected"
+	EgressAccessRequestStateWithdrawn EgressAccessRequestState = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the EgressAccessRequestState enum.
@@ -974,6 +981,8 @@ func (e EgressAccessRequestState) Valid() bool {
 	case EgressAccessRequestStatePending:
 		return true
 	case EgressAccessRequestStateRejected:
+		return true
+	case EgressAccessRequestStateWithdrawn:
 		return true
 	default:
 		return false
@@ -2986,10 +2995,11 @@ func (e RegistryCredentialProfileUpdateType) Valid() bool {
 
 // Defines values for RepositoryRequestState.
 const (
-	RepositoryRequestStateApproved RepositoryRequestState = "approved"
-	RepositoryRequestStateExpired  RepositoryRequestState = "expired"
-	RepositoryRequestStatePending  RepositoryRequestState = "pending"
-	RepositoryRequestStateRejected RepositoryRequestState = "rejected"
+	RepositoryRequestStateApproved  RepositoryRequestState = "approved"
+	RepositoryRequestStateExpired   RepositoryRequestState = "expired"
+	RepositoryRequestStatePending   RepositoryRequestState = "pending"
+	RepositoryRequestStateRejected  RepositoryRequestState = "rejected"
+	RepositoryRequestStateWithdrawn RepositoryRequestState = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the RepositoryRequestState enum.
@@ -3002,6 +3012,8 @@ func (e RepositoryRequestState) Valid() bool {
 	case RepositoryRequestStatePending:
 		return true
 	case RepositoryRequestStateRejected:
+		return true
+	case RepositoryRequestStateWithdrawn:
 		return true
 	default:
 		return false
@@ -4255,10 +4267,11 @@ func (e WorkerPoolUpdateIsolationProfile) Valid() bool {
 
 // Defines values for ListApprovalsParamsState.
 const (
-	ListApprovalsParamsStateApproved ListApprovalsParamsState = "approved"
-	ListApprovalsParamsStateExpired  ListApprovalsParamsState = "expired"
-	ListApprovalsParamsStatePending  ListApprovalsParamsState = "pending"
-	ListApprovalsParamsStateRejected ListApprovalsParamsState = "rejected"
+	ListApprovalsParamsStateApproved  ListApprovalsParamsState = "approved"
+	ListApprovalsParamsStateExpired   ListApprovalsParamsState = "expired"
+	ListApprovalsParamsStatePending   ListApprovalsParamsState = "pending"
+	ListApprovalsParamsStateRejected  ListApprovalsParamsState = "rejected"
+	ListApprovalsParamsStateWithdrawn ListApprovalsParamsState = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the ListApprovalsParamsState enum.
@@ -4271,6 +4284,8 @@ func (e ListApprovalsParamsState) Valid() bool {
 	case ListApprovalsParamsStatePending:
 		return true
 	case ListApprovalsParamsStateRejected:
+		return true
+	case ListApprovalsParamsStateWithdrawn:
 		return true
 	default:
 		return false
@@ -4421,10 +4436,13 @@ type ApiTokenRequestScopes string
 // Approval defines model for Approval.
 type Approval struct {
 	// CanDecide The caller may decide it; requesters never decide their own requests
-	CanDecide bool       `json:"canDecide"`
-	CreatedAt Timestamp  `json:"createdAt"`
-	DecidedAt *Timestamp `json:"decidedAt,omitempty"`
-	DecidedBy *Principal `json:"decidedBy,omitempty"`
+	CanDecide bool `json:"canDecide"`
+
+	// CanWithdraw The caller may withdraw it: a pending repository, base-image, egress-access or secret-binding request they made, or any on a project they maintain (ADR 0062)
+	CanWithdraw bool       `json:"canWithdraw"`
+	CreatedAt   Timestamp  `json:"createdAt"`
+	DecidedAt   *Timestamp `json:"decidedAt,omitempty"`
+	DecidedBy   *Principal `json:"decidedBy,omitempty"`
 
 	// ExpiresAt When a pending request lapses
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -4469,6 +4487,11 @@ type ApprovalDecisionDecision string
 type ApprovalList struct {
 	Items      []Approval  `json:"items"`
 	NextCursor *NextCursor `json:"nextCursor,omitempty"`
+}
+
+// ApprovalWithdrawal defines model for ApprovalWithdrawal.
+type ApprovalWithdrawal struct {
+	Reason *string `json:"reason,omitempty"`
 }
 
 // ArtifactQuarantine defines model for ArtifactQuarantine.
@@ -4600,8 +4623,11 @@ type BaseImagePin struct {
 // BaseImageRequest defines model for BaseImageRequest.
 type BaseImageRequest struct {
 	// ApprovalId ULID
-	ApprovalId Id        `json:"approvalId"`
-	CreatedAt  Timestamp `json:"createdAt"`
+	ApprovalId Id `json:"approvalId"`
+
+	// CanWithdraw The caller may withdraw this request while it is pending (ADR 0062)
+	CanWithdraw *bool     `json:"canWithdraw,omitempty"`
+	CreatedAt   Timestamp `json:"createdAt"`
 
 	// Id ULID
 	Id            Id     `json:"id"`
@@ -5570,7 +5596,10 @@ type EcrRepositoryList struct {
 // EgressAccessRequest defines model for EgressAccessRequest.
 type EgressAccessRequest struct {
 	// ApprovalId ULID
-	ApprovalId   Id        `json:"approvalId"`
+	ApprovalId Id `json:"approvalId"`
+
+	// CanWithdraw The caller may withdraw this request while it is pending (ADR 0062)
+	CanWithdraw  *bool     `json:"canWithdraw,omitempty"`
 	CreatedAt    Timestamp `json:"createdAt"`
 	Destinations []string  `json:"destinations"`
 
@@ -6567,6 +6596,11 @@ type KubeConversionRunList struct {
 	Items []KubeConversionRun `json:"items"`
 }
 
+// KubeConversionUpdate defines model for KubeConversionUpdate.
+type KubeConversionUpdate struct {
+	Name string `json:"name"`
+}
+
 // KubeProviderList defines model for KubeProviderList.
 type KubeProviderList struct {
 	Items []struct {
@@ -7191,6 +7225,24 @@ type PipelineSecretIssued struct {
 	Secret string `json:"secret"`
 }
 
+// PipelineUpdate defines model for PipelineUpdate.
+type PipelineUpdate struct {
+	Name *string   `json:"name,omitempty"`
+	Refs *[]string `json:"refs,omitempty"`
+
+	// RepoUrl https only (http only on loopback); no credentials
+	RepoUrl *string `json:"repoUrl,omitempty"`
+
+	// SpecRevision 0 builds the spec's latest revision
+	SpecRevision *int `json:"specRevision,omitempty"`
+
+	// Token Replaces the repository token; never returned
+	Token *string `json:"token,omitempty"`
+
+	// Username Empty removes the username
+	Username *string `json:"username,omitempty"`
+}
+
 // Policy defines model for Policy.
 type Policy struct {
 	Document map[string]interface{} `json:"document"`
@@ -7484,9 +7536,10 @@ type ProjectPurge struct {
 	Snapshots int `json:"snapshots"`
 }
 
-// ProjectUpdate defines model for ProjectUpdate.
+// ProjectUpdate A project keeps its team; it cannot move to another one.
 type ProjectUpdate struct {
-	PublicationMode ProjectUpdatePublicationMode `json:"publicationMode"`
+	Name            *string                       `json:"name,omitempty"`
+	PublicationMode *ProjectUpdatePublicationMode `json:"publicationMode,omitempty"`
 }
 
 // ProjectUpdatePublicationMode defines model for ProjectUpdate.PublicationMode.
@@ -7973,8 +8026,11 @@ type RepositoryFulfillment struct {
 // RepositoryRequest defines model for RepositoryRequest.
 type RepositoryRequest struct {
 	// ApprovalId ULID
-	ApprovalId Id        `json:"approvalId"`
-	CreatedAt  Timestamp `json:"createdAt"`
+	ApprovalId Id `json:"approvalId"`
+
+	// CanWithdraw The caller may withdraw this request while it is pending (ADR 0062)
+	CanWithdraw *bool     `json:"canWithdraw,omitempty"`
+	CreatedAt   Timestamp `json:"createdAt"`
 
 	// DestinationId ULID
 	DestinationId   *Id     `json:"destinationId,omitempty"`
@@ -9250,6 +9306,12 @@ type FulfillRepositoryRequestParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// WithdrawApprovalParams defines parameters for WithdrawApproval.
+type WithdrawApprovalParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListArtifactQuarantinesParams defines parameters for ListArtifactQuarantines.
 type ListArtifactQuarantinesParams struct {
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
@@ -9573,6 +9635,18 @@ type SetImageSourceStateParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// DeleteKubeConversionParams defines parameters for DeleteKubeConversion.
+type DeleteKubeConversionParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdateKubeConversionParams defines parameters for UpdateKubeConversion.
+type UpdateKubeConversionParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // GetKubeConversionFileParams defines parameters for GetKubeConversionFile.
 type GetKubeConversionFileParams struct {
 	Path string `form:"path" json:"path"`
@@ -9729,6 +9803,18 @@ type ListPipelinesParams struct {
 
 // CreatePipelineParams defines parameters for CreatePipeline.
 type CreatePipelineParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// DeletePipelineParams defines parameters for DeletePipeline.
+type DeletePipelineParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UpdatePipelineParams defines parameters for UpdatePipeline.
+type UpdatePipelineParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
@@ -10448,6 +10534,9 @@ type DecideApprovalJSONRequestBody = ApprovalDecision
 // FulfillRepositoryRequestJSONRequestBody defines body for FulfillRepositoryRequest for application/json ContentType.
 type FulfillRepositoryRequestJSONRequestBody = RepositoryFulfillment
 
+// WithdrawApprovalJSONRequestBody defines body for WithdrawApproval for application/json ContentType.
+type WithdrawApprovalJSONRequestBody = ApprovalWithdrawal
+
 // ReleaseArtifactQuarantineJSONRequestBody defines body for ReleaseArtifactQuarantine for application/json ContentType.
 type ReleaseArtifactQuarantineJSONRequestBody ReleaseArtifactQuarantineJSONBody
 
@@ -10541,6 +10630,9 @@ type CreateImageSourceJSONRequestBody = ImageSourceCreate
 // SetImageSourceStateJSONRequestBody defines body for SetImageSourceState for application/json ContentType.
 type SetImageSourceStateJSONRequestBody = EnabledState
 
+// UpdateKubeConversionJSONRequestBody defines body for UpdateKubeConversion for application/json ContentType.
+type UpdateKubeConversionJSONRequestBody = KubeConversionUpdate
+
 // EditKubeConversionFileJSONRequestBody defines body for EditKubeConversionFile for application/json ContentType.
 type EditKubeConversionFileJSONRequestBody = KubeConversionFileEdit
 
@@ -10579,6 +10671,9 @@ type RevokeOutputExceptionJSONRequestBody = Decision
 
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody = PipelineCreate
+
+// UpdatePipelineJSONRequestBody defines body for UpdatePipeline for application/json ContentType.
+type UpdatePipelineJSONRequestBody = PipelineUpdate
 
 // StartPipelineRunJSONRequestBody defines body for StartPipelineRun for application/json ContentType.
 type StartPipelineRunJSONRequestBody = PipelineRunCreate
@@ -10985,6 +11080,18 @@ type ClientInterface interface {
 	//
 	// Approves a repository request by linking a destination open to its project (and in the requested registry, if one was named). Create the repository and the destination first.
 	FulfillRepositoryRequest(ctx context.Context, approvalId Id, params *FulfillRepositoryRequestParams, body FulfillRepositoryRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WithdrawApprovalWithBody performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+	WithdrawApprovalWithBody(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WithdrawApproval performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+	WithdrawApproval(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, body WithdrawApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListArtifactQuarantines performs a GET /artifact-quarantines (the `ListArtifactQuarantines` operationId) request.
 	ListArtifactQuarantines(ctx context.Context, params *ListArtifactQuarantinesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11532,8 +11639,25 @@ type ClientInterface interface {
 	// Disabling stops new mirror tokens at once; issued tokens expire within five minutes.
 	SetImageSourceState(ctx context.Context, sourceId Id, params *SetImageSourceStateParams, body SetImageSourceStateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteKubeConversion performs a DELETE /kube-conversions/{conversionId} (the `DeleteKubeConversion` operationId) request.
+	//
+	// Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running.
+	DeleteKubeConversion(ctx context.Context, conversionId ConversionId, params *DeleteKubeConversionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetKubeConversion performs a GET /kube-conversions/{conversionId} (the `GetKubeConversion` operationId) request.
 	GetKubeConversion(ctx context.Context, conversionId ConversionId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateKubeConversionWithBody performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+	UpdateKubeConversionWithBody(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateKubeConversion performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+	UpdateKubeConversion(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, body UpdateKubeConversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListKubeConversionRevisions performs a GET /kube-conversions/{conversionId}/revisions (the `ListKubeConversionRevisions` operationId) request.
 	ListKubeConversionRevisions(ctx context.Context, conversionId ConversionId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11748,8 +11872,25 @@ type ClientInterface interface {
 	// Samuori generates the webhook secret and returns it once. The optional repository token is stored for the controller only.
 	CreatePipeline(ctx context.Context, params *CreatePipelineParams, body CreatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeletePipeline performs a DELETE /pipelines/{pipelineId} (the `DeletePipeline` operationId) request.
+	//
+	// Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062).
+	DeletePipeline(ctx context.Context, pipelineId Id, params *DeletePipelineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetPipeline performs a GET /pipelines/{pipelineId} (the `GetPipeline` operationId) request.
 	GetPipeline(ctx context.Context, pipelineId Id, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePipelineWithBody performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+	UpdatePipelineWithBody(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePipeline performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+	UpdatePipeline(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RotatePipelineHookSecret performs a POST /pipelines/{pipelineId}/hook-secret (the `RotatePipelineHookSecret` operationId) request.
 	//
@@ -11841,13 +11982,13 @@ type ClientInterface interface {
 	// UpdateProjectWithBody performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Changes project settings. Automatic publication also needs the spec to ask for it.
+	// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 	UpdateProjectWithBody(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateProject performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Changes project settings. Automatic publication also needs the spec to ask for it.
+	// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 	UpdateProject(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ArchiveProjectWithBody performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
@@ -12901,6 +13042,38 @@ func (c *Client) FulfillRepositoryRequestWithBody(ctx context.Context, approvalI
 // Approves a repository request by linking a destination open to its project (and in the requested registry, if one was named). Create the repository and the destination first.
 func (c *Client) FulfillRepositoryRequest(ctx context.Context, approvalId Id, params *FulfillRepositoryRequestParams, body FulfillRepositoryRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFulfillRepositoryRequestRequest(c.Server, approvalId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// WithdrawApprovalWithBody performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request,
+// with any type of body and a specified content type.
+//
+// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+func (c *Client) WithdrawApprovalWithBody(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWithdrawApprovalRequestWithBody(c.Server, approvalId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// WithdrawApproval performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+func (c *Client) WithdrawApproval(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, body WithdrawApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWithdrawApprovalRequest(c.Server, approvalId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14577,9 +14750,56 @@ func (c *Client) SetImageSourceState(ctx context.Context, sourceId Id, params *S
 	return c.Client.Do(req)
 }
 
+// DeleteKubeConversion performs a DELETE /kube-conversions/{conversionId} (the `DeleteKubeConversion` operationId) request.
+//
+// Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running.
+func (c *Client) DeleteKubeConversion(ctx context.Context, conversionId ConversionId, params *DeleteKubeConversionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteKubeConversionRequest(c.Server, conversionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetKubeConversion performs a GET /kube-conversions/{conversionId} (the `GetKubeConversion` operationId) request.
 func (c *Client) GetKubeConversion(ctx context.Context, conversionId ConversionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetKubeConversionRequest(c.Server, conversionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateKubeConversionWithBody performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request,
+// with any type of body and a specified content type.
+//
+// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+func (c *Client) UpdateKubeConversionWithBody(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateKubeConversionRequestWithBody(c.Server, conversionId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateKubeConversion performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+func (c *Client) UpdateKubeConversion(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, body UpdateKubeConversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateKubeConversionRequest(c.Server, conversionId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15293,9 +15513,56 @@ func (c *Client) CreatePipeline(ctx context.Context, params *CreatePipelineParam
 	return c.Client.Do(req)
 }
 
+// DeletePipeline performs a DELETE /pipelines/{pipelineId} (the `DeletePipeline` operationId) request.
+//
+// Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062).
+func (c *Client) DeletePipeline(ctx context.Context, pipelineId Id, params *DeletePipelineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePipelineRequest(c.Server, pipelineId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetPipeline performs a GET /pipelines/{pipelineId} (the `GetPipeline` operationId) request.
 func (c *Client) GetPipeline(ctx context.Context, pipelineId Id, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetPipelineRequest(c.Server, pipelineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePipelineWithBody performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+func (c *Client) UpdatePipelineWithBody(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePipelineRequestWithBody(c.Server, pipelineId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePipeline performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+func (c *Client) UpdatePipeline(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePipelineRequest(c.Server, pipelineId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15586,7 +15853,7 @@ func (c *Client) GetProject(ctx context.Context, projectId ProjectId, reqEditors
 // UpdateProjectWithBody performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request,
 // with any type of body and a specified content type.
 //
-// Changes project settings. Automatic publication also needs the spec to ask for it.
+// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 func (c *Client) UpdateProjectWithBody(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProjectRequestWithBody(c.Server, projectId, params, contentType, body)
 	if err != nil {
@@ -15602,7 +15869,7 @@ func (c *Client) UpdateProjectWithBody(ctx context.Context, projectId ProjectId,
 // UpdateProject performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Changes project settings. Automatic publication also needs the spec to ask for it.
+// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 func (c *Client) UpdateProject(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProjectRequest(c.Server, projectId, params, body)
 	if err != nil {
@@ -18866,6 +19133,68 @@ func NewFulfillRepositoryRequestRequestWithBody(server string, approvalId Id, pa
 	}
 
 	operationPath := fmt.Sprintf("/approvals/%s/fulfillment", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewWithdrawApprovalRequest calls the generic WithdrawApproval builder with application/json body
+func NewWithdrawApprovalRequest(server string, approvalId Id, params *WithdrawApprovalParams, body WithdrawApprovalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewWithdrawApprovalRequestWithBody(server, approvalId, params, "application/json", bodyReader)
+}
+
+// NewWithdrawApprovalRequestWithBody constructs an http.Request for the WithdrawApproval method, with any body, and a specified content type
+func NewWithdrawApprovalRequestWithBody(server string, approvalId Id, params *WithdrawApprovalParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "approvalId", approvalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/approvals/%s/withdrawal", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -22919,6 +23248,55 @@ func NewSetImageSourceStateRequestWithBody(server string, sourceId Id, params *S
 	return req, nil
 }
 
+// NewDeleteKubeConversionRequest constructs an http.Request for the DeleteKubeConversion method
+func NewDeleteKubeConversionRequest(server string, conversionId ConversionId, params *DeleteKubeConversionParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "conversionId", conversionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/kube-conversions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewGetKubeConversionRequest constructs an http.Request for the GetKubeConversion method
 func NewGetKubeConversionRequest(server string, conversionId ConversionId) (*http.Request, error) {
 	var err error
@@ -22948,6 +23326,68 @@ func NewGetKubeConversionRequest(server string, conversionId ConversionId) (*htt
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateKubeConversionRequest calls the generic UpdateKubeConversion builder with application/json body
+func NewUpdateKubeConversionRequest(server string, conversionId ConversionId, params *UpdateKubeConversionParams, body UpdateKubeConversionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateKubeConversionRequestWithBody(server, conversionId, params, "application/json", bodyReader)
+}
+
+// NewUpdateKubeConversionRequestWithBody constructs an http.Request for the UpdateKubeConversion method, with any body, and a specified content type
+func NewUpdateKubeConversionRequestWithBody(server string, conversionId ConversionId, params *UpdateKubeConversionParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "conversionId", conversionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/kube-conversions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
 	}
 
 	return req, nil
@@ -24768,6 +25208,55 @@ func NewCreatePipelineRequestWithBody(server string, params *CreatePipelineParam
 	return req, nil
 }
 
+// NewDeletePipelineRequest constructs an http.Request for the DeletePipeline method
+func NewDeletePipelineRequest(server string, pipelineId Id, params *DeletePipelineParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "pipelineId", pipelineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/pipelines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewGetPipelineRequest constructs an http.Request for the GetPipeline method
 func NewGetPipelineRequest(server string, pipelineId Id) (*http.Request, error) {
 	var err error
@@ -24797,6 +25286,68 @@ func NewGetPipelineRequest(server string, pipelineId Id) (*http.Request, error) 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdatePipelineRequest calls the generic UpdatePipeline builder with application/json body
+func NewUpdatePipelineRequest(server string, pipelineId Id, params *UpdatePipelineParams, body UpdatePipelineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdatePipelineRequestWithBody(server, pipelineId, params, "application/json", bodyReader)
+}
+
+// NewUpdatePipelineRequestWithBody constructs an http.Request for the UpdatePipeline method, with any body, and a specified content type
+func NewUpdatePipelineRequestWithBody(server string, pipelineId Id, params *UpdatePipelineParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "pipelineId", pipelineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/pipelines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
 	}
 
 	return req, nil
@@ -32963,6 +33514,20 @@ type ClientWithResponsesInterface interface {
 	// Approves a repository request by linking a destination open to its project (and in the requested registry, if one was named). Create the repository and the destination first.
 	FulfillRepositoryRequestWithResponse(ctx context.Context, approvalId Id, params *FulfillRepositoryRequestParams, body FulfillRepositoryRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*FulfillRepositoryRequestResponse, error)
 
+	// WithdrawApprovalWithBodyWithResponse performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	WithdrawApprovalWithBodyWithResponse(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WithdrawApprovalResponse, error)
+
+	// WithdrawApprovalWithResponse performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+	WithdrawApprovalWithResponse(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, body WithdrawApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*WithdrawApprovalResponse, error)
+
 	// ListArtifactQuarantinesWithResponse performs a GET /artifact-quarantines (the `ListArtifactQuarantines` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -33671,10 +34236,31 @@ type ClientWithResponsesInterface interface {
 	// Disabling stops new mirror tokens at once; issued tokens expire within five minutes.
 	SetImageSourceStateWithResponse(ctx context.Context, sourceId Id, params *SetImageSourceStateParams, body SetImageSourceStateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetImageSourceStateResponse, error)
 
+	// DeleteKubeConversionWithResponse performs a DELETE /kube-conversions/{conversionId} (the `DeleteKubeConversion` operationId) request.
+	//
+	// Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteKubeConversionWithResponse(ctx context.Context, conversionId ConversionId, params *DeleteKubeConversionParams, reqEditors ...RequestEditorFn) (*DeleteKubeConversionResponse, error)
+
 	// GetKubeConversionWithResponse performs a GET /kube-conversions/{conversionId} (the `GetKubeConversion` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetKubeConversionWithResponse(ctx context.Context, conversionId ConversionId, reqEditors ...RequestEditorFn) (*GetKubeConversionResponse, error)
+
+	// UpdateKubeConversionWithBodyWithResponse performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateKubeConversionWithBodyWithResponse(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateKubeConversionResponse, error)
+
+	// UpdateKubeConversionWithResponse performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+	UpdateKubeConversionWithResponse(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, body UpdateKubeConversionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateKubeConversionResponse, error)
 
 	// ListKubeConversionRevisionsWithResponse performs a GET /kube-conversions/{conversionId}/revisions (the `ListKubeConversionRevisions` operationId) request.
 	//
@@ -33961,10 +34547,31 @@ type ClientWithResponsesInterface interface {
 	// Samuori generates the webhook secret and returns it once. The optional repository token is stored for the controller only.
 	CreatePipelineWithResponse(ctx context.Context, params *CreatePipelineParams, body CreatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePipelineResponse, error)
 
+	// DeletePipelineWithResponse performs a DELETE /pipelines/{pipelineId} (the `DeletePipeline` operationId) request.
+	//
+	// Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeletePipelineWithResponse(ctx context.Context, pipelineId Id, params *DeletePipelineParams, reqEditors ...RequestEditorFn) (*DeletePipelineResponse, error)
+
 	// GetPipelineWithResponse performs a GET /pipelines/{pipelineId} (the `GetPipeline` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetPipelineWithResponse(ctx context.Context, pipelineId Id, reqEditors ...RequestEditorFn) (*GetPipelineResponse, error)
+
+	// UpdatePipelineWithBodyWithResponse performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdatePipelineWithBodyWithResponse(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePipelineResponse, error)
+
+	// UpdatePipelineWithResponse performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+	UpdatePipelineWithResponse(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePipelineResponse, error)
 
 	// RotatePipelineHookSecretWithResponse performs a POST /pipelines/{pipelineId}/hook-secret (the `RotatePipelineHookSecret` operationId) request.
 	//
@@ -34082,7 +34689,7 @@ type ClientWithResponsesInterface interface {
 	// UpdateProjectWithBodyWithResponse performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Changes project settings. Automatic publication also needs the spec to ask for it.
+	// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	UpdateProjectWithBodyWithResponse(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
@@ -34090,7 +34697,7 @@ type ClientWithResponsesInterface interface {
 	// UpdateProjectWithResponse performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Changes project settings. Automatic publication also needs the spec to ask for it.
+	// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 	UpdateProjectWithResponse(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
 	// ArchiveProjectWithBodyWithResponse performs a POST /projects/{projectId}/archive (the `ArchiveProject` operationId) request,
@@ -35582,6 +36189,75 @@ func (r FulfillRepositoryRequestResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r FulfillRepositoryRequestResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type WithdrawApprovalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Approval
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r WithdrawApprovalResponse) GetJSON200() *Approval {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r WithdrawApprovalResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r WithdrawApprovalResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r WithdrawApprovalResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r WithdrawApprovalResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r WithdrawApprovalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r WithdrawApprovalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r WithdrawApprovalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r WithdrawApprovalResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -39432,6 +40108,61 @@ func (r SetImageSourceStateResponse) ContentType() string {
 	return ""
 }
 
+type DeleteKubeConversionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteKubeConversionResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteKubeConversionResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteKubeConversionResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteKubeConversionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteKubeConversionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteKubeConversionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteKubeConversionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetKubeConversionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -39474,6 +40205,75 @@ func (r GetKubeConversionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetKubeConversionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateKubeConversionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *KubeConversion
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateKubeConversionResponse) GetJSON200() *KubeConversion {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateKubeConversionResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateKubeConversionResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateKubeConversionResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateKubeConversionResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateKubeConversionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateKubeConversionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateKubeConversionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateKubeConversionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -41177,6 +41977,61 @@ func (r CreatePipelineResponse) ContentType() string {
 	return ""
 }
 
+type DeletePipelineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeletePipelineResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeletePipelineResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePipelineResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeletePipelineResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePipelineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePipelineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeletePipelineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetPipelineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -41219,6 +42074,75 @@ func (r GetPipelineResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetPipelineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdatePipelineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Pipeline
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdatePipelineResponse) GetJSON200() *Pipeline {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdatePipelineResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdatePipelineResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdatePipelineResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdatePipelineResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdatePipelineResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdatePipelineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdatePipelineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdatePipelineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -41868,8 +42792,14 @@ type UpdateProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Project
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
 	// JSON404 the response for an HTTP 404 `application/json` response
 	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -41877,9 +42807,24 @@ func (r UpdateProjectResponse) GetJSON200() *Project {
 	return r.JSON200
 }
 
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateProjectResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r UpdateProjectResponse) GetJSON404() *Problem {
 	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateProjectResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateProjectResponse) GetJSON422() *Problem {
+	return r.JSON422
 }
 
 // GetBody returns the raw response body bytes
@@ -49080,6 +50025,32 @@ func (c *ClientWithResponses) FulfillRepositoryRequestWithResponse(ctx context.C
 	return ParseFulfillRepositoryRequestResponse(rsp)
 }
 
+// WithdrawApprovalWithBodyWithResponse performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request,
+// with any type of body and a specified content type.
+//
+// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) WithdrawApprovalWithBodyWithResponse(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WithdrawApprovalResponse, error) {
+	rsp, err := c.WithdrawApprovalWithBody(ctx, approvalId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWithdrawApprovalResponse(rsp)
+}
+
+// WithdrawApprovalWithResponse performs a POST /approvals/{approvalId}/withdrawal (the `WithdrawApproval` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062).
+func (c *ClientWithResponses) WithdrawApprovalWithResponse(ctx context.Context, approvalId Id, params *WithdrawApprovalParams, body WithdrawApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*WithdrawApprovalResponse, error) {
+	rsp, err := c.WithdrawApproval(ctx, approvalId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWithdrawApprovalResponse(rsp)
+}
+
 // ListArtifactQuarantinesWithResponse performs a GET /artifact-quarantines (the `ListArtifactQuarantines` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -50460,6 +51431,19 @@ func (c *ClientWithResponses) SetImageSourceStateWithResponse(ctx context.Contex
 	return ParseSetImageSourceStateResponse(rsp)
 }
 
+// DeleteKubeConversionWithResponse performs a DELETE /kube-conversions/{conversionId} (the `DeleteKubeConversion` operationId) request.
+//
+// Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteKubeConversionWithResponse(ctx context.Context, conversionId ConversionId, params *DeleteKubeConversionParams, reqEditors ...RequestEditorFn) (*DeleteKubeConversionResponse, error) {
+	rsp, err := c.DeleteKubeConversion(ctx, conversionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteKubeConversionResponse(rsp)
+}
+
 // GetKubeConversionWithResponse performs a GET /kube-conversions/{conversionId} (the `GetKubeConversion` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -50469,6 +51453,32 @@ func (c *ClientWithResponses) GetKubeConversionWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetKubeConversionResponse(rsp)
+}
+
+// UpdateKubeConversionWithBodyWithResponse performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request,
+// with any type of body and a specified content type.
+//
+// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateKubeConversionWithBodyWithResponse(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateKubeConversionResponse, error) {
+	rsp, err := c.UpdateKubeConversionWithBody(ctx, conversionId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateKubeConversionResponse(rsp)
+}
+
+// UpdateKubeConversionWithResponse performs a PATCH /kube-conversions/{conversionId} (the `UpdateKubeConversion` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited.
+func (c *ClientWithResponses) UpdateKubeConversionWithResponse(ctx context.Context, conversionId ConversionId, params *UpdateKubeConversionParams, body UpdateKubeConversionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateKubeConversionResponse, error) {
+	rsp, err := c.UpdateKubeConversion(ctx, conversionId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateKubeConversionResponse(rsp)
 }
 
 // ListKubeConversionRevisionsWithResponse performs a GET /kube-conversions/{conversionId}/revisions (the `ListKubeConversionRevisions` operationId) request.
@@ -51050,6 +52060,19 @@ func (c *ClientWithResponses) CreatePipelineWithResponse(ctx context.Context, pa
 	return ParseCreatePipelineResponse(rsp)
 }
 
+// DeletePipelineWithResponse performs a DELETE /pipelines/{pipelineId} (the `DeletePipeline` operationId) request.
+//
+// Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeletePipelineWithResponse(ctx context.Context, pipelineId Id, params *DeletePipelineParams, reqEditors ...RequestEditorFn) (*DeletePipelineResponse, error) {
+	rsp, err := c.DeletePipeline(ctx, pipelineId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePipelineResponse(rsp)
+}
+
 // GetPipelineWithResponse performs a GET /pipelines/{pipelineId} (the `GetPipeline` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -51059,6 +52082,32 @@ func (c *ClientWithResponses) GetPipelineWithResponse(ctx context.Context, pipel
 		return nil, err
 	}
 	return ParseGetPipelineResponse(rsp)
+}
+
+// UpdatePipelineWithBodyWithResponse performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdatePipelineWithBodyWithResponse(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePipelineResponse, error) {
+	rsp, err := c.UpdatePipelineWithBody(ctx, pipelineId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePipelineResponse(rsp)
+}
+
+// UpdatePipelineWithResponse performs a PATCH /pipelines/{pipelineId} (the `UpdatePipeline` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited.
+func (c *ClientWithResponses) UpdatePipelineWithResponse(ctx context.Context, pipelineId Id, params *UpdatePipelineParams, body UpdatePipelineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePipelineResponse, error) {
+	rsp, err := c.UpdatePipeline(ctx, pipelineId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePipelineResponse(rsp)
 }
 
 // RotatePipelineHookSecretWithResponse performs a POST /pipelines/{pipelineId}/hook-secret (the `RotatePipelineHookSecret` operationId) request.
@@ -51291,7 +52340,7 @@ func (c *ClientWithResponses) GetProjectWithResponse(ctx context.Context, projec
 // UpdateProjectWithBodyWithResponse performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request,
 // with any type of body and a specified content type.
 //
-// Changes project settings. Automatic publication also needs the spec to ask for it.
+// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) UpdateProjectWithBodyWithResponse(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error) {
@@ -51305,7 +52354,7 @@ func (c *ClientWithResponses) UpdateProjectWithBodyWithResponse(ctx context.Cont
 // UpdateProjectWithResponse performs a PATCH /projects/{projectId} (the `UpdateProject` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Changes project settings. Automatic publication also needs the spec to ask for it.
+// Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team.
 func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, projectId ProjectId, params *UpdateProjectParams, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error) {
 	rsp, err := c.UpdateProject(ctx, projectId, params, body, reqEditors...)
 	if err != nil {
@@ -53876,6 +54925,60 @@ func ParseFulfillRepositoryRequestResponse(rsp *http.Response) (*FulfillReposito
 	}
 
 	response := &FulfillRepositoryRequestResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Approval
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseWithdrawApprovalResponse parses an HTTP response from a WithdrawApprovalWithResponse call
+func ParseWithdrawApprovalResponse(rsp *http.Response) (*WithdrawApprovalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &WithdrawApprovalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -56552,6 +57655,49 @@ func ParseSetImageSourceStateResponse(rsp *http.Response) (*SetImageSourceStateR
 	return response, nil
 }
 
+// ParseDeleteKubeConversionResponse parses an HTTP response from a DeleteKubeConversionWithResponse call
+func ParseDeleteKubeConversionResponse(rsp *http.Response) (*DeleteKubeConversionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteKubeConversionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetKubeConversionResponse parses an HTTP response from a GetKubeConversionWithResponse call
 func ParseGetKubeConversionResponse(rsp *http.Response) (*GetKubeConversionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -56579,6 +57725,60 @@ func ParseGetKubeConversionResponse(rsp *http.Response) (*GetKubeConversionRespo
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateKubeConversionResponse parses an HTTP response from a UpdateKubeConversionWithResponse call
+func ParseUpdateKubeConversionResponse(rsp *http.Response) (*UpdateKubeConversionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateKubeConversionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KubeConversion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 
@@ -57755,6 +58955,49 @@ func ParseCreatePipelineResponse(rsp *http.Response) (*CreatePipelineResponse, e
 	return response, nil
 }
 
+// ParseDeletePipelineResponse parses an HTTP response from a DeletePipelineWithResponse call
+func ParseDeletePipelineResponse(rsp *http.Response) (*DeletePipelineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePipelineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetPipelineResponse parses an HTTP response from a GetPipelineWithResponse call
 func ParseGetPipelineResponse(rsp *http.Response) (*GetPipelineResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -57782,6 +59025,60 @@ func ParseGetPipelineResponse(rsp *http.Response) (*GetPipelineResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdatePipelineResponse parses an HTTP response from a UpdatePipelineWithResponse call
+func ParseUpdatePipelineResponse(rsp *http.Response) (*UpdatePipelineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdatePipelineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Pipeline
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 
@@ -58261,12 +59558,33 @@ func ParseUpdateProjectResponse(rsp *http.Response) (*UpdateProjectResponse, err
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 

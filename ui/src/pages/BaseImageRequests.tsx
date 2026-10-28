@@ -6,6 +6,7 @@ import { Dialog } from "../components/Dialog";
 import { TextField } from "../components/Field";
 import { Alert } from "../components/Feedback";
 import { Table } from "../components/Table";
+import { WithdrawDialog } from "../components/Withdraw";
 import { useLoader } from "../hooks";
 import { isForbidden } from "../session/session";
 
@@ -16,6 +17,7 @@ const stateText: Record<BaseImageRequest["state"], string> = {
   approved: "Approved; builds may use it",
   rejected: "Rejected",
   expired: "Expired",
+  withdrawn: "Withdrawn",
 };
 
 /** The project's base-image requests, a group of Requests & exceptions that renders nothing when there are none. */
@@ -28,6 +30,7 @@ export function BaseImageRequests({
 }) {
   const [forbidden, setForbidden] = useState(false);
   const [items, setItems] = useState<BaseImageRequest[]>();
+  const [withdrawing, setWithdrawing] = useState<string>();
   const load = useCallback(async () => {
     const res = await api.GET("/projects/{projectId}/base-image-requests", {
       params: { path: { projectId } },
@@ -73,9 +76,32 @@ export function BaseImageRequests({
               name: "Requested",
               render: (r) => new Date(r.createdAt).toLocaleString(),
             },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (r) =>
+                r.canWithdraw && (
+                  <Button
+                    variant="quiet"
+                    onPress={() => setWithdrawing(r.approvalId)}
+                  >
+                    Withdraw
+                  </Button>
+                ),
+            },
           ]}
         />
       )}
+      <WithdrawDialog
+        key={withdrawing ?? "none"}
+        approvalId={withdrawing}
+        what="base-image request"
+        onClose={() => setWithdrawing(undefined)}
+        onDone={() => {
+          setWithdrawing(undefined);
+          void load();
+        }}
+      />
     </div>
   );
 }

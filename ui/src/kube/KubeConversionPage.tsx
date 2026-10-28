@@ -20,6 +20,7 @@ import { useLoader } from "../hooks";
 import { navigate } from "../router";
 import { useCan } from "../session/session";
 import { KubeQuestions } from "./KubeQuestions";
+import { ConversionManage } from "./ConversionManage";
 
 type Conversion = Schemas["KubeConversion"];
 type Revision = Schemas["KubeConversionRevision"];
@@ -138,15 +139,22 @@ export function KubeConversionPage({ id }: { id: string }) {
         ]}
         description="Generated for review. Samuori never applies these files to a cluster."
         actions={
-          canEdit && (
-            <Button
-              variant="secondary"
-              onPress={() => void rerun()}
-              isDisabled={active.has(conv.state)}
-            >
-              Run again
-            </Button>
-          )
+          <>
+            {canEdit && (
+              <Button
+                variant="secondary"
+                onPress={() => void rerun()}
+                isDisabled={active.has(conv.state)}
+              >
+                Run again
+              </Button>
+            )}
+            <ConversionManage
+              conversion={conv}
+              busy={active.has(conv.state)}
+              onChange={(c) => setConv(c)}
+            />
+          </>
         }
       />
       {error && <Alert>{error}</Alert>}

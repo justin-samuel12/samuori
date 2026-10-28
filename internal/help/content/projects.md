@@ -13,6 +13,15 @@ apply to it.
 On **Projects**, choose **New project**, pick the team and a name (lower-case letters, digits and dashes), and
 whether approved images are published manually or automatically.
 
+## Rename a project
+
+A project's maintainers and administrators can **Rename** it on its page. The name follows the same rule and must be
+unique in the team. Builds, images and history keep their IDs; repositories and tags already published are not
+renamed. A project cannot move to another team.
+
+When the organization has more than one location, the page shows **Build locations**. Administrators choose
+**Change locations** to keep the project's builds in some locations only (data residency); none allows any location.
+
 ## Archive, restore or purge a project
 
 A project's maintainers and administrators can **Archive project** on its page. An archived project is hidden from
@@ -39,6 +48,7 @@ before installing. Samuori does not deploy these files, and nothing you choose i
 
 - **Source uploads:** every upload, newest first.
 - **Repository requests:** ask for a registry repository for this project's images, with a justification.
-  An administrator creates it.
+  An administrator creates it. You can **Withdraw** your own request while it is waiting; maintainers can withdraw
+  any. The same applies to base image and network access requests.
 - **Output exceptions:** request permission for the image to contain specific sensitive paths, with the reason and
   how many days it is needed. See [Validation results](help:validation).

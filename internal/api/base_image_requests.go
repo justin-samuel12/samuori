@@ -8,8 +8,9 @@ import (
 	"samuori.invalid/samuori/internal/approvals"
 )
 
-func toBaseImageRequest(x approvals.BaseImageRequest) apigen.BaseImageRequest {
-	v := apigen.BaseImageRequest{Id: x.ID, ProjectId: x.ProjectID, Repository: x.Repository, Justification: x.Justification, ApprovalId: x.ApprovalID, State: apigen.BaseImageRequestState(x.State), CreatedAt: x.CreatedAt}
+func (a *API) toBaseImageRequest(r *http.Request, x approvals.BaseImageRequest) apigen.BaseImageRequest {
+	can := a.approvals.CanWithdrawRequest(r.Context(), principal(r), approvals.SubjectBaseImage, x.OrgID, x.ProjectID, x.RequestedBy, x.State)
+	v := apigen.BaseImageRequest{CanWithdraw: &can, Id: x.ID, ProjectId: x.ProjectID, Repository: x.Repository, Justification: x.Justification, ApprovalId: x.ApprovalID, State: apigen.BaseImageRequestState(x.State), CreatedAt: x.CreatedAt}
 	if x.Reason != "" {
 		v.Reason = &x.Reason
 	}
@@ -27,7 +28,7 @@ func (a *API) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, proj
 	}
 	out := apigen.BaseImageRequestList{Items: []apigen.BaseImageRequest{}}
 	for _, x := range list {
-		out.Items = append(out.Items, toBaseImageRequest(x))
+		out.Items = append(out.Items, a.toBaseImageRequest(r, x))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -49,6 +50,6 @@ func (a *API) RequestBaseImage(w http.ResponseWriter, r *http.Request, projectID
 	case err != nil:
 		apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid", err.Error())
 	default:
-		writeJSON(w, http.StatusAccepted, toBaseImageRequest(x))
+		writeJSON(w, http.StatusAccepted, a.toBaseImageRequest(r, x))
 	}
 }

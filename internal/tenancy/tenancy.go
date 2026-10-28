@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 
@@ -435,10 +436,32 @@ func conflict(err error) error {
 	return err
 }
 
-// SetPublicationMode changes whether the project publishes automatically after a passing validation.
-func (s *Store) SetPublicationMode(ctx context.Context, p authz.Principal, id, mode, requestID string) (Project, error) {
-	if mode != "manual" && mode != "automatic" {
-		return Project{}, errors.New("the publication mode must be manual or automatic")
+// ProjectName is the name rule for projects, the same as the API contract's.
+var ProjectName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
+
+// ErrInvalid reports a rejected project setting.
+type ErrInvalid struct{ Reason string }
+
+func (e *ErrInvalid) Error() string { return e.Reason }
+
+// ProjectChanges are the settings UpdateProject may change; nil leaves a setting as it is. A project never moves to
+// another team.
+type ProjectChanges struct {
+	Name, PublicationMode *string
+}
+
+// UpdateProject renames the project or changes whether it publishes automatically after a passing validation. Only
+// maintainers and administrators of the project's team may, with the same name rule and per-team uniqueness as
+// creation; each change is audited.
+func (s *Store) UpdateProject(ctx context.Context, p authz.Principal, id string, c ProjectChanges, requestID string) (Project, error) {
+	if c.PublicationMode != nil && *c.PublicationMode != "manual" && *c.PublicationMode != "automatic" {
+		return Project{}, &ErrInvalid{"the publication mode must be manual or automatic"}
+	}
+	if c.Name != nil && !ProjectName.MatchString(*c.Name) {
+		return Project{}, &ErrInvalid{"the name must be lower-case letters, digits and dashes, at most 63 characters"}
+	}
+	if c.Name == nil && c.PublicationMode == nil {
+		return Project{}, &ErrInvalid{"change the name or the publication mode"}
 	}
 	readers := []authz.Role{authz.Developer, authz.Maintainer, authz.Publisher, authz.SecurityReviewer, authz.Administrator}
 	pr, err := s.GetProject(ctx, p, readers, id)
@@ -453,11 +476,31 @@ func (s *Store) SetPublicationMode(ctx context.Context, p authz.Principal, id, m
 		if err := RequireActive(ctx, s.db, tx, id); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE projects SET publication_mode = ?, updated_at = ? WHERE id = ?`), mode, now, id); err != nil {
-			return err
+		if c.Name != nil && *c.Name != pr.Name {
+			if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE projects SET name = ?, updated_at = ? WHERE id = ?`), *c.Name, now, id); err != nil {
+				return conflict(err)
+			}
+			if err := audit.Append(ctx, s.db, tx, audit.Event{Actor: p, Action: "project.update", ResourceType: "project", ResourceID: id, Outcome: "succeeded",
+				Reason: "renamed " + pr.Name + " to " + *c.Name, RequestID: requestID}); err != nil {
+				return err
+			}
+			pr.Name = *c.Name
 		}
-		return audit.Append(ctx, s.db, tx, audit.Event{Actor: p, Action: "project.update", ResourceType: "project", ResourceID: id, Outcome: "succeeded", Reason: "publication mode " + mode, RequestID: requestID})
+		if c.PublicationMode != nil && *c.PublicationMode != pr.PublicationMode {
+			if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE projects SET publication_mode = ?, updated_at = ? WHERE id = ?`), *c.PublicationMode, now, id); err != nil {
+				return err
+			}
+			if err := audit.Append(ctx, s.db, tx, audit.Event{Actor: p, Action: "project.update", ResourceType: "project", ResourceID: id, Outcome: "succeeded",
+				Reason: "publication mode " + *c.PublicationMode, RequestID: requestID}); err != nil {
+				return err
+			}
+			pr.PublicationMode = *c.PublicationMode
+		}
+		return nil
 	})
-	pr.PublicationMode, pr.UpdatedAt = mode, now
-	return pr, err
+	if err != nil {
+		return Project{}, err
+	}
+	pr.UpdatedAt = now
+	return pr, nil
 }

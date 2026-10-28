@@ -43,6 +43,8 @@ export function PipelinesPage() {
   const [selected, setSelected] = useState<Pipeline>();
   const [error, setError] = useState<string>();
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Pipeline>();
+  const [deleting, setDeleting] = useState<Pipeline>();
   const [secret, setSecret] = useState<{ name: string; value: string }>();
 
   useEffect(() => {
@@ -186,13 +188,43 @@ export function PipelinesPage() {
                     <Button variant="quiet" onPress={() => void rotate(p)}>
                       New secret
                     </Button>
+                    <Button variant="quiet" onPress={() => setEditing(p)}>
+                      Edit
+                    </Button>
+                    <Button variant="quiet" onPress={() => setDeleting(p)}>
+                      Delete
+                    </Button>
                   </div>
                 ) : null,
             },
           ]}
         />
       )}
-      {selected && <PipelineRuns pipeline={selected} />}
+      {selected && <PipelineRuns key={selected.id} pipeline={selected} />}
+      {admin && (
+        <EditDialog
+          key={editing?.id ?? "none"}
+          pipeline={editing}
+          onClose={() => setEditing(undefined)}
+          onDone={(p) => {
+            setEditing(undefined);
+            if (selected?.id === p.id) setSelected(p);
+            void load();
+          }}
+        />
+      )}
+      {admin && (
+        <DeleteDialog
+          key={`delete-${deleting?.id ?? "none"}`}
+          pipeline={deleting}
+          onClose={() => setDeleting(undefined)}
+          onDone={(p) => {
+            setDeleting(undefined);
+            if (selected?.id === p.id) setSelected(undefined);
+            void load();
+          }}
+        />
+      )}
       {admin && (
         <CreateDialog
           isOpen={creating}
@@ -504,6 +536,186 @@ function CreateDialog({
           <Button type="submit">Create pipeline</Button>
         </div>
       </Form>
+    </Dialog>
+  );
+}
+
+function splitRefs(text: string): string[] {
+  return text
+    .split(/[\s,]+/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+}
+
+/** Edits a pipeline; the webhook URL and secret stay the same, and a token typed here replaces the stored one. */
+function EditDialog({
+  pipeline,
+  onClose,
+  onDone,
+}: {
+  pipeline?: Pipeline;
+  onClose: () => void;
+  onDone: (p: Pipeline) => void;
+}) {
+  const [name, setName] = useState(pipeline?.name ?? "");
+  const [repoUrl, setRepoUrl] = useState(pipeline?.repoUrl ?? "");
+  const [refs, setRefs] = useState(pipeline?.refs.join(", ") ?? "");
+  const [revision, setRevision] = useState(String(pipeline?.specRevision ?? 0));
+  const [revisions, setRevisions] = useState<Option[]>([]);
+  const [username, setUsername] = useState(pipeline?.username ?? "");
+  const [token, setToken] = useState("");
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    if (!pipeline) return;
+    void (async () => {
+      const { data } = await api.GET("/specs/{specId}/revisions", {
+        params: { path: { specId: pipeline.specId }, query: { limit: 100 } },
+      });
+      setRevisions([
+        { id: "0", label: "Latest revision" },
+        ...(data?.items ?? []).map((r) => ({
+          id: String(r.revision),
+          label: `Revision ${r.revision}`,
+        })),
+      ]);
+    })();
+  }, [pipeline]);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!pipeline) return;
+    setError(undefined);
+    const { data, error } = await api.PATCH("/pipelines/{pipelineId}", {
+      params: { path: { pipelineId: pipeline.id } },
+      body: {
+        name,
+        repoUrl,
+        refs: splitRefs(refs),
+        specRevision: Number(revision),
+        username,
+        ...(token ? { token } : {}),
+      },
+    });
+    if (data) onDone(data);
+    else setError(describeError(error, "The pipeline could not be saved."));
+  }
+
+  return (
+    <Dialog
+      title={`Edit ${pipeline?.name ?? "pipeline"}`}
+      isOpen={pipeline !== undefined}
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <Form onSubmit={submit} className="samuori-form">
+        {error && <Alert>{error}</Alert>}
+        <p className="mt-0 samuori-muted">
+          The webhook URL and secret stay the same. Use New secret to replace
+          the secret.
+        </p>
+        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          label="Repository URL"
+          value={repoUrl}
+          onChange={setRepoUrl}
+          type="url"
+          isRequired
+          description="HTTPS clone URL, without credentials."
+        />
+        <TextField
+          label="Refs to build"
+          value={refs}
+          onChange={setRefs}
+          isRequired
+          description="Full refs separated by commas; * and ? are wildcards."
+        />
+        <Select
+          label="Spec revision"
+          value={revision}
+          onChange={setRevision}
+          options={revisions}
+          description="Latest builds whatever the newest revision is when a run starts."
+        />
+        <TextField
+          label="Username (optional)"
+          value={username}
+          onChange={setUsername}
+        />
+        <TextField
+          label="New access token (optional)"
+          value={token}
+          onChange={setToken}
+          type="password"
+          description={
+            pipeline?.hasToken
+              ? "A token is stored. Leave empty to keep it; a new one replaces it and is never shown again."
+              : "Stored on the server for fetching only and never shown again."
+          }
+        />
+        <div className="samuori-actions">
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Save pipeline</Button>
+        </div>
+      </Form>
+    </Dialog>
+  );
+}
+
+function DeleteDialog({
+  pipeline,
+  onClose,
+  onDone,
+}: {
+  pipeline?: Pipeline;
+  onClose: () => void;
+  onDone: (p: Pipeline) => void;
+}) {
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  async function remove() {
+    if (!pipeline) return;
+    setBusy(true);
+    const { error } = await api.DELETE("/pipelines/{pipelineId}", {
+      params: { path: { pipelineId: pipeline.id } },
+    });
+    setBusy(false);
+    if (error)
+      setError(describeError(error, "The pipeline could not be deleted."));
+    else onDone(pipeline);
+  }
+  return (
+    <Dialog
+      title={`Delete ${pipeline?.name ?? "pipeline"}?`}
+      size="confirm"
+      isOpen={pipeline !== undefined}
+      onOpenChange={(o) => !o && onClose()}
+    >
+      {error && <Alert>{error}</Alert>}
+      <p className="mt-0">
+        Its webhook stops working at once and it disappears from this list. The
+        builds it started, their history and the audit trail are kept. A
+        pipeline with a run that is queued or fetching cannot be deleted;
+        disable it and wait for the run to end.
+      </p>
+      <p className="samuori-muted">
+        Remove the webhook from the repository too. The stored webhook secret
+        and token stay in the secrets list, unused, until an administrator
+        deletes them.
+      </p>
+      <div className="samuori-actions">
+        <Button variant="secondary" onPress={onClose}>
+          Keep it
+        </Button>
+        <Button
+          variant="danger"
+          isDisabled={busy}
+          onPress={() => void remove()}
+        >
+          Delete pipeline
+        </Button>
+      </div>
     </Dialog>
   );
 }

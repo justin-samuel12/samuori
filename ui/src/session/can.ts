@@ -32,6 +32,7 @@ export const projectWork: ReadonlySet<OperationId> = new Set<OperationId>([
   "createSpec",
   "createSpecRevision",
   "createUploadSession",
+  "deleteKubeConversion",
   "editKubeConversionFile",
   "putUploadChunk",
   "requestBaseImage",
@@ -45,6 +46,7 @@ export const projectWork: ReadonlySet<OperationId> = new Set<OperationId>([
   "startDiscovery",
   "startPipelineRun",
   "startRevalidation",
+  "updateKubeConversion",
   "updateProject",
 ]);
 

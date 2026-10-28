@@ -33,6 +33,10 @@ func (Unimplemented) FulfillRepositoryRequest(w http.ResponseWriter, r *http.Req
 	NotImplemented(w, r, "FulfillRepositoryRequest")
 }
 
+func (Unimplemented) WithdrawApproval(w http.ResponseWriter, r *http.Request, _ Id, _ WithdrawApprovalParams) {
+	NotImplemented(w, r, "WithdrawApproval")
+}
+
 func (Unimplemented) ListArtifactQuarantines(w http.ResponseWriter, r *http.Request, _ ListArtifactQuarantinesParams) {
 	NotImplemented(w, r, "ListArtifactQuarantines")
 }
@@ -355,8 +359,16 @@ func (Unimplemented) SetImageSourceState(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "SetImageSourceState")
 }
 
+func (Unimplemented) DeleteKubeConversion(w http.ResponseWriter, r *http.Request, _ ConversionId, _ DeleteKubeConversionParams) {
+	NotImplemented(w, r, "DeleteKubeConversion")
+}
+
 func (Unimplemented) GetKubeConversion(w http.ResponseWriter, r *http.Request, _ ConversionId) {
 	NotImplemented(w, r, "GetKubeConversion")
+}
+
+func (Unimplemented) UpdateKubeConversion(w http.ResponseWriter, r *http.Request, _ ConversionId, _ UpdateKubeConversionParams) {
+	NotImplemented(w, r, "UpdateKubeConversion")
 }
 
 func (Unimplemented) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request, _ ConversionId) {
@@ -501,8 +513,16 @@ func (Unimplemented) CreatePipeline(w http.ResponseWriter, r *http.Request, _ Cr
 	NotImplemented(w, r, "CreatePipeline")
 }
 
+func (Unimplemented) DeletePipeline(w http.ResponseWriter, r *http.Request, _ Id, _ DeletePipelineParams) {
+	NotImplemented(w, r, "DeletePipeline")
+}
+
 func (Unimplemented) GetPipeline(w http.ResponseWriter, r *http.Request, _ Id) {
 	NotImplemented(w, r, "GetPipeline")
+}
+
+func (Unimplemented) UpdatePipeline(w http.ResponseWriter, r *http.Request, _ Id, _ UpdatePipelineParams) {
+	NotImplemented(w, r, "UpdatePipeline")
 }
 
 func (Unimplemented) RotatePipelineHookSecret(w http.ResponseWriter, r *http.Request, _ Id, _ RotatePipelineHookSecretParams) {

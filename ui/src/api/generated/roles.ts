@@ -64,10 +64,12 @@ export const operationAccess = {
   deleteDestination: ["administrator"],
   deleteFederationRoute: ["administrator"],
   deleteGroupMapping: ["administrator"],
+  deleteKubeConversion: ["developer", "maintainer", "administrator"],
   deleteLocalSecret: ["administrator"],
   deleteLocation: ["administrator"],
   deleteNotificationChannel: ["administrator"],
   deleteNotificationRule: ["administrator"],
+  deletePipeline: ["administrator"],
   deleteRegistry: ["administrator"],
   deleteRegistryCredentialProfile: ["administrator"],
   deleteRelease: ["administrator"],
@@ -281,8 +283,10 @@ export const operationAccess = {
   updateDatabasePassword: ["administrator"],
   updateDestination: ["administrator"],
   updateIdentityProvider: ["administrator"],
+  updateKubeConversion: ["developer", "maintainer", "administrator"],
   updateNotificationChannel: ["administrator"],
   updateNotificationRule: ["administrator"],
+  updatePipeline: ["administrator"],
   updateProject: ["maintainer", "administrator"],
   updateRegistry: ["administrator"],
   updateRegistryCredentialProfile: ["administrator"],
@@ -290,6 +294,7 @@ export const operationAccess = {
   updateWorkerPool: ["administrator"],
   uploadRelease: ["administrator"],
   validateSpecDocument: ["developer", "maintainer", "publisher", "administrator"],
+  withdrawApproval: ["developer", "maintainer", "administrator"],
 } as const satisfies Record<string, Access>;
 
 export type OperationId = keyof typeof operationAccess;

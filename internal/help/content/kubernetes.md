@@ -70,7 +70,13 @@ Edit a file in the preview and **Save as new revision**: Samuori checks every fi
 revision. **Download ZIP** gives the files with a `samuori-review.json` of the findings and where they came from. Run
 the conversion again after changing the Compose file or the options; each run is a new revision in **History**.
 
+## Rename or delete
+
+**Rename** changes the conversion's name; files already generated keep the old name inside them until the next run or
+edit. **Delete** removes the conversion with all its runs, revisions and files, so they can no longer be downloaded;
+the audit log keeps a record. It is not possible while a run is in progress.
+
 ## Who can do what
 
-People with a build role on the project generate, edit and run again; everyone who can see the project can read
-and download. Other teams cannot see the conversion at all.
+People with a build role on the project generate, edit, rename and run again; the person who created a conversion
+and the project's maintainers can delete it; everyone who can see the project can read and download. Other teams cannot see the conversion at all.

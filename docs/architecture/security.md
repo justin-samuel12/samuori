@@ -30,7 +30,8 @@ registries. Each boundary is documented with its authentication, authorization a
 
 RBAC is evaluated by the controller API **and enforced again** on task dispatch, artifact access, worker-scoped
 credentials and publication. Approvals and exceptions are immutable audit objects with actor, reason, expiration
-and scope.
+and scope. A pending request may be withdrawn by its requester or a project maintainer before anyone decides it;
+the withdrawal is itself recorded and audited, and never changes a decision (ADR 0062).
 
 ## Upload handling
 

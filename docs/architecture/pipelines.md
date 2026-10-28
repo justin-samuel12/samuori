@@ -26,7 +26,7 @@ publication keep their own lifecycles ([build lifecycle](build-lifecycle.md)).
 
 | Action | Who |
 |---|---|
-| Create, enable, disable, rotate the webhook secret | Organization administrators |
+| Create, edit, enable, disable, rotate the webhook secret, delete | Organization administrators |
 | See pipelines and runs | Administrators, and anyone who can see the project |
 | Start a run by hand or through the API | Developers and maintainers of the project |
 
@@ -36,6 +36,21 @@ that one project is recommended. Each run reloads the owner's roles: if the owne
 role, runs fail with `owner_unavailable` or `owner_forbidden`. A person who starts a run also needs a build role on
 the project. The snapshot and the build are created through the same services and checks as an upload and a build
 started in the UI (D29).
+
+## Editing and deleting
+
+`PATCH /pipelines/{id}` changes the name, repository URL, refs, pinned spec revision (`0` for the latest), username or
+repository token, as one audited change (`pipeline.update`, listing what changed). The token is write-only: a new one
+is stored as a new controller-only secret and is never returned, and the replaced one is left unused for an
+administrator to delete under **Secrets**, as after a webhook-secret rotation. The webhook URL, scheme and secret stay
+the same; rotate the secret separately. The owner, project and spec are fixed; create a new pipeline to change them.
+
+`DELETE /pipelines/{id}` takes a pipeline out of use and is audited (`pipeline.delete`). It is refused with `409`
+while a run is queued or fetching; disable the pipeline and wait for the run to end. A deleted pipeline is no longer
+listed, its webhook answers `401` like an unknown pipeline, and its name is free for a new one. Its row, its runs and
+the builds they started are kept, so history and audit stay complete (migration 00070; ADR 0062). Its webhook secret
+and token are no longer referenced, so an administrator may delete them under **Secrets**. A run queued at the moment
+of deletion ends as `failed` with `deleted`.
 
 ## Webhooks (SEC-HOOK-01, SEC-HOOK-02)
 

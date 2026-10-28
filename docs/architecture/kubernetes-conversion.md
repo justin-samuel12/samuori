@@ -18,6 +18,7 @@ guide: `../operators/providers.md`.
 | Execution in `rootless-dedicated-vm` (and `rootless-host` for trusted pools) | implemented; ran on the enrolled worker of an all-in-one VM (arm64, 2026-10-24) for Kompose and Move2Kube ([practical run](../spikes/e2e-providers.md)) |
 | Execution in `vm-per-job` | **not implemented**: the KVM provider does not implement `isolation.Converter`, so its workers do not advertise providers and receive no conversion |
 | API and UI (wizard, conversion page, history) | implemented; API tests; UI type-checked, linted and built, not yet checked in a browser |
+| Rename and delete (API and conversion page) | implemented; API tests on SQLite (`TestKubeConversionRenameDelete`); UI type-checked and linted, not yet checked in a browser |
 | Move2Kube v0.3.15 (plan, interpretation, questions, answers, re-run) | implemented, **off by default** (unmaintained since March 2025); golden tests consume real runs on macOS with the network denied ([spike](../spikes/move2kube.md)); ran on a Linux worker through questions, answers and resume ([practical run](../spikes/e2e-providers.md)) |
 | Wizard provider list and questions on the conversion page | implemented; type-checked, linted and built, not yet checked in a browser |
 
@@ -33,7 +34,12 @@ queued → assigned → running → succeeded | needs-answers | failed | timed-o
 ```
 
 Only one run of a conversion is active at a time. Creating and re-running use the operations table and an
-`Idempotency-Key`; create, re-run, edit and download are audited (`kube-conversion.*`).
+`Idempotency-Key`; create, re-run, edit, rename, delete and download are audited (`kube-conversion.*`).
+
+**Rename** changes only the conversion's name; stored revisions keep the names already written into their files, and
+the next run or edit uses the new name. **Delete** removes the conversion with its runs, revisions and stored files;
+the audit trail keeps the create, edit, download and delete events. Delete is refused with `409` while a run is
+queued, assigned or running, and like rename it is refused on an archived project.
 
 **Inputs:** `compose` (an upload and the Compose file's path, optionally a Samuori build or publication whose image
 replaces one service's image), `build` or `publication` (image only: Samuori writes a one-service Compose file from its
@@ -194,8 +200,9 @@ options are carried over.
 `/projects/{projectId}/kube-providers` (the conversion providers the project may use, their inputs, formats and
 maintenance warning; no pins or scope), `/projects/{projectId}/kube-conversions` (list, create), `/kube-conversions/{id}` (get), `…/runs` (list, re-run),
 `…/revisions`, `…/revisions/{n}` (files, findings, lineage), `…/revisions/{n}/findings`, `…/revisions/{n}/file?path=`
-(get, edit), `…/revisions/{n}/bundle` (ZIP with `samuori-review.json`). Read: any role on the project; create, re-run and
-edit: developer, maintainer or administrator. A re-run takes options and, for Move2Kube, `answers` (id → value);
+(get, edit), `…/revisions/{n}/bundle` (ZIP with `samuori-review.json`). `PATCH /kube-conversions/{id}` renames and
+`DELETE /kube-conversions/{id}` deletes. Read: any role on the project; create, re-run, edit and rename: developer,
+maintainer or administrator; delete: the conversion's creator, or a maintainer or administrator of the project. A re-run takes options and, for Move2Kube, `answers` (id → value);
 omitted answers keep the previous ones. Another team gets 404 on every call (SEC-K8S-06).
 
 ## Evidence

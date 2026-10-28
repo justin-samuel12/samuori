@@ -35,11 +35,12 @@ type egressRequestView struct {
 	ApprovalID    string                   `json:"approvalId"`
 	State         string                   `json:"state"`
 	Reason        string                   `json:"reason,omitempty"`
+	CanWithdraw   bool                     `json:"canWithdraw"`
 	CreatedAt     time.Time                `json:"createdAt"`
 }
 
-func toEgressRequest(x approvals.EgressAccessRequest) egressRequestView {
-	v := egressRequestView{ID: x.ID, ProjectID: x.ProjectID, Method: x.Method, Presets: x.Presets, Destinations: x.Destinations, Internal: x.InternalDestinations, Justification: x.Justification,
+func (a *API) toEgressRequest(r *http.Request, x approvals.EgressAccessRequest) egressRequestView {
+	v := egressRequestView{CanWithdraw: a.approvals.CanWithdrawRequest(r.Context(), principal(r), approvals.SubjectEgressAccess, x.OrgID, x.ProjectID, x.RequestedBy, x.State), ID: x.ID, ProjectID: x.ProjectID, Method: x.Method, Presets: x.Presets, Destinations: x.Destinations, Internal: x.InternalDestinations, Justification: x.Justification,
 		Evidence: x.Evidence, ApprovalID: x.ApprovalID, State: x.State, Reason: x.Reason, CreatedAt: x.CreatedAt}
 	if v.Presets == nil {
 		v.Presets = []string{}
@@ -95,7 +96,7 @@ func (a *API) ListEgressAccessRequests(w http.ResponseWriter, r *http.Request, p
 		Items []egressRequestView `json:"items"`
 	}{Items: []egressRequestView{}}
 	for _, x := range list {
-		out.Items = append(out.Items, toEgressRequest(x))
+		out.Items = append(out.Items, a.toEgressRequest(r, x))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -135,7 +136,7 @@ func (a *API) RequestEgressAccess(w http.ResponseWriter, r *http.Request, projec
 		}
 		var x approvals.EgressAccessRequest
 		if x, err = a.approvals.RequestEgressAccess(r.Context(), p, roles, projectID, method, in.Presets, in.Destinations, internal, in.Justification, ev); err == nil {
-			writeJSON(w, http.StatusAccepted, toEgressRequest(x))
+			writeJSON(w, http.StatusAccepted, a.toEgressRequest(r, x))
 			return
 		}
 	}

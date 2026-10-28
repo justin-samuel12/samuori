@@ -20,11 +20,13 @@ type repositoryRequestView struct {
 	State           string    `json:"state"`
 	DestinationID   string    `json:"destinationId,omitempty"`
 	DestinationName string    `json:"destinationName,omitempty"`
+	CanWithdraw     bool      `json:"canWithdraw"`
 	CreatedAt       time.Time `json:"createdAt"`
 }
 
 func (a *API) toRepositoryRequest(r *http.Request, x approvals.RepositoryRequest) repositoryRequestView {
-	v := repositoryRequestView{ID: x.ID, ProjectID: x.ProjectID, RegistryID: x.RegistryID, Repository: x.Repository, Justification: x.Justification, ApprovalID: x.ApprovalID, State: x.State, CreatedAt: x.CreatedAt}
+	v := repositoryRequestView{ID: x.ID, ProjectID: x.ProjectID, RegistryID: x.RegistryID, Repository: x.Repository, Justification: x.Justification, ApprovalID: x.ApprovalID, State: x.State, CreatedAt: x.CreatedAt,
+		CanWithdraw: a.approvals.CanWithdrawRequest(r.Context(), principal(r), approvals.SubjectRepository, x.OrgID, x.ProjectID, x.RequestedBy, x.State)}
 	if x.DestinationID != "" && x.State == approvals.Approved {
 		v.DestinationID, v.DestinationName = x.DestinationID, a.publications.DestinationName(r.Context(), principal(r).OrgID, x.DestinationID)
 	}

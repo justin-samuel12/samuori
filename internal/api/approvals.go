@@ -6,6 +6,7 @@ import (
 
 	"samuori.invalid/samuori/internal/api/apigen"
 	"samuori.invalid/samuori/internal/approvals"
+	"samuori.invalid/samuori/internal/tenancy"
 )
 
 func (a *API) approvalError(w http.ResponseWriter, r *http.Request, err error) {
@@ -28,7 +29,7 @@ func (a *API) approvalError(w http.ResponseWriter, r *http.Request, err error) {
 func (a *API) toApproval(r *http.Request, ap approvals.Approval) apigen.Approval {
 	out := apigen.Approval{Id: ap.ID, ProjectId: ap.ProjectID, SubjectType: apigen.ApprovalSubjectType(ap.SubjectType), SubjectId: ap.SubjectID, State: apigen.ApprovalState(ap.State),
 		Summary: ap.Summary, RequestedBy: apigen.Principal{Id: ap.RequestedBy, Type: apigen.PrincipalTypeUser}, CanDecide: a.approvals.CanDecide(r.Context(), principal(r), ap),
-		CreatedAt: ap.CreatedAt, ExpiresAt: ap.ExpiresAt, DecidedAt: ap.DecidedAt, ValidUntil: ap.ValidUntil}
+		CanWithdraw: a.approvals.CanWithdraw(r.Context(), principal(r), ap), CreatedAt: ap.CreatedAt, ExpiresAt: ap.ExpiresAt, DecidedAt: ap.DecidedAt, ValidUntil: ap.ValidUntil}
 	if ap.RequestedBy == "system" {
 		out.RequestedBy.Type = apigen.PrincipalTypeService
 	}
@@ -72,6 +73,31 @@ func (a *API) DecideApproval(w http.ResponseWriter, r *http.Request, id apigen.I
 	writeJSON(w, http.StatusOK, a.toApproval(r, ap))
 }
 
+// WithdrawApproval closes a pending request before it is decided (ADR 0062).
+func (a *API) WithdrawApproval(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.WithdrawApprovalParams) {
+	var in apigen.ApprovalWithdrawal
+	if r.ContentLength != 0 && !decodeBody(w, r, &in) {
+		return
+	}
+	reason := ""
+	if in.Reason != nil {
+		reason = *in.Reason
+	}
+	ap, err := a.approvals.Withdraw(r.Context(), principal(r), operationRoles(r.Context()), id, reason, requestID(w))
+	switch {
+	case errors.Is(err, approvals.ErrForbidden):
+		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", "only the requester or a maintainer or administrator of the project may withdraw this request")
+	case errors.Is(err, approvals.ErrNotWithdrawable):
+		apigen.WriteProblem(w, http.StatusConflict, "not_withdrawable", err.Error())
+	case errors.Is(err, approvals.ErrWithdrawReason):
+		apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid", err.Error())
+	case err != nil:
+		a.approvalError(w, r, err)
+	default:
+		writeJSON(w, http.StatusOK, a.toApproval(r, ap))
+	}
+}
+
 func (a *API) RequestSecretBinding(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, _ apigen.RequestSecretBindingParams) {
 	var in apigen.SecretBindingRequest
 	if !decodeBody(w, r, &in) {
@@ -97,7 +123,18 @@ func (a *API) UpdateProject(w http.ResponseWriter, r *http.Request, id apigen.Pr
 	if !decodeBody(w, r, &in) {
 		return
 	}
-	p, err := a.tenancy.SetPublicationMode(r.Context(), principal(r), id, string(in.PublicationMode), requestID(w))
+	var c tenancy.ProjectChanges
+	c.Name = in.Name
+	if in.PublicationMode != nil {
+		mode := string(*in.PublicationMode)
+		c.PublicationMode = &mode
+	}
+	p, err := a.tenancy.UpdateProject(r.Context(), principal(r), id, c, requestID(w))
+	var inv *tenancy.ErrInvalid
+	if errors.As(err, &inv) {
+		apigen.WriteProblem(w, http.StatusUnprocessableEntity, "invalid", inv.Reason)
+		return
+	}
 	if err != nil {
 		a.tenancyError(w, r, err)
 		return

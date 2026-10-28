@@ -1319,7 +1319,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Changes project settings. Automatic publication also needs the spec to ask for it. */
+        /** @description Renames the project (same name rule and per-team uniqueness as creation) or changes its publication mode; automatic publication also needs the spec to ask for it. Each change is audited. The project stays in its team. */
         patch: operations["updateProject"];
         trace?: never;
     };
@@ -2368,6 +2368,25 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["decideApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/{approvalId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approvalId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Withdraws a pending repository, base-image, egress-access or secret-binding request before it is decided. The requester, or a maintainer or administrator of the project, may withdraw it; decided and expired requests stay immutable (409). Audited (ADR 0062). */
+        post: operations["withdrawApproval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3700,10 +3719,12 @@ export interface paths {
         get: operations["getPipeline"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Takes the pipeline out of use: its webhook answers 401, it is no longer listed and its name is free again. Its runs, the builds they started and the audit trail are kept. Refused with 409 while a run is queued or fetching (ADR 0062). */
+        delete: operations["deletePipeline"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Changes the name, repository URL, refs, pinned spec revision, username or repository token. The token is write-only and replaces the stored one; the webhook URL and secret stay the same. Audited. */
+        patch: operations["updatePipeline"];
         trace?: never;
     };
     "/pipelines/{pipelineId}/state": {
@@ -3901,10 +3922,12 @@ export interface paths {
         get: operations["getKubeConversion"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Deletes the conversion with its runs, revisions and stored files; the audit trail is kept. Its creator or a maintainer or administrator of the project may delete it. Refused with 409 while a run is queued, assigned or running. */
+        delete: operations["deleteKubeConversion"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Renames the conversion. Stored revisions keep the names already in their files; the next run or edit uses the new name. Audited. */
+        patch: operations["updateKubeConversion"];
         trace?: never;
     };
     "/kube-conversions/{conversionId}/runs": {
@@ -4436,9 +4459,11 @@ export interface components {
              */
             publicationMode: "manual" | "automatic";
         };
+        /** @description A project keeps its team; it cannot move to another one. */
         ProjectUpdate: {
+            name?: string;
             /** @enum {string} */
-            publicationMode: "manual" | "automatic";
+            publicationMode?: "manual" | "automatic";
         };
         ImageSummary: {
             artifactId: components["schemas"]["Id"];
@@ -5194,11 +5219,13 @@ export interface components {
             subjectType: "publication" | "security-exception" | "secret-binding" | "repository-request" | "base-image-request" | "egress-access-request";
             subjectId: components["schemas"]["Id"];
             /** @enum {string} */
-            state: "pending" | "approved" | "rejected" | "expired";
+            state: "pending" | "approved" | "rejected" | "expired" | "withdrawn";
             summary: string;
             requestedBy: components["schemas"]["Principal"];
             /** @description The caller may decide it; requesters never decide their own requests */
             canDecide: boolean;
+            /** @description The caller may withdraw it: a pending repository, base-image, egress-access or secret-binding request they made, or any on a project they maintain (ADR 0062) */
+            canWithdraw: boolean;
             decidedBy?: components["schemas"]["Principal"];
             reason?: string;
             createdAt: components["schemas"]["Timestamp"];
@@ -5217,6 +5244,9 @@ export interface components {
         ApprovalList: {
             items: components["schemas"]["Approval"][];
             nextCursor?: components["schemas"]["NextCursor"];
+        };
+        ApprovalWithdrawal: {
+            reason?: string;
         };
         ApprovalDecision: {
             /** @enum {string} */
@@ -6255,7 +6285,9 @@ export interface components {
             justification: string;
             approvalId: components["schemas"]["Id"];
             /** @enum {string} */
-            state: "pending" | "approved" | "rejected" | "expired";
+            state: "pending" | "approved" | "rejected" | "expired" | "withdrawn";
+            /** @description The caller may withdraw this request while it is pending (ADR 0062) */
+            canWithdraw?: boolean;
             destinationId?: components["schemas"]["Id"];
             destinationName?: string;
             createdAt: components["schemas"]["Timestamp"];
@@ -6275,7 +6307,9 @@ export interface components {
             justification: string;
             approvalId: components["schemas"]["Id"];
             /** @enum {string} */
-            state: "pending" | "approved" | "rejected" | "expired";
+            state: "pending" | "approved" | "rejected" | "expired" | "withdrawn";
+            /** @description The caller may withdraw this request while it is pending (ADR 0062) */
+            canWithdraw?: boolean;
             /** @description The decider's reason */
             reason?: string;
             /** @description The base-images policy version that lists the repository, once approved */
@@ -6344,7 +6378,9 @@ export interface components {
             evidence: components["schemas"]["EgressEvidence"];
             approvalId: components["schemas"]["Id"];
             /** @enum {string} */
-            state: "pending" | "approved" | "rejected" | "expired";
+            state: "pending" | "approved" | "rejected" | "expired" | "withdrawn";
+            /** @description The caller may withdraw this request while it is pending (ADR 0062) */
+            canWithdraw?: boolean;
             /** @description The decider's reason */
             reason?: string;
             createdAt: components["schemas"]["Timestamp"];
@@ -6987,6 +7023,21 @@ export interface components {
             hookPath: string;
             createdAt: components["schemas"]["Timestamp"];
         };
+        PipelineUpdate: {
+            name?: string;
+            /** @description 0 builds the spec's latest revision */
+            specRevision?: number;
+            /** @description https only (http only on loopback); no credentials */
+            repoUrl?: string;
+            refs?: string[];
+            /** @description Empty removes the username */
+            username?: string;
+            /**
+             * Format: password
+             * @description Replaces the repository token; never returned
+             */
+            token?: string;
+        };
         PipelineCreated: components["schemas"]["Pipeline"] & {
             /** @description Webhook secret; shown once */
             secret: string;
@@ -7155,6 +7206,9 @@ export interface components {
                 storageClass?: string;
             };
             kubernetesVersion?: string;
+        };
+        KubeConversionUpdate: {
+            name: string;
         };
         KubeConversionCreate: {
             name: string;
@@ -9656,7 +9710,10 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     archiveProject: {
@@ -11443,7 +11500,7 @@ export interface operations {
             query?: {
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
-                state?: "pending" | "approved" | "rejected" | "expired";
+                state?: "pending" | "approved" | "rejected" | "expired" | "withdrawn";
             };
             header?: never;
             path?: never;
@@ -11490,6 +11547,39 @@ export interface operations {
                     "application/json": components["schemas"]["Approval"];
                 };
             };
+        };
+    };
+    withdrawApproval: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                approvalId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ApprovalWithdrawal"];
+            };
+        };
+        responses: {
+            /** @description Withdrawn */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     listWorkers: {
@@ -14255,6 +14345,65 @@ export interface operations {
             404: components["responses"]["Problem"];
         };
     };
+    deletePipeline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                pipelineId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    updatePipeline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                pipelineId: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
     setPipelineState: {
         parameters: {
             query?: never;
@@ -14637,6 +14786,65 @@ export interface operations {
                 };
             };
             404: components["responses"]["Problem"];
+        };
+    };
+    deleteKubeConversion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                conversionId: components["parameters"]["ConversionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    updateKubeConversion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                conversionId: components["parameters"]["ConversionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KubeConversionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Renamed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KubeConversion"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     listKubeConversionRuns: {

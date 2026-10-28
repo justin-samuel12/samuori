@@ -280,3 +280,24 @@ func (a *API) DownloadKubeConversionBundle(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(buf.Bytes())
 }
+
+func (a *API) UpdateKubeConversion(w http.ResponseWriter, r *http.Request, id apigen.ConversionId, _ apigen.UpdateKubeConversionParams) {
+	var in apigen.KubeConversionUpdate
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	c, err := a.kube.Rename(r.Context(), principal(r), id, in.Name, requestID(w))
+	if err != nil {
+		a.kubeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toKubeConversion(c))
+}
+
+func (a *API) DeleteKubeConversion(w http.ResponseWriter, r *http.Request, id apigen.ConversionId, _ apigen.DeleteKubeConversionParams) {
+	if err := a.kube.Delete(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.kubeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

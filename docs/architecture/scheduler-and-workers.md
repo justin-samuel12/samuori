@@ -69,7 +69,7 @@ Eligibility is re-evaluated at every assignment.
 registers its location. Every organization starts with one location, `default` (ADR 0045); a pool created without a
 location goes to the organization's only location, or `default`. The UI hides location fields while only one
 location exists. An administrator may restrict a project to locations (`PUT /projects/{id}/locations`, data
-residency); admission and the scheduler then consider only pools in those locations. A build request may name a
+residency; **Build locations** on the project page); admission and the scheduler then consider only pools in those locations. A build request may name a
 preferred location (`location` in `POST /builds`), which must be allowed for the project; the scheduler tries it
 first and otherwise uses any allowed location. Pools can be renamed or moved (`PATCH /worker-pools/{id}`); changing an
 enabled pool's isolation profile or trust domain keeps it approved by the editing administrator, recorded as an

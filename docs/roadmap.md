@@ -13,6 +13,14 @@ independently testable, not scope cuts. Update task status in the same PR that d
   Notifications deletes channels (`DELETE /notification-channels/{id}`, 409 while rules use them). All administrator
   only and audited. Runnable: API and UI; `TestEnrollmentTokenRevocation` and `TestInfrastructureDeletes` pass on
   SQLite. Not yet run: PostgreSQL and a browser check of the new dialogs.
+- **Editing and removing (2026-10-28, owner request, ADR 0062).** Maintainers and administrators rename a project in
+  its team; administrators set its build locations from the project page (shown once a second location exists); the
+  requester or a project maintainer withdraws a pending repository, base-image, egress-access or secret-binding request
+  (state `withdrawn`, audited; decided requests stay immutable); administrators edit pipelines (name, repository,
+  refs, spec revision, username, write-only token; webhook kept) and delete them while no run is queued or fetching
+  (runs kept); conversions are renamed and deleted (creator or maintainer; not while a run is active). Migration
+  00070. Runnable: API and UI; focused API and service tests pass on SQLite. Not yet run: PostgreSQL and a browser
+  check.
 - **Project archive, restore and purge (2026-10-28, owner decision, ADR 0058).** Maintainers and administrators
   archive a project (hidden from lists, new work refused with 409, grants revoked and audited, queued and running
   builds cancelled) and restore it without its grants; administrators purge an archived project with its typed name,

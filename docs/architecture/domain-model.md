@@ -31,6 +31,12 @@ column — ADR 0003. `validation_runs`/`check_results` are added by ADR 0003.)
   revisions, runs, attempts, artifacts, approvals, policy decisions, audit events).
 - A project is `active`, `archived` or `purged` (ADR 0058). Archived and purged projects accept no new work; every
   create path checks the state inside its own transaction (`tenancy.RequireActive`). Projects are never deleted.
+- A project's maintainers and administrators may rename it (`PATCH /projects/{id}`) with the creation name rule and
+  per-team uniqueness, audited as `project.update`; a project never moves to another team. Records keep the project
+  ID, not the name.
+- Deleting keeps history: a deleted pipeline keeps its row and runs (`deleted_at`); a deleted Kubernetes conversion
+  removes its runs, revisions and files, and the audit trail keeps what happened. A pending request is withdrawn, not
+  deleted (ADR 0062).
 - Explicit revision numbers and optimistic concurrency (`ETag` / `If-Match`) for spec and policy edits.
 - Audit is append-only at the application layer. A SQL row is **not** tamper-proof; where stronger guarantees are
   needed, ship tamper-evident copies externally. Never claim otherwise.

@@ -22,3 +22,9 @@ inside your network, so approve only hosts the project really needs. Only organi
 administrators decide it, and they can revoke the access later on the project page.
 
 You cannot decide your own request. Decided requests move to **Decided**.
+
+## Withdraw
+
+While a repository, secret binding, base image or network access request is still waiting, the person who asked for
+it, or a maintainer of the project, can **Withdraw** it here or where it is listed on the project page. It moves to
+**Decided** as withdrawn and stays in the audit log. A decided or expired request cannot be withdrawn.

@@ -15,6 +15,7 @@ import { Alert, Loading, PageHeader } from "../components/Feedback";
 import { Table } from "../components/Table";
 import { DeleteUploadDialog, isUploader } from "../components/DeleteUpload";
 import { ProjectDeploymentFiles } from "../components/ProjectDeploymentFiles";
+import { WithdrawDialog } from "../components/Withdraw";
 import { bytes, correctName, shortDigest } from "../format";
 import { useLoader } from "../hooks";
 import { navigate } from "../router";
@@ -32,6 +33,7 @@ import {
   ArchivedBanner,
   isArchived,
 } from "./ProjectLifecycle";
+import { ProjectLocations, RenameProjectButton } from "./ProjectSettings";
 
 export function ProjectPage({ id }: { id: string }) {
   const can = useCan();
@@ -80,6 +82,11 @@ export function ProjectPage({ id }: { id: string }) {
             {can("getProjectDeploymentFiles", scope) && (
               <ProjectDeploymentFiles projectId={project.id} />
             )}
+            <RenameProjectButton
+              project={project}
+              scope={scope}
+              onChange={setProject}
+            />
             {can("archiveProject", scope) && (
               <ArchiveProjectButton project={project} scope={scope} />
             )}
@@ -97,6 +104,7 @@ export function ProjectPage({ id }: { id: string }) {
             <PublicationMode project={project} onChange={setProject} />
           )}
         </dd>
+        <ProjectLocations projectId={project.id} scope={scope} />
         <dt>Created</dt>
         <dd>{new Date(project.createdAt).toLocaleString()}</dd>
         <dt>Project ID</dt>
@@ -561,6 +569,7 @@ const requestStateText: Record<RepositoryRequest["state"], string> = {
   approved: "Ready",
   rejected: "Rejected",
   expired: "Expired",
+  withdrawn: "Withdrawn",
 };
 
 function RepositoryRequests({
@@ -572,6 +581,7 @@ function RepositoryRequests({
 }) {
   const [forbidden, setForbidden] = useState(false);
   const [items, setItems] = useState<RepositoryRequest[]>();
+  const [withdrawing, setWithdrawing] = useState<string>();
   const load = useCallback(async () => {
     const res = await api.GET("/projects/{projectId}/repository-requests", {
       params: { path: { projectId } },
@@ -618,9 +628,32 @@ function RepositoryRequests({
               name: "Requested",
               render: (r) => new Date(r.createdAt).toLocaleString(),
             },
+            {
+              id: "actions",
+              name: "Actions",
+              render: (r) =>
+                r.canWithdraw && (
+                  <Button
+                    variant="quiet"
+                    onPress={() => setWithdrawing(r.approvalId)}
+                  >
+                    Withdraw
+                  </Button>
+                ),
+            },
           ]}
         />
       )}
+      <WithdrawDialog
+        key={withdrawing ?? "none"}
+        approvalId={withdrawing}
+        what="repository request"
+        onClose={() => setWithdrawing(undefined)}
+        onDone={() => {
+          setWithdrawing(undefined);
+          void load();
+        }}
+      />
     </div>
   );
 }

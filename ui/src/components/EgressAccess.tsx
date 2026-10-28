@@ -7,6 +7,7 @@ import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { RadioGroup, TextField } from "./Field";
 import { Alert, Badge } from "./Feedback";
+import { WithdrawDialog } from "./Withdraw";
 
 type AccessRequest = Schemas["EgressAccessRequest"];
 type EvidenceRef = Schemas["EgressEvidenceRef"];
@@ -49,6 +50,7 @@ const stateLabel: Record<
   approved: { text: "Allowed for this project", tone: "ok" },
   rejected: { text: "Request rejected", tone: "bad" },
   expired: { text: "Request expired", tone: "neutral" },
+  withdrawn: { text: "Request withdrawn", tone: "neutral" },
 };
 
 /** Request access for one item's presets and destinations, and the state of the latest matching request. */
@@ -66,6 +68,7 @@ export function EgressAccess({
 }) {
   const can = useCan();
   const [open, setOpen] = useState(false);
+  const [withdrawing, setWithdrawing] = useState<string>();
   if (presets.length + destinations.length === 0) return null;
   const latest = context.requests.find(
     (r) =>
@@ -79,7 +82,10 @@ export function EgressAccess({
   );
   const canRequest = can("requestEgressAccess");
   const again =
-    !latest || latest.state === "rejected" || latest.state === "expired";
+    !latest ||
+    latest.state === "rejected" ||
+    latest.state === "expired" ||
+    latest.state === "withdrawn";
   return (
     <div className="samuori-actions" data-testid="egress-access">
       {latest && (
@@ -100,6 +106,24 @@ export function EgressAccess({
           Request access
         </Button>
       )}
+      {latest?.canWithdraw && (
+        <Button
+          variant="quiet"
+          onPress={() => setWithdrawing(latest.approvalId)}
+        >
+          Withdraw
+        </Button>
+      )}
+      <WithdrawDialog
+        key={withdrawing ?? "none"}
+        approvalId={withdrawing}
+        what="network access request"
+        onClose={() => setWithdrawing(undefined)}
+        onDone={() => {
+          setWithdrawing(undefined);
+          context.onRequested();
+        }}
+      />
       <RequestAccessDialog
         context={context}
         presets={presets}

@@ -273,7 +273,7 @@ func scanPipeline(sc interface{ Scan(...any) error }) (Pipeline, error) {
 }
 
 func (s *Service) load(ctx context.Context, id string) (Pipeline, error) {
-	p, err := scanPipeline(s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT `+pipelineCols+` FROM pipelines WHERE id = ?`), id))
+	p, err := scanPipeline(s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT `+pipelineCols+` FROM pipelines WHERE id = ? AND deleted_at IS NULL`), id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Pipeline{}, ErrNotFound
 	}
@@ -299,7 +299,7 @@ func (s *Service) Get(ctx context.Context, actor authz.Principal, id string) (Pi
 
 // List returns a project's pipelines, or every pipeline of the organization for administrators.
 func (s *Service) List(ctx context.Context, actor authz.Principal, projectID string) ([]Pipeline, error) {
-	q, args := `SELECT `+pipelineCols+` FROM pipelines WHERE org_id = ?`, []any{actor.OrgID}
+	q, args := `SELECT `+pipelineCols+` FROM pipelines WHERE org_id = ? AND deleted_at IS NULL`, []any{actor.OrgID}
 	if projectID != "" {
 		if !actor.IsOrgAdmin() {
 			if _, err := s.projects.GetProject(ctx, actor, viewRoles, projectID); err != nil {
@@ -331,7 +331,7 @@ func (s *Service) SetEnabled(ctx context.Context, actor authz.Principal, id stri
 		return ErrForbidden
 	}
 	return s.db.InTx(ctx, func(tx *sql.Tx) error {
-		res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE pipelines SET enabled = ?, updated_at = ? WHERE id = ? AND org_id = ?`), enabled, s.now().UTC(), id, actor.OrgID)
+		res, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE pipelines SET enabled = ?, updated_at = ? WHERE id = ? AND org_id = ? AND deleted_at IS NULL`), enabled, s.now().UTC(), id, actor.OrgID)
 		if err != nil {
 			return err
 		}
@@ -357,7 +357,7 @@ func (s *Service) RotateHookSecret(ctx context.Context, actor authz.Principal, i
 		return "", err
 	}
 	return hook, s.db.InTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE pipelines SET hook_secret_id = ?, updated_at = ? WHERE id = ?`), secretID, s.now().UTC(), id); err != nil {
+		if _, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE pipelines SET hook_secret_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL`), secretID, s.now().UTC(), id); err != nil {
 			return err
 		}
 		return audit.Append(ctx, s.db, tx, audit.Event{Actor: actor, Action: "pipeline.rotate-hook-secret", ResourceType: "pipeline", ResourceID: id, Outcome: "succeeded", RequestID: requestID})

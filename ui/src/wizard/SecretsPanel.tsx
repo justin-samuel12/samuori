@@ -10,6 +10,7 @@ import { api, describeError, type Schemas } from "../api/client";
 import { get } from "../spec/model";
 import { useEditor } from "./fields";
 import { correctName } from "../format";
+import { WithdrawDialog } from "../components/Withdraw";
 
 interface SecretDecl {
   id: string;
@@ -318,10 +319,62 @@ export function SecretsPanel({
           onDone={(id) => {
             setAsking(undefined);
             setAsked([...asked, id]);
+            void queryClient.invalidateQueries({
+              queryKey: ["secret-requests", projectId],
+            });
           }}
         />
       )}
+      {projectId && <PendingSecretRequests projectId={projectId} />}
     </section>
+  );
+}
+
+/** The project's secret-binding requests still waiting for an administrator, with a way to withdraw them. */
+function PendingSecretRequests({ projectId }: { projectId: string }) {
+  const queryClient = useQueryClient();
+  const [withdrawing, setWithdrawing] = useState<string>();
+  const pending = useQuery({
+    queryKey: ["secret-requests", projectId],
+    queryFn: async () => {
+      const { data } = await api.GET("/approvals", {
+        params: { query: { state: "pending" } },
+      });
+      return (data?.items ?? []).filter(
+        (a) => a.subjectType === "secret-binding" && a.projectId === projectId,
+      );
+    },
+  });
+  const items = pending.data ?? [];
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <h4>Waiting for an administrator</h4>
+      <ul>
+        {items.map((a) => (
+          <li key={a.id}>
+            {a.summary}{" "}
+            {a.canWithdraw && (
+              <Button variant="quiet" onPress={() => setWithdrawing(a.id)}>
+                Withdraw
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <WithdrawDialog
+        key={withdrawing ?? "none"}
+        approvalId={withdrawing}
+        what="secret request"
+        onClose={() => setWithdrawing(undefined)}
+        onDone={() => {
+          setWithdrawing(undefined);
+          void queryClient.invalidateQueries({
+            queryKey: ["secret-requests", projectId],
+          });
+        }}
+      />
+    </div>
   );
 }
 

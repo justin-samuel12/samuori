@@ -130,6 +130,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | tenancy | GET | `/projects` | `listProjects` | developer, maintainer, publisher, security-reviewer, administrator |
 | tenancy | POST | `/projects` | `createProject` | maintainer, administrator |
 | tenancy | GET | `/projects/{projectId}` | `getProject` | developer, maintainer, publisher, security-reviewer, administrator |
+| tenancy | PATCH | `/projects/{projectId}` | `updateProject` (name, publication mode; never the team) | maintainer, administrator (of the project's team; audited) |
 | tenancy | POST | `/projects/{projectId}/archive` | `archiveProject` | maintainer, administrator (of the project; ADR 0058) |
 | tenancy | POST | `/projects/{projectId}/restore` | `restoreProject` | maintainer, administrator (of the project; ADR 0058) |
 | tenancy | POST | `/projects/{projectId}/purge` | `purgeProject` | administrator (organization; `X-Samuori-Confirm` = project name; ADR 0058) |
@@ -175,6 +176,7 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | publication | POST | `/publications/{publicationId}/retire` | `retirePublication` | publisher, maintainer |
 | approvals | GET | `/approvals` | `listApprovals` | publisher, security-reviewer, administrator |
 | approvals | POST | `/approvals/{approvalId}/decision` | `decideApproval` | publisher, security-reviewer, administrator |
+| approvals | POST | `/approvals/{approvalId}/withdrawal` | `withdrawApproval` | the requester (developer, maintainer, administrator), or a maintainer or administrator of the project; pending repository, base-image, egress-access and secret-binding requests only (ADR 0062) |
 | validation | GET | `/projects/{projectId}/output-exceptions` | `listOutputExceptions` | developer, maintainer, publisher, security-reviewer, administrator |
 | validation | POST | `/projects/{projectId}/output-exceptions` | `requestOutputException` | maintainer, administrator |
 | validation | GET | `/output-exceptions` | `listPendingOutputExceptions` | administrator |
@@ -243,11 +245,15 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | pipelines | GET | `/pipelines` | `listPipelines` | any role that can see the project |
 | pipelines | POST | `/pipelines` | `createPipeline` | administrator |
 | pipelines | GET | `/pipelines/{pipelineId}` | `getPipeline` | any role that can see the project |
+| pipelines | PATCH | `/pipelines/{pipelineId}` | `updatePipeline` (token write-only; webhook URL and secret kept) | administrator |
+| pipelines | DELETE | `/pipelines/{pipelineId}` | `deletePipeline` (409 while a run is queued or fetching; runs kept; ADR 0062) | administrator |
 | pipelines | POST | `/pipelines/{pipelineId}/state` | `setPipelineState` | administrator |
 | pipelines | POST | `/pipelines/{pipelineId}/hook-secret` | `rotatePipelineHookSecret` | administrator |
 | pipelines | GET | `/pipelines/{pipelineId}/runs` | `listPipelineRuns` | any role that can see the project |
 | pipelines | POST | `/pipelines/{pipelineId}/runs` | `startPipelineRun` | developer, maintainer |
 | pipelines | POST | `/hooks/pipelines/{pipelineId}` | `receivePipelineHook` | public, signed |
+| kubernetes | PATCH | `/kube-conversions/{conversionId}` | `updateKubeConversion` (rename) | developer, maintainer, administrator |
+| kubernetes | DELETE | `/kube-conversions/{conversionId}` | `deleteKubeConversion` (409 while a run is active) | its creator, or a maintainer or administrator of the project |
 | audit | GET | `/audit-events` | `listAuditEvents` | administrator, security-reviewer |
 | audit | GET | `/audit-events/export` | `exportAuditEvents` | administrator, security-reviewer |
 | audit | GET | `/audit-policy` | `getAuditPolicy` | administrator, security-reviewer |

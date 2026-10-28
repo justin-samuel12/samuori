@@ -19,6 +19,8 @@ func (a *API) pipelineError(w http.ResponseWriter, r *http.Request, err error) {
 		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", "your roles do not permit this")
 	case errors.Is(err, pipelines.ErrNotFound):
 		apigen.WriteProblem(w, http.StatusNotFound, "not_found", "not found")
+	case errors.Is(err, pipelines.ErrActive):
+		apigen.WriteProblem(w, http.StatusConflict, "busy", err.Error())
 	case errors.Is(err, pipelines.ErrConflict):
 		apigen.WriteProblem(w, http.StatusConflict, "conflict", "the project already has a pipeline with that name")
 	case errors.As(err, &inv):
@@ -129,6 +131,32 @@ func (a *API) GetPipeline(w http.ResponseWriter, r *http.Request, id apigen.Id) 
 		return
 	}
 	writeJSON(w, http.StatusOK, toPipeline(p))
+}
+
+// UpdatePipeline changes a pipeline's settings; the webhook URL and secret stay the same and the token is never returned.
+func (a *API) UpdatePipeline(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.UpdatePipelineParams) {
+	var in apigen.PipelineUpdate
+	if !decodeBody(w, r, &in) {
+		return
+	}
+	c := pipelines.Changes{Name: in.Name, RepoURL: in.RepoUrl, Username: in.Username, Token: in.Token, SpecRevision: in.SpecRevision}
+	if in.Refs != nil {
+		c.Refs = *in.Refs
+	}
+	p, err := a.pipelines.Update(r.Context(), principal(r), id, c, requestID(w))
+	if err != nil {
+		a.pipelineError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toPipeline(p))
+}
+
+func (a *API) DeletePipeline(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.DeletePipelineParams) {
+	if err := a.pipelines.Delete(r.Context(), principal(r), id, requestID(w)); err != nil {
+		a.pipelineError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *API) SetPipelineState(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.SetPipelineStateParams) {

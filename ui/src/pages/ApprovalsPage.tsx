@@ -13,6 +13,7 @@ import { Alert, Loading, PageHeader } from "../components/Feedback";
 import { Table } from "../components/Table";
 import { useLoader } from "../hooks";
 import { useCan } from "../session/session";
+import { WithdrawDialog } from "../components/Withdraw";
 
 type Approval = Schemas["Approval"];
 
@@ -29,6 +30,7 @@ export function ApprovalsPage() {
   const [pending, setPending] = useState<Approval[]>();
   const [history, setHistory] = useState<Approval[]>([]);
   const [deciding, setDeciding] = useState<Approval>();
+  const [withdrawing, setWithdrawing] = useState<string>();
   const can = useCan();
   const load = useCallback(async () => {
     const [p, all] = await Promise.all([
@@ -71,18 +73,30 @@ export function ApprovalsPage() {
           {
             id: "actions",
             name: "Actions",
-            render: (a) =>
-              a.canDecide ? (
-                <Button
-                  variant="secondary"
-                  onPress={() => setDeciding(a)}
-                  aria-label={`Decide: ${a.summary}`}
-                >
-                  Decide
-                </Button>
-              ) : (
-                <span className="samuori-muted">Waiting for an approver</span>
-              ),
+            render: (a) => (
+              <>
+                {a.canDecide ? (
+                  <Button
+                    variant="secondary"
+                    onPress={() => setDeciding(a)}
+                    aria-label={`Decide: ${a.summary}`}
+                  >
+                    Decide
+                  </Button>
+                ) : (
+                  <span className="samuori-muted">Waiting for an approver</span>
+                )}
+                {a.canWithdraw && (
+                  <Button
+                    variant="quiet"
+                    onPress={() => setWithdrawing(a.id)}
+                    aria-label={`Withdraw: ${a.summary}`}
+                  >
+                    Withdraw
+                  </Button>
+                )}
+              </>
+            ),
           },
         ]}
       />
@@ -108,6 +122,16 @@ export function ApprovalsPage() {
               a.decidedAt ? new Date(a.decidedAt).toLocaleString() : "",
           },
         ]}
+      />
+      <WithdrawDialog
+        key={withdrawing ?? "none"}
+        approvalId={withdrawing}
+        what="request"
+        onClose={() => setWithdrawing(undefined)}
+        onDone={() => {
+          setWithdrawing(undefined);
+          void load();
+        }}
       />
       <DecideDialog
         approval={deciding}

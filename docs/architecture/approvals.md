@@ -20,6 +20,7 @@ An approval is a request someone other than the requester must decide. Each appr
 | Right deciders | Publications: publisher, security reviewer or administrator covering the project. Secret bindings and repository requests: administrators. Base-image and egress access requests: organization-scoped administrators only, since they change an organization policy or widen a project beyond it |
 | Visibility | Deciders and anyone who can read the project; other teams never see the request |
 | Expiry | Pending requests lapse at `expiresAt` (publications 72 hours, binding and repository requests 7 days, base-image and egress access requests 14 days); the reconciler marks them `expired` |
+| Withdrawal | The requester, or a maintainer or administrator of the project, may withdraw a pending repository, base-image, egress-access or secret-binding request (`POST /approvals/{id}/withdrawal`, optional reason). It closes as `withdrawn` with the same compare-and-swap from `pending`, runs the subject's closing step (a withdrawn base-image or egress request no longer blocks a new one) and is audited as `approval.withdraw`. Withdrawal is not a decision: decided and expired requests stay immutable (`409`), and publications follow their own lifecycle (ADR 0062). `canWithdraw` on approvals and on listed requests tells the UI when to offer it |
 | Audit | Every request and decision is an audit event |
 
 ## Publications

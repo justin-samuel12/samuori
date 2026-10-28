@@ -68,3 +68,4 @@ owner approval.
 | [0059](0059-deployment-files-for-built-images.md) | Deployment files for built images | Accepted (provisional) |
 | [0060](0060-deprecating-and-withdrawing-built-in-runtimes.md) | Deprecating and withdrawing built-in runtimes | Accepted (provisional) |
 | [0061](0061-deployment-files-for-a-project.md) | Deployment files for a project | Accepted (provisional) |
+| [0062](0062-editing-withdrawing-and-deleting.md) | Renaming, withdrawing requests and deleting pipelines and conversions | Accepted (provisional) |
