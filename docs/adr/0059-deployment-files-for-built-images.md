@@ -1,7 +1,8 @@
 # 0059. Deployment files for built images
 
 Status: **Accepted** (2026-10-28, owner request; provisional, may change during acceptance testing). Extends
-[ADR 0053](0053-image-download-and-build-deletion.md); complements [ADR 0048](0048-kubernetes-artifact-generation.md).
+[ADR 0053](0053-image-download-and-build-deletion.md); complements [ADR 0048](0048-kubernetes-artifact-generation.md);
+extended to a whole project by [ADR 0061](0061-deployment-files-for-a-project.md).
 
 ## Context
 Next to "Download image", the owner asked for "a docker compose and/or helm file referencing the image AND if it's

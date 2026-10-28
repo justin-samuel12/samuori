@@ -1380,6 +1380,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{projectId}/deploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files. */
+        get: operations["getProjectDeploymentFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/deploy/compose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited. */
+        get: operations["downloadProjectDeploymentCompose"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/deploy/helm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited. */
+        get: operations["downloadProjectDeploymentHelmChart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{projectId}/build-methods": {
         parameters: {
             query?: never;
@@ -4877,6 +4934,73 @@ export interface components {
             reference: string;
             publishedAt: components["schemas"]["Timestamp"];
         };
+        ProjectDeploymentPlan: {
+            components?: components["schemas"]["ProjectDeploymentChoice"][];
+        };
+        ProjectDeploymentChoice: {
+            specId: components["schemas"]["Id"];
+            artifactId?: components["schemas"]["Id"];
+            publicationId?: components["schemas"]["Id"];
+            /** @description 1 when omitted */
+            replicas?: number;
+            /** @description Each sets envName to the in-network URL of the target image definition, which must serve HTTP on a port */
+            links?: {
+                envName: string;
+                target: components["schemas"]["Id"];
+            }[];
+            volumes?: {
+                name: string;
+                /** @description A clean absolute path other than / */
+                mountPath: string;
+            }[];
+        };
+        ProjectDeploymentFiles: {
+            projectId: components["schemas"]["Id"];
+            composeFilename: string;
+            chartFilename: string;
+            components: components["schemas"]["ProjectDeploymentComponent"][];
+        };
+        ProjectDeploymentComponent: {
+            specId: components["schemas"]["Id"];
+            specName: string;
+            /** @description False when the image definition has no successful build; it is left out of the files */
+            available: boolean;
+            /** @description Which reference the files use, or why the definition is left out */
+            note: string;
+            /** @description The Compose service and Helm component name */
+            name?: string;
+            /** @description spec.application.type of the chosen build */
+            type?: string;
+            port?: number;
+            /** @description True when other images can link to it: it serves HTTP on a port */
+            linkable?: boolean;
+            artifactId?: components["schemas"]["Id"];
+            publicationId?: components["schemas"]["Id"];
+            reference?: string;
+            published?: boolean;
+            replicas: number;
+            links: components["schemas"]["ProjectDeploymentLink"][];
+            volumes: components["schemas"]["ProjectDeploymentVolume"][];
+            /** @description Recent successful builds, newest first */
+            builds: components["schemas"]["ProjectDeploymentBuild"][];
+        };
+        ProjectDeploymentLink: {
+            envName: string;
+            target: components["schemas"]["Id"];
+            /** @description The Compose URL; Helm uses the release-prefixed Service name */
+            url: string;
+        };
+        ProjectDeploymentVolume: {
+            name: string;
+            mountPath: string;
+        };
+        ProjectDeploymentBuild: {
+            artifactId: components["schemas"]["Id"];
+            buildRunId: components["schemas"]["Id"];
+            version?: string;
+            builtAt: components["schemas"]["Timestamp"];
+            publications: components["schemas"]["DeploymentTarget"][];
+        };
         ValidationSummary: {
             id: components["schemas"]["Id"];
             /** @enum {string} */
@@ -7177,6 +7301,8 @@ export interface components {
         ArtifactId: components["schemas"]["Id"];
         /** @description A successful publication of the image to reference; the newest one when omitted */
         DeployPublicationId: components["schemas"]["Id"];
+        /** @description A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored. */
+        DeployPlan: string;
         WorkerId: components["schemas"]["Id"];
         ConversionId: components["schemas"]["Id"];
     };
@@ -9568,6 +9694,87 @@ export interface operations {
                 };
             };
             404: components["responses"]["Problem"];
+        };
+    };
+    getProjectDeploymentFiles: {
+        parameters: {
+            query?: {
+                /** @description A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored. */
+                plan?: components["parameters"]["DeployPlan"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The components and their references */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDeploymentFiles"];
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    downloadProjectDeploymentCompose: {
+        parameters: {
+            query?: {
+                /** @description A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored. */
+                plan?: components["parameters"]["DeployPlan"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compose file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    downloadProjectDeploymentHelmChart: {
+        parameters: {
+            query?: {
+                /** @description A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored. */
+                plan?: components["parameters"]["DeployPlan"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Helm chart archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/gzip": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     getProjectBuildMethods: {

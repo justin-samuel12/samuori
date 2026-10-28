@@ -178,6 +178,23 @@ v1.36 schemas). Practical run, 2026-10-28, on generated samples: `docker compose
 Compose files, and Helm 3.16.3 (`alpine/helm` container) lints and renders the charts. Not yet deployed to a
 cluster or run with `docker compose up`, and the dialog is not yet checked in a browser.
 
+### For a whole project (ADR 0061)
+
+`GET /projects/{id}/deploy/compose` and `/deploy/helm` return one `compose.yml` and one chart for every image
+definition of the project with a successful build; `GET /projects/{id}/deploy` lists each definition, its recent
+successful builds and their publications, and the reference each would use. An optional `plan` query parameter
+(`ProjectDeploymentPlan` as JSON, never stored) chooses per definition the build, publication, replicas (0–20),
+links and volumes. References follow ADR 0059. A link sets an environment variable to another HTTP image's
+in-network URL (`http://<service>:<port>` in Compose, `http://<release>-<component>:<port>` in Helm); a volume
+becomes a Compose named volume or a PersistentVolumeClaim whose size must be set before `helm install`. A definition
+without a successful build is listed as unavailable and named in a "Left out" header line. Bad env names, link
+targets, mount paths, replicas or choices get 422; other teams get 404; downloads are audited as
+`project.deployment_files`. The project page offers them under "Deployment files". `TestProjectDeploymentFiles`,
+`TestProjectCompose`, `TestProjectChart` and `TestProjectValidate` pass (2026-10-28; the chart renders through the
+tests' renderer and passes the embedded Kubernetes v1.36 schemas). Practical run, 2026-10-28: `docker compose config`
+(Compose v5.6.1) accepts a generated three-image sample. Not yet linted with a real Helm binary, deployed, run with
+`docker compose up`, or checked in a browser.
+
 ## Publication (WP21)
 
 Implemented for generic OCI registries: [`publication.md`](publication.md).

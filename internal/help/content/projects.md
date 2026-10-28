@@ -25,6 +25,16 @@ An administrator can **Purge** an archived project by typing its name. This dele
 reports and SBOMs it stored, keeps its name, records and audit trail, and cannot be undone. A purged project cannot
 be restored. Images already pushed to external registries are not deleted.
 
+## Deployment files for the whole project
+
+Once an image of the project has built successfully, **Deployment files** on the project page gives one
+`compose.yml` and one Helm chart that run all of the project's images together. For each image you can pick the
+build and publication, the number of replicas, **links** (an environment variable set to another image's address,
+such as `API_URL` pointing at `http://api:8080`) and **volumes** (a name and an absolute mount path). Images that
+have not built successfully are listed and left out. A published image is named by tag and digest; an unpublished
+one by the name `docker load` gives it, so download and load it first. Set each volume's size in the Helm values
+before installing. Samuori does not deploy these files, and nothing you choose is saved.
+
 ## On the project page
 
 - **Source uploads:** every upload, newest first.

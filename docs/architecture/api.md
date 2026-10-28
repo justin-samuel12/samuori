@@ -161,6 +161,9 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | artifacts | GET | `/artifacts/{artifactId}/deploy` | `getDeploymentFiles` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; ADR 0059) |
 | artifacts | GET | `/artifacts/{artifactId}/deploy/compose` | `downloadDeploymentCompose` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
 | artifacts | GET | `/artifacts/{artifactId}/deploy/helm` | `downloadDeploymentHelmChart` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
+| artifacts | GET | `/projects/{projectId}/deploy` | `getProjectDeploymentFiles` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; ADR 0061) |
+| artifacts | GET | `/projects/{projectId}/deploy/compose` | `downloadProjectDeploymentCompose` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
+| artifacts | GET | `/projects/{projectId}/deploy/helm` | `downloadProjectDeploymentHelmChart` | developer, maintainer, publisher, security-reviewer, administrator (project visibility applies; audited) |
 | validation | GET | `/artifacts/{artifactId}/validations` | `listValidations` | developer, maintainer, publisher, security-reviewer, administrator |
 | validation | POST | `/artifacts/{artifactId}/validations` | `startRevalidation` | maintainer, security-reviewer, administrator |
 | validation | GET | `/validations/{validationId}` | `getValidation` | developer, maintainer, publisher, security-reviewer, administrator |

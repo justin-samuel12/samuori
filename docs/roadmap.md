@@ -24,6 +24,11 @@ independently testable, not scope cuts. Update task status in the same PR that d
   publication when there are several) or the local `docker load` name. Runnable: the API and UI; focused tests pass;
   samples pass `docker compose config` and Helm 3.16.3 lint and template. Outstanding: a real `docker compose up` and
   `helm install`, and a browser check of the dialog.
+- **Project deployment files (2026-10-28, owner request, ADR 0061).** The project page offers one `compose.yml` and
+  one Helm chart for all of the project's images, with a build and publication choice, replicas, links (an env var set
+  to another image's in-network URL) and volumes per image; images without a successful build are listed and left
+  out. Runnable: API and UI; focused tests pass; a sample passes `docker compose config`. Outstanding: real Helm
+  lint/install, `docker compose up`, and a browser check of the dialog.
 - **Tests (ADR 0039 as amended).** All tests were removed on 2026-10-20, and focused regression tests for critical
   security boundaries and practical workflows were restored the same day; `make test` runs them and `make ci`
   includes it. Results below that cite tests which were not restored come from runs at earlier commits and cannot be

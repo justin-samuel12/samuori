@@ -7355,6 +7355,82 @@ type ProjectCreate struct {
 // ProjectCreatePublicationMode defines model for ProjectCreate.PublicationMode.
 type ProjectCreatePublicationMode string
 
+// ProjectDeploymentBuild defines model for ProjectDeploymentBuild.
+type ProjectDeploymentBuild struct {
+	// ArtifactId ULID
+	ArtifactId Id `json:"artifactId"`
+
+	// BuildRunId ULID
+	BuildRunId   Id                 `json:"buildRunId"`
+	BuiltAt      Timestamp          `json:"builtAt"`
+	Publications []DeploymentTarget `json:"publications"`
+	Version      *string            `json:"version,omitempty"`
+}
+
+// ProjectDeploymentComponent defines model for ProjectDeploymentComponent.
+type ProjectDeploymentComponent struct {
+	// ArtifactId ULID
+	ArtifactId *Id `json:"artifactId,omitempty"`
+
+	// Available False when the image definition has no successful build; it is left out of the files
+	Available bool `json:"available"`
+
+	// Builds Recent successful builds, newest first
+	Builds []ProjectDeploymentBuild `json:"builds"`
+
+	// Linkable True when other images can link to it: it serves HTTP on a port
+	Linkable *bool                   `json:"linkable,omitempty"`
+	Links    []ProjectDeploymentLink `json:"links"`
+
+	// Name The Compose service and Helm component name
+	Name *string `json:"name,omitempty"`
+
+	// Note Which reference the files use, or why the definition is left out
+	Note string `json:"note"`
+	Port *int   `json:"port,omitempty"`
+
+	// PublicationId ULID
+	PublicationId *Id     `json:"publicationId,omitempty"`
+	Published     *bool   `json:"published,omitempty"`
+	Reference     *string `json:"reference,omitempty"`
+	Replicas      int     `json:"replicas"`
+
+	// SpecId ULID
+	SpecId   Id     `json:"specId"`
+	SpecName string `json:"specName"`
+
+	// Type spec.application.type of the chosen build
+	Type    *string                   `json:"type,omitempty"`
+	Volumes []ProjectDeploymentVolume `json:"volumes"`
+}
+
+// ProjectDeploymentFiles defines model for ProjectDeploymentFiles.
+type ProjectDeploymentFiles struct {
+	ChartFilename   string                       `json:"chartFilename"`
+	Components      []ProjectDeploymentComponent `json:"components"`
+	ComposeFilename string                       `json:"composeFilename"`
+
+	// ProjectId ULID
+	ProjectId Id `json:"projectId"`
+}
+
+// ProjectDeploymentLink defines model for ProjectDeploymentLink.
+type ProjectDeploymentLink struct {
+	EnvName string `json:"envName"`
+
+	// Target ULID
+	Target Id `json:"target"`
+
+	// Url The Compose URL; Helm uses the release-prefixed Service name
+	Url string `json:"url"`
+}
+
+// ProjectDeploymentVolume defines model for ProjectDeploymentVolume.
+type ProjectDeploymentVolume struct {
+	MountPath string `json:"mountPath"`
+	Name      string `json:"name"`
+}
+
 // ProjectList defines model for ProjectList.
 type ProjectList struct {
 	Items      []Project   `json:"items"`
@@ -9083,6 +9159,9 @@ type CsrfToken = string
 // Cursor defines model for Cursor.
 type Cursor = string
 
+// DeployPlan defines model for DeployPlan.
+type DeployPlan = string
+
 // DeployPublicationId ULID
 type DeployPublicationId = Id
 
@@ -9695,6 +9774,24 @@ type ArchiveProjectParams struct {
 type RequestBaseImageParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// GetProjectDeploymentFilesParams defines parameters for GetProjectDeploymentFiles.
+type GetProjectDeploymentFilesParams struct {
+	// Plan A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored.
+	Plan *DeployPlan `form:"plan,omitempty" json:"plan,omitempty"`
+}
+
+// DownloadProjectDeploymentComposeParams defines parameters for DownloadProjectDeploymentCompose.
+type DownloadProjectDeploymentComposeParams struct {
+	// Plan A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored.
+	Plan *DeployPlan `form:"plan,omitempty" json:"plan,omitempty"`
+}
+
+// DownloadProjectDeploymentHelmChartParams defines parameters for DownloadProjectDeploymentHelmChart.
+type DownloadProjectDeploymentHelmChartParams struct {
+	// Plan A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored.
+	Plan *DeployPlan `form:"plan,omitempty" json:"plan,omitempty"`
 }
 
 // RequestEgressAccessParams defines parameters for RequestEgressAccess.
@@ -11723,6 +11820,21 @@ type ClientInterface interface {
 	//
 	// The build methods this project may use now and the organization's default, for the wizard. Shows availability and reasons only, never provider pins or scope (ADR 0047).
 	GetProjectBuildMethods(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectDeploymentFiles performs a GET /projects/{projectId}/deploy (the `GetProjectDeploymentFiles` operationId) request.
+	//
+	// Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files.
+	GetProjectDeploymentFiles(ctx context.Context, projectId ProjectId, params *GetProjectDeploymentFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadProjectDeploymentCompose performs a GET /projects/{projectId}/deploy/compose (the `DownloadProjectDeploymentCompose` operationId) request.
+	//
+	// A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+	DownloadProjectDeploymentCompose(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentComposeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadProjectDeploymentHelmChart performs a GET /projects/{projectId}/deploy/helm (the `DownloadProjectDeploymentHelmChart` operationId) request.
+	//
+	// A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+	DownloadProjectDeploymentHelmChart(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectDestinations performs a GET /projects/{projectId}/destinations (the `ListProjectDestinations` operationId) request.
 	ListProjectDestinations(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15464,6 +15576,51 @@ func (c *Client) RequestBaseImage(ctx context.Context, projectId ProjectId, para
 // The build methods this project may use now and the organization's default, for the wizard. Shows availability and reasons only, never provider pins or scope (ADR 0047).
 func (c *Client) GetProjectBuildMethods(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectBuildMethodsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectDeploymentFiles performs a GET /projects/{projectId}/deploy (the `GetProjectDeploymentFiles` operationId) request.
+//
+// Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files.
+func (c *Client) GetProjectDeploymentFiles(ctx context.Context, projectId ProjectId, params *GetProjectDeploymentFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectDeploymentFilesRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadProjectDeploymentCompose performs a GET /projects/{projectId}/deploy/compose (the `DownloadProjectDeploymentCompose` operationId) request.
+//
+// A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+func (c *Client) DownloadProjectDeploymentCompose(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentComposeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadProjectDeploymentComposeRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadProjectDeploymentHelmChart performs a GET /projects/{projectId}/deploy/helm (the `DownloadProjectDeploymentHelmChart` operationId) request.
+//
+// A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+func (c *Client) DownloadProjectDeploymentHelmChart(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadProjectDeploymentHelmChartRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -25309,6 +25466,189 @@ func NewGetProjectBuildMethodsRequest(server string, projectId ProjectId) (*http
 	return req, nil
 }
 
+// NewGetProjectDeploymentFilesRequest constructs an http.Request for the GetProjectDeploymentFiles method
+func NewGetProjectDeploymentFilesRequest(server string, projectId ProjectId, params *GetProjectDeploymentFilesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/deploy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Plan != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "plan", *params.Plan, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadProjectDeploymentComposeRequest constructs an http.Request for the DownloadProjectDeploymentCompose method
+func NewDownloadProjectDeploymentComposeRequest(server string, projectId ProjectId, params *DownloadProjectDeploymentComposeParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/deploy/compose", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Plan != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "plan", *params.Plan, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadProjectDeploymentHelmChartRequest constructs an http.Request for the DownloadProjectDeploymentHelmChart method
+func NewDownloadProjectDeploymentHelmChartRequest(server string, projectId ProjectId, params *DownloadProjectDeploymentHelmChartParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/projects/%s/deploy/helm", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Plan != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "plan", *params.Plan, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectDestinationsRequest constructs an http.Request for the ListProjectDestinations method
 func NewListProjectDestinationsRequest(server string, projectId ProjectId) (*http.Request, error) {
 	var err error
@@ -33470,6 +33810,27 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetProjectBuildMethodsWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBuildMethodsResponse, error)
 
+	// GetProjectDeploymentFilesWithResponse performs a GET /projects/{projectId}/deploy (the `GetProjectDeploymentFiles` operationId) request.
+	//
+	// Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProjectDeploymentFilesWithResponse(ctx context.Context, projectId ProjectId, params *GetProjectDeploymentFilesParams, reqEditors ...RequestEditorFn) (*GetProjectDeploymentFilesResponse, error)
+
+	// DownloadProjectDeploymentComposeWithResponse performs a GET /projects/{projectId}/deploy/compose (the `DownloadProjectDeploymentCompose` operationId) request.
+	//
+	// A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DownloadProjectDeploymentComposeWithResponse(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentComposeParams, reqEditors ...RequestEditorFn) (*DownloadProjectDeploymentComposeResponse, error)
+
+	// DownloadProjectDeploymentHelmChartWithResponse performs a GET /projects/{projectId}/deploy/helm (the `DownloadProjectDeploymentHelmChart` operationId) request.
+	//
+	// A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DownloadProjectDeploymentHelmChartWithResponse(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*DownloadProjectDeploymentHelmChartResponse, error)
+
 	// ListProjectDestinationsWithResponse performs a GET /projects/{projectId}/destinations (the `ListProjectDestinations` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -41263,6 +41624,164 @@ func (r GetProjectBuildMethodsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetProjectBuildMethodsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectDeploymentFilesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectDeploymentFiles
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectDeploymentFilesResponse) GetJSON200() *ProjectDeploymentFiles {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProjectDeploymentFilesResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r GetProjectDeploymentFilesResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectDeploymentFilesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectDeploymentFilesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectDeploymentFilesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectDeploymentFilesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DownloadProjectDeploymentComposeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// YAML200 the response for an HTTP 200 `application/yaml` response
+	YAML200 *string
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetYAML200 returns the response for an HTTP 200 `application/yaml` response
+func (r DownloadProjectDeploymentComposeResponse) GetYAML200() *string {
+	return r.YAML200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DownloadProjectDeploymentComposeResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DownloadProjectDeploymentComposeResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadProjectDeploymentComposeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadProjectDeploymentComposeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadProjectDeploymentComposeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadProjectDeploymentComposeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DownloadProjectDeploymentHelmChartResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DownloadProjectDeploymentHelmChartResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DownloadProjectDeploymentHelmChartResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadProjectDeploymentHelmChartResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadProjectDeploymentHelmChartResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadProjectDeploymentHelmChartResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadProjectDeploymentHelmChartResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -50311,6 +50830,45 @@ func (c *ClientWithResponses) GetProjectBuildMethodsWithResponse(ctx context.Con
 	return ParseGetProjectBuildMethodsResponse(rsp)
 }
 
+// GetProjectDeploymentFilesWithResponse performs a GET /projects/{projectId}/deploy (the `GetProjectDeploymentFiles` operationId) request.
+//
+// Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProjectDeploymentFilesWithResponse(ctx context.Context, projectId ProjectId, params *GetProjectDeploymentFilesParams, reqEditors ...RequestEditorFn) (*GetProjectDeploymentFilesResponse, error) {
+	rsp, err := c.GetProjectDeploymentFiles(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectDeploymentFilesResponse(rsp)
+}
+
+// DownloadProjectDeploymentComposeWithResponse performs a GET /projects/{projectId}/deploy/compose (the `DownloadProjectDeploymentCompose` operationId) request.
+//
+// A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DownloadProjectDeploymentComposeWithResponse(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentComposeParams, reqEditors ...RequestEditorFn) (*DownloadProjectDeploymentComposeResponse, error) {
+	rsp, err := c.DownloadProjectDeploymentCompose(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadProjectDeploymentComposeResponse(rsp)
+}
+
+// DownloadProjectDeploymentHelmChartWithResponse performs a GET /projects/{projectId}/deploy/helm (the `DownloadProjectDeploymentHelmChart` operationId) request.
+//
+// A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DownloadProjectDeploymentHelmChartWithResponse(ctx context.Context, projectId ProjectId, params *DownloadProjectDeploymentHelmChartParams, reqEditors ...RequestEditorFn) (*DownloadProjectDeploymentHelmChartResponse, error) {
+	rsp, err := c.DownloadProjectDeploymentHelmChart(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadProjectDeploymentHelmChartResponse(rsp)
+}
+
 // ListProjectDestinationsWithResponse performs a GET /projects/{projectId}/destinations (the `ListProjectDestinations` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -57182,6 +57740,119 @@ func ParseGetProjectBuildMethodsResponse(rsp *http.Response) (*GetProjectBuildMe
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectDeploymentFilesResponse parses an HTTP response from a GetProjectDeploymentFilesWithResponse call
+func ParseGetProjectDeploymentFilesResponse(rsp *http.Response) (*GetProjectDeploymentFilesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectDeploymentFilesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectDeploymentFiles
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadProjectDeploymentComposeResponse parses an HTTP response from a DownloadProjectDeploymentComposeWithResponse call
+func ParseDownloadProjectDeploymentComposeResponse(rsp *http.Response) (*DownloadProjectDeploymentComposeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadProjectDeploymentComposeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
+		var dest string
+		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.YAML200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadProjectDeploymentHelmChartResponse parses an HTTP response from a DownloadProjectDeploymentHelmChartWithResponse call
+func ParseDownloadProjectDeploymentHelmChartResponse(rsp *http.Response) (*DownloadProjectDeploymentHelmChartResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadProjectDeploymentHelmChartResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 

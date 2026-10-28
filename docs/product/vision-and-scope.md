@@ -44,7 +44,7 @@ security, storage, publication, promotion, or administration of those functions.
 - An arbitrary CI engine or generic workflow engine (Git-driven *image* pipelines only: build/test/scan/sign/publish/promote).
 - General application deployment, orchestration, or hosting of applications. Generating and validating Kubernetes
   deployment artifacts is in scope (ADR 0048), as are starting Compose files and Helm charts for a built image
-  (ADR 0059); applying them, reconciling or provisioning clusters is not.
+  (ADR 0059) or for all of a project's images (ADR 0061); applying them, reconciling or provisioning clusters is not.
 - An IDE, ITSM, or enterprise service catalog.
 - Tag rollback is not execution rollback of a deployed workload.
 

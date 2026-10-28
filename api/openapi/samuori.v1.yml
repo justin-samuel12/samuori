@@ -1549,6 +1549,57 @@ paths:
               schema: { $ref: "#/components/schemas/ImageSummaryList" }
         "404": { $ref: "#/components/responses/Problem" }
 
+  /projects/{projectId}/deploy:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    get:
+      tags: [artifacts]
+      operationId: getProjectDeploymentFiles
+      description: "Per image definition of the project, the builds and publications deployment files can use and the reference each would use (ADR 0061). Definitions without a successful build are listed as unavailable and left out of the files."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPlan" }]
+      responses:
+        "200":
+          description: The components and their references
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDeploymentFiles" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /projects/{projectId}/deploy/compose:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    get:
+      tags: [artifacts]
+      operationId: downloadProjectDeploymentCompose
+      description: "A starting compose.yml with one service per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPlan" }]
+      responses:
+        "200":
+          description: Compose file
+          content:
+            application/yaml:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /projects/{projectId}/deploy/helm:
+    parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+    get:
+      tags: [artifacts]
+      operationId: downloadProjectDeploymentHelmChart
+      description: "A starting Helm chart (.tgz) with a workload per image of the project (ADR 0061). It holds references, never secret values; Samuori does not deploy it. Audited."
+      x-samuori-roles: [developer, maintainer, publisher, security-reviewer, administrator]
+      parameters: [{ $ref: "#/components/parameters/DeployPlan" }]
+      responses:
+        "200":
+          description: Helm chart archive
+          content:
+            application/gzip:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
   /projects/{projectId}/build-methods:
     parameters: [{ $ref: "#/components/parameters/ProjectId" }]
     get:
@@ -4691,6 +4742,7 @@ components:
     BuildId: { name: buildId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     ArtifactId: { name: artifactId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     DeployPublicationId: { name: publicationId, in: query, required: false, description: "A successful publication of the image to reference; the newest one when omitted", schema: { $ref: "#/components/schemas/Id" } }
+    DeployPlan: { name: plan, in: query, required: false, description: "A ProjectDeploymentPlan as JSON: per image definition the build, publication, replicas, links and volumes to use; defaults apply when omitted. Nothing is stored.", schema: { type: string, maxLength: 16384 } }
     WorkerId: { name: workerId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
     ConversionId: { name: conversionId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }
 
@@ -5728,6 +5780,106 @@ components:
         destinationName: { type: string }
         reference: { type: string }
         publishedAt: { $ref: "#/components/schemas/Timestamp" }
+
+    ProjectDeploymentPlan:
+      type: object
+      additionalProperties: false
+      properties:
+        components:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/ProjectDeploymentChoice" }
+    ProjectDeploymentChoice:
+      type: object
+      additionalProperties: false
+      required: [specId]
+      properties:
+        specId: { $ref: "#/components/schemas/Id" }
+        artifactId: { $ref: "#/components/schemas/Id" }
+        publicationId: { $ref: "#/components/schemas/Id" }
+        replicas: { type: integer, minimum: 0, maximum: 20, description: "1 when omitted" }
+        links:
+          type: array
+          maxItems: 20
+          description: "Each sets envName to the in-network URL of the target image definition, which must serve HTTP on a port"
+          items:
+            type: object
+            additionalProperties: false
+            required: [envName, target]
+            properties:
+              envName: { type: string, pattern: "^[A-Z_][A-Z0-9_]{0,63}$" }
+              target: { $ref: "#/components/schemas/Id" }
+        volumes:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, mountPath]
+            properties:
+              name: { type: string, pattern: "^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$" }
+              mountPath: { type: string, maxLength: 256, description: "A clean absolute path other than /" }
+    ProjectDeploymentFiles:
+      type: object
+      required: [projectId, composeFilename, chartFilename, components]
+      properties:
+        projectId: { $ref: "#/components/schemas/Id" }
+        composeFilename: { type: string }
+        chartFilename: { type: string }
+        components:
+          type: array
+          items: { $ref: "#/components/schemas/ProjectDeploymentComponent" }
+    ProjectDeploymentComponent:
+      type: object
+      required: [specId, specName, available, note, builds, replicas, links, volumes]
+      properties:
+        specId: { $ref: "#/components/schemas/Id" }
+        specName: { type: string }
+        available: { type: boolean, description: "False when the image definition has no successful build; it is left out of the files" }
+        note: { type: string, description: "Which reference the files use, or why the definition is left out" }
+        name: { type: string, description: "The Compose service and Helm component name" }
+        type: { type: string, description: "spec.application.type of the chosen build" }
+        port: { type: integer }
+        linkable: { type: boolean, description: "True when other images can link to it: it serves HTTP on a port" }
+        artifactId: { $ref: "#/components/schemas/Id" }
+        publicationId: { $ref: "#/components/schemas/Id" }
+        reference: { type: string }
+        published: { type: boolean }
+        replicas: { type: integer }
+        links:
+          type: array
+          items: { $ref: "#/components/schemas/ProjectDeploymentLink" }
+        volumes:
+          type: array
+          items: { $ref: "#/components/schemas/ProjectDeploymentVolume" }
+        builds:
+          type: array
+          description: "Recent successful builds, newest first"
+          items: { $ref: "#/components/schemas/ProjectDeploymentBuild" }
+    ProjectDeploymentLink:
+      type: object
+      required: [envName, target, url]
+      properties:
+        envName: { type: string }
+        target: { $ref: "#/components/schemas/Id" }
+        url: { type: string, description: "The Compose URL; Helm uses the release-prefixed Service name" }
+    ProjectDeploymentVolume:
+      type: object
+      required: [name, mountPath]
+      properties:
+        name: { type: string }
+        mountPath: { type: string }
+    ProjectDeploymentBuild:
+      type: object
+      required: [artifactId, buildRunId, builtAt, publications]
+      properties:
+        artifactId: { $ref: "#/components/schemas/Id" }
+        buildRunId: { $ref: "#/components/schemas/Id" }
+        version: { type: string }
+        builtAt: { $ref: "#/components/schemas/Timestamp" }
+        publications:
+          type: array
+          items: { $ref: "#/components/schemas/DeploymentTarget" }
 
     ValidationSummary:
       type: object

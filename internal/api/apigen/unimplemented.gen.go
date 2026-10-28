@@ -561,6 +561,18 @@ func (Unimplemented) GetProjectBuildMethods(w http.ResponseWriter, r *http.Reque
 	NotImplemented(w, r, "GetProjectBuildMethods")
 }
 
+func (Unimplemented) GetProjectDeploymentFiles(w http.ResponseWriter, r *http.Request, _ ProjectId, _ GetProjectDeploymentFilesParams) {
+	NotImplemented(w, r, "GetProjectDeploymentFiles")
+}
+
+func (Unimplemented) DownloadProjectDeploymentCompose(w http.ResponseWriter, r *http.Request, _ ProjectId, _ DownloadProjectDeploymentComposeParams) {
+	NotImplemented(w, r, "DownloadProjectDeploymentCompose")
+}
+
+func (Unimplemented) DownloadProjectDeploymentHelmChart(w http.ResponseWriter, r *http.Request, _ ProjectId, _ DownloadProjectDeploymentHelmChartParams) {
+	NotImplemented(w, r, "DownloadProjectDeploymentHelmChart")
+}
+
 func (Unimplemented) ListProjectDestinations(w http.ResponseWriter, r *http.Request, _ ProjectId) {
 	NotImplemented(w, r, "ListProjectDestinations")
 }

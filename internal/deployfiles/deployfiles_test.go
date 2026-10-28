@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -29,9 +30,9 @@ func input(img Image, app *buildspec.Application) Input {
 	return Input{Name: "orders-api", Version: "2026-10-27.1", App: app, Image: img, ModTime: time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC)}
 }
 
-// render executes the chart's templates the way helm template does, with the functions the templates use.
-func render(t *testing.T, files []File, values map[string]any) map[string]map[string]any {
-	t.Helper()
+// execChart executes the chart's templates the way helm template does, with the functions the templates use, and
+// checks each manifest against the Kubernetes schemas.
+func execChart(files []File, values map[string]any) ([]map[string]any, error) {
 	var meta struct {
 		Name       string `yaml:"name"`
 		AppVersion string `yaml:"appVersion"`
@@ -54,17 +55,23 @@ func render(t *testing.T, files []File, values map[string]any) map[string]map[st
 			b, err := yaml.Marshal(v)
 			return strings.TrimSuffix(string(b), "\n"), err
 		},
+		"required": func(msg string, v any) (any, error) {
+			if v == nil || v == "" {
+				return nil, errors.New(msg)
+			}
+			return v, nil
+		},
 	})
 	var manifests []File
 	for _, f := range files {
 		switch {
 		case strings.HasSuffix(f.Path, "/Chart.yaml"):
 			if err := yaml.Unmarshal(f.Content, &meta); err != nil {
-				t.Fatal(err)
+				return nil, err
 			}
 		case strings.Contains(f.Path, "/templates/"):
 			if _, err := root.New(f.Path).Parse(string(f.Content)); err != nil {
-				t.Fatalf("%s: %v", f.Path, err)
+				return nil, fmt.Errorf("%s: %w", f.Path, err)
 			}
 			if strings.HasSuffix(f.Path, ".yml") {
 				manifests = append(manifests, f)
@@ -76,21 +83,35 @@ func render(t *testing.T, files []File, values map[string]any) map[string]map[st
 		"Release": map[string]any{"Name": "orders", "Namespace": "default", "Service": "Helm"},
 		"Chart":   map[string]any{"Name": meta.Name, "AppVersion": meta.AppVersion},
 	}
-	out := map[string]map[string]any{}
+	var out []map[string]any
 	for _, f := range manifests {
 		var b bytes.Buffer
 		if err := root.ExecuteTemplate(&b, f.Path, data); err != nil {
-			t.Fatalf("%s: %v", f.Path, err)
+			return nil, fmt.Errorf("%s: %w", f.Path, err)
 		}
 		var obj map[string]any
 		if err := yaml.Unmarshal(b.Bytes(), &obj); err != nil {
-			t.Fatalf("%s does not parse: %v\n%s", f.Path, err, b.String())
+			return nil, fmt.Errorf("%s does not parse: %w\n%s", f.Path, err, b.String())
 		}
 		problems, err := kubeconvert.ValidateObject(obj)
 		if err != nil || len(problems) > 0 {
-			t.Fatalf("%s: %v %v\n%s", f.Path, err, problems, b.String())
+			return nil, fmt.Errorf("%s: %v %v\n%s", f.Path, err, problems, b.String())
 		}
-		out[obj["kind"].(string)] = obj
+		out = append(out, obj)
+	}
+	return out, nil
+}
+
+// render executes the chart and returns its objects by kind.
+func render(t *testing.T, files []File, values map[string]any) map[string]map[string]any {
+	t.Helper()
+	objs, err := execChart(files, values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := map[string]map[string]any{}
+	for _, o := range objs {
+		out[o["kind"].(string)] = o
 	}
 	return out
 }
@@ -266,6 +287,128 @@ func TestChartArchive(t *testing.T) {
 	for v, want := range map[string]string{"2026-01-05.12": "2026.105.12", "samuori-4f53cda18c2b": "0.1.0+samuori-4f53cda18c2b", "": "0.1.0", "a b..c": "0.1.0+a-b.c"} {
 		if got := ChartVersion(v); got != want {
 			t.Errorf("ChartVersion(%q) = %s, want %s", v, got, want)
+		}
+	}
+}
+
+func project() Project {
+	return Project{Name: "shop", Version: "2026-10-28.2", ModTime: time.Date(2026, 10, 28, 9, 0, 0, 0, time.UTC),
+		Components: []Component{
+			{Name: "web", App: web, Image: published, Replicas: 3, Links: []Link{{Env: "API_URL", Target: "api"}}},
+			{Name: "api", App: &buildspec.Application{Type: "http-service", Port: 8080}, Image: local, Replicas: 1},
+			{Name: "worker", App: &buildspec.Application{Type: "worker"}, Image: local, Replicas: 2,
+				Links: []Link{{Env: "API_URL", Target: "api"}}, Volumes: []Volume{{Name: "data", MountPath: "/var/lib/worker"}}},
+		},
+		Skipped: []string{"report has no successful build."}}
+}
+
+// TestProjectCompose: one service per component, links set the target's service URL, replicas and volumes as asked,
+// and two services on one port do not both take the host port.
+func TestProjectCompose(t *testing.T) {
+	p := project()
+	if err := p.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	out := ProjectCompose(p)
+	if !bytes.Equal(out, ProjectCompose(p)) {
+		t.Error("the Compose file is not deterministic")
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(out, &doc); err != nil {
+		t.Fatalf("compose.yml does not parse: %v\n%s", err, out)
+	}
+	w, a, k := dig(doc, "services", "web"), dig(doc, "services", "api"), dig(doc, "services", "worker")
+	if dig(doc, "services", "web", "image") != published.Reference() || dig(doc, "services", "web", "deploy", "replicas") != 3 ||
+		dig(doc, "services", "web", "environment", "API_URL") != "http://api:8080" || fmt.Sprint(dig(doc, "services", "web", "ports")) != "[8080]" {
+		t.Errorf("web = %v", w)
+	}
+	if fmt.Sprint(dig(doc, "services", "api", "ports")) != "[8080:8080]" || dig(doc, "services", "api", "pull_policy") != "never" || dig(doc, "services", "api", "deploy") != nil {
+		t.Errorf("api = %v", a)
+	}
+	if dig(doc, "services", "worker", "ports") != nil || fmt.Sprint(dig(doc, "services", "worker", "volumes")) != "[worker-data:/var/lib/worker]" ||
+		dig(doc, "services", "worker", "deploy", "replicas") != 2 || dig(doc, "services", "worker", "environment", "API_URL") != "http://api:8080" {
+		t.Errorf("worker = %v", k)
+	}
+	if _, ok := dig(doc, "volumes", "worker-data").(map[string]any); !ok || !strings.Contains(string(out), "# Left out: report has no successful build.") {
+		t.Errorf("compose = %s", out)
+	}
+}
+
+// TestProjectChart: the chart renders a Deployment and Service for each HTTP image, a Deployment without a Service
+// for the worker, a claim for its volume that needs a size, and link URLs that name the target's Service.
+func TestProjectChart(t *testing.T) {
+	p := project()
+	files := ProjectChart(p)
+	values := valuesOf(t, files)
+	if _, err := execChart(files, values); err == nil || !strings.Contains(err.Error(), "set worker.persistence.data.size") {
+		t.Errorf("a claim without a size rendered: %v", err)
+	}
+	dig(values, "worker", "persistence", "data").(map[string]any)["size"] = "1Gi"
+	list, err := execChart(files, values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objs := map[string]map[string]any{}
+	var names []string
+	for _, o := range list {
+		k := o["kind"].(string) + "/" + dig(o, "metadata", "name").(string)
+		objs[k] = o
+		names = append(names, k)
+	}
+	want := "Deployment/orders-web Service/orders-web Deployment/orders-api Service/orders-api Deployment/orders-worker PersistentVolumeClaim/orders-worker-data"
+	if strings.Join(names, " ") != want {
+		t.Fatalf("objects = %v", names)
+	}
+	webC := dig(objs["Deployment/orders-web"], "spec", "template", "spec", "containers", 0).(map[string]any)
+	if dig(objs["Deployment/orders-web"], "spec", "replicas") != 3 || dig(webC, "env", 0, "name") != "API_URL" || dig(webC, "env", 0, "value") != "http://orders-api:8080" ||
+		webC["image"] != published.Reference() || dig(webC, "livenessProbe", "httpGet", "path") != "/healthz" {
+		t.Errorf("web = %v", webC)
+	}
+	if dig(objs["Service/orders-api"], "spec", "selector", "app.kubernetes.io/component") != "api" ||
+		dig(objs["Deployment/orders-api"], "spec", "selector", "matchLabels", "app.kubernetes.io/component") != "api" {
+		t.Errorf("api = %v", objs["Service/orders-api"])
+	}
+	worker := dig(objs["Deployment/orders-worker"], "spec", "template", "spec").(map[string]any)
+	if dig(worker, "containers", 0, "volumeMounts", 0, "mountPath") != "/var/lib/worker" || dig(worker, "volumes", 0, "persistentVolumeClaim", "claimName") != "orders-worker-data" ||
+		dig(worker, "containers", 0, "imagePullPolicy") != "Never" || dig(worker, "containers", 0, "ports") != nil ||
+		dig(objs["PersistentVolumeClaim/orders-worker-data"], "spec", "resources", "requests", "storage") != "1Gi" {
+		t.Errorf("worker = %v", worker)
+	}
+	dig(values, "web").(map[string]any)["env"] = []any{map[string]any{"name": "LOG_LEVEL", "value": "info"}}
+	list, err = execChart(files, values)
+	if err != nil || dig(list[0], "spec", "template", "spec", "containers", 0, "env", 1, "name") != "LOG_LEVEL" {
+		t.Errorf("extra env with links = %v %v", err, list)
+	}
+	var a, b bytes.Buffer
+	if err := WriteProjectChart(&a, p); err != nil {
+		t.Fatal(err)
+	}
+	_ = WriteProjectChart(&b, p)
+	if !bytes.Equal(a.Bytes(), b.Bytes()) || ProjectChartFilename(p) != "shop-2026.1028.2.tgz" {
+		t.Errorf("archive not deterministic or misnamed: %s", ProjectChartFilename(p))
+	}
+}
+
+// TestProjectValidate: links need a valid name and an HTTP target with a port; volumes a clean absolute path.
+func TestProjectValidate(t *testing.T) {
+	for name, change := range map[string]func(*Project){
+		"lower-case env":     func(p *Project) { p.Components[0].Links[0].Env = "api_url" },
+		"env starting digit": func(p *Project) { p.Components[0].Links[0].Env = "1URL" },
+		"duplicate env":      func(p *Project) { p.Components[0].Links = append(p.Components[0].Links, p.Components[0].Links[0]) },
+		"worker target":      func(p *Project) { p.Components[0].Links[0].Target = "worker" },
+		"unknown target":     func(p *Project) { p.Components[0].Links[0].Target = "report" },
+		"relative mount":     func(p *Project) { p.Components[2].Volumes[0].MountPath = "var/lib" },
+		"root mount":         func(p *Project) { p.Components[2].Volumes[0].MountPath = "/" },
+		"dot-dot mount":      func(p *Project) { p.Components[2].Volumes[0].MountPath = "/var/../etc" },
+		"colon mount":        func(p *Project) { p.Components[2].Volumes[0].MountPath = "/data:rw" },
+		"volume name":        func(p *Project) { p.Components[2].Volumes[0].Name = "Data" },
+		"too many replicas":  func(p *Project) { p.Components[1].Replicas = MaxReplicas + 1 },
+		"negative replicas":  func(p *Project) { p.Components[1].Replicas = -1 },
+	} {
+		p := project()
+		change(&p)
+		if p.Validate() == nil {
+			t.Errorf("%s was accepted", name)
 		}
 	}
 }

@@ -14,6 +14,7 @@ import { TextField } from "../components/Field";
 import { Alert, Loading, PageHeader } from "../components/Feedback";
 import { Table } from "../components/Table";
 import { DeleteUploadDialog, isUploader } from "../components/DeleteUpload";
+import { ProjectDeploymentFiles } from "../components/ProjectDeploymentFiles";
 import { bytes, correctName, shortDigest } from "../format";
 import { useLoader } from "../hooks";
 import { navigate } from "../router";
@@ -75,9 +76,14 @@ export function ProjectPage({ id }: { id: string }) {
       <PageHeader
         title={project.name}
         actions={
-          can("archiveProject", scope) && (
-            <ArchiveProjectButton project={project} scope={scope} />
-          )
+          <>
+            {can("getProjectDeploymentFiles", scope) && (
+              <ProjectDeploymentFiles projectId={project.id} />
+            )}
+            {can("archiveProject", scope) && (
+              <ArchiveProjectButton project={project} scope={scope} />
+            )}
+          </>
         }
       />
       <ArchivedBanner project={project} scope={scope} onChange={setProject} />
