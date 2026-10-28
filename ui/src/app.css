@@ -1644,6 +1644,10 @@
     bottom: var(--samuori-space-4);
     z-index: 90;
     width: min(420px, calc(100% - 2 * var(--samuori-space-4)));
+  }
+
+  .samuori-session-notice > .samuori-alert {
+    margin: 0;
     box-shadow: var(--samuori-shadow);
   }
 
