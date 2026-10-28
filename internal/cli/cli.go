@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -34,12 +35,26 @@ const (
 	ExitTimeout = 4
 )
 
+// PollInterval is how often waiting commands ask the server for progress.
+var PollInterval = 3 * time.Second
+
 type env struct {
 	api    *apiclient.ClientWithResponses
+	stream *apiclient.ClientWithResponses
+	raw    *http.Client
+	base   string
+	auth   apiclient.RequestEditorFn
+	in     io.Reader
 	out    io.Writer
 	errOut io.Writer
+	getenv func(string) string
 	json   bool
 	poll   time.Duration
+	global globalFlags
+}
+
+type globalFlags struct {
+	url, tokenFile, caFile, profile string
 }
 
 type exitError struct {
@@ -53,39 +68,16 @@ func failf(code int, format string, args ...any) error {
 	return &exitError{code: code, msg: fmt.Sprintf(format, args...)}
 }
 
-const usage = `samuori talks to a Samuori server with an API token.
-
-Usage: samuori [global flags] <command> [flags]
-
-Commands:
-  whoami                     show the identity behind the token
-  projects                   list the projects the token can see
-  upload  --project ID PATH  upload a directory or archive; prints the snapshot ID
-  build   --spec ID ...      start a build; --wait follows it through its checks
-  status  BUILD              show a build as JSON
-  logs    BUILD              print a build's log
-  publish --artifact ID --destination ID [--tag T]...  request a publication
-  pipeline run PIPELINE --ref REF   start a pipeline run
-  version                    print the client version
-
-Global flags (or environment):
-  --url URL          server URL (SAMUORI_URL)
-  --token-file FILE  file holding the API token, mode 0600 (SAMUORI_TOKEN_FILE); or set SAMUORI_TOKEN
-  --ca-file FILE     PEM CA bundle for a private certificate authority (SAMUORI_CA_FILE)
-  --json             print JSON results
-
-Exit codes: 0 success, 1 the build, checks, publication or run did not succeed (blocked and skipped included),
-2 usage, 3 request or server error, 4 timed out while waiting.
-`
-
-// Run executes args and returns the exit code. getenv reads the environment.
-func Run(ctx context.Context, args []string, getenv func(string) string, stdout, stderr io.Writer) int {
+// Run executes args and returns the exit code. getenv reads the environment; stdin feeds login.
+func Run(ctx context.Context, args []string, getenv func(string) string, stdin io.Reader, stdout, stderr io.Writer) int {
 	global := flag.NewFlagSet("samuori", flag.ContinueOnError)
 	global.SetOutput(stderr)
-	global.Usage = func() { fmt.Fprint(stderr, usage) }
-	server := global.String("url", getenv("SAMUORI_URL"), "")
-	tokenFile := global.String("token-file", getenv("SAMUORI_TOKEN_FILE"), "")
-	caFile := global.String("ca-file", getenv("SAMUORI_CA_FILE"), "")
+	global.Usage = func() { fmt.Fprint(stderr, usageText()) }
+	var g globalFlags
+	global.StringVar(&g.url, "url", getenv("SAMUORI_URL"), "")
+	global.StringVar(&g.tokenFile, "token-file", getenv("SAMUORI_TOKEN_FILE"), "")
+	global.StringVar(&g.caFile, "ca-file", getenv("SAMUORI_CA_FILE"), "")
+	global.StringVar(&g.profile, "profile", getenv("SAMUORI_PROFILE"), "")
 	asJSON := global.Bool("json", false, "")
 	if err := global.Parse(args); err != nil {
 		return ExitUsage
@@ -95,94 +87,119 @@ func Run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		global.Usage()
 		return ExitUsage
 	}
-	if rest[0] == "version" {
-		fmt.Fprintln(stdout, version.Version)
-		fmt.Fprintln(stdout, version.Credit)
-		return ExitOK
+	e := &env{in: stdin, out: stdout, errOut: stderr, getenv: getenv, json: *asJSON, poll: PollInterval, global: g}
+	offline := map[string]func(context.Context, []string) error{
+		"version": e.version, "help": e.help, "login": e.login, "logout": e.logout, "profiles": e.profiles,
+		"completion": e.completion,
 	}
-	if rest[0] == "help" {
-		global.Usage()
-		return ExitOK
+	online := map[string]func(context.Context, []string) error{
+		"whoami": e.whoami, "projects": e.projects, "upload": e.upload, "analyze": e.analyze, "spec": e.spec,
+		"build": e.build, "builds": e.builds, "status": e.status, "logs": e.logs, "cancel": e.cancel,
+		"images": e.images, "download": e.download, "deploy-files": e.deployFiles, "publish": e.publish,
+		"promote": e.promote, "requests": e.requests, "request": e.request, "withdraw": e.withdraw,
+		"pipeline": e.pipeline, "pipelines": e.pipelines, "api": e.apiCall, "ci": e.ci,
 	}
-	client, err := connect(*server, *tokenFile, *caFile, getenv("SAMUORI_TOKEN"))
-	if err != nil {
-		fmt.Fprintln(stderr, "samuori:", err)
-		return ExitUsage
-	}
-	e := &env{api: client, out: stdout, errOut: stderr, json: *asJSON, poll: 3 * time.Second}
-	cmds := map[string]func(context.Context, []string) error{
-		"whoami": e.whoami, "projects": e.projects, "upload": e.upload, "build": e.build,
-		"status": e.status, "logs": e.logs, "publish": e.publish, "pipeline": e.pipeline,
-	}
-	cmd, ok := cmds[rest[0]]
+	cmd, ok := offline[rest[0]]
 	if !ok {
-		fmt.Fprintf(stderr, "samuori: unknown command %q\n", rest[0])
-		return ExitUsage
+		if cmd, ok = online[rest[0]]; !ok {
+			fmt.Fprintf(stderr, "samuori: unknown command %q; run samuori help\n", rest[0])
+			return ExitUsage
+		}
+		if !wantsHelp(rest[1:]) {
+			s, err := resolveSettings(g, getenv)
+			if err == nil {
+				err = e.connect(s)
+			}
+			if err != nil {
+				fmt.Fprintln(stderr, "samuori:", err)
+				return ExitUsage
+			}
+		}
 	}
 	if err := cmd(ctx, rest[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitUsage
+		}
 		fmt.Fprintln(stderr, "samuori:", err)
 		var x *exitError
 		if errors.As(err, &x) {
 			return x.code
-		}
-		if errors.Is(err, flag.ErrHelp) {
-			return ExitUsage
 		}
 		return ExitError
 	}
 	return ExitOK
 }
 
+func wantsHelp(args []string) bool {
+	for _, a := range args {
+		if a == "-h" || a == "-help" || a == "--help" {
+			return true
+		}
+	}
+	return false
+}
+
+func (e *env) version(context.Context, []string) error {
+	fmt.Fprintln(e.out, version.Version)
+	fmt.Fprintln(e.out, version.Credit)
+	return nil
+}
+
 // connect refuses to send the token in clear text except to a loopback server.
-func connect(server, tokenFile, caFile, token string) (*apiclient.ClientWithResponses, error) {
-	if server == "" {
-		return nil, errors.New("set --url or SAMUORI_URL")
+func (e *env) connect(s settings) error {
+	if s.url == "" {
+		return errors.New("set --url or SAMUORI_URL, or run samuori login")
 	}
-	u, err := url.Parse(server)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
-		return nil, errors.New("the server URL must be https://host[:port]")
+	if err := checkURL(s.url); err != nil {
+		return err
 	}
-	if u.Scheme == "http" {
-		ip := net.ParseIP(u.Hostname())
-		if u.Hostname() != "localhost" && (ip == nil || !ip.IsLoopback()) {
-			return nil, errors.New("plain http is allowed only to a loopback server; use https")
-		}
-	}
-	if tokenFile != "" {
-		raw, err := readPrivate(tokenFile)
-		if err != nil {
-			return nil, err
-		}
-		token = raw
-	}
-	token = strings.TrimSpace(token)
-	if token == "" {
-		return nil, errors.New("set SAMUORI_TOKEN or --token-file")
+	if s.token == "" {
+		return errors.New("set SAMUORI_TOKEN or --token-file, or run samuori login")
 	}
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
-	if caFile != "" {
-		pem, err := os.ReadFile(caFile)
+	if s.caFile != "" {
+		pem, err := os.ReadFile(s.caFile)
 		if err != nil {
-			return nil, fmt.Errorf("reading the CA bundle: %w", err)
+			return fmt.Errorf("reading the CA bundle: %w", err)
 		}
 		pool := x509.NewCertPool()
 		if !pool.AppendCertsFromPEM(pem) {
-			return nil, errors.New("the CA bundle holds no PEM certificates")
+			return errors.New("the CA bundle holds no PEM certificates")
 		}
 		tlsConfig.RootCAs = pool
 	}
-	httpClient := &http.Client{
-		Timeout:   5 * time.Minute,
-		Transport: &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig, ForceAttemptHTTP2: true},
-		// The token is never sent to another host.
-		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-	}
-	auth := func(_ context.Context, r *http.Request) error {
+	transport := &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig, ForceAttemptHTTP2: true, ResponseHeaderTimeout: 5 * time.Minute}
+	// The token is never sent to another host.
+	noRedirect := func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	e.raw = &http.Client{Transport: transport, CheckRedirect: noRedirect}
+	timed := &http.Client{Timeout: 5 * time.Minute, Transport: transport, CheckRedirect: noRedirect}
+	token := s.token
+	e.auth = func(_ context.Context, r *http.Request) error {
 		r.Header.Set("Authorization", "Bearer "+token)
 		r.Header.Set("User-Agent", "samuori/"+version.Version)
 		return nil
 	}
-	return apiclient.NewClientWithResponses(strings.TrimRight(server, "/")+"/api/v1", apiclient.WithHTTPClient(httpClient), apiclient.WithRequestEditorFn(auth))
+	e.base = strings.TrimRight(s.url, "/") + "/api/v1"
+	var err error
+	if e.api, err = apiclient.NewClientWithResponses(e.base, apiclient.WithHTTPClient(timed), apiclient.WithRequestEditorFn(e.auth)); err != nil {
+		return err
+	}
+	e.stream, err = apiclient.NewClientWithResponses(e.base, apiclient.WithHTTPClient(e.raw), apiclient.WithRequestEditorFn(e.auth))
+	return err
+}
+
+func checkURL(server string) error {
+	u, err := url.Parse(server)
+	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
+		return errors.New("the server URL must be https://host[:port]")
+	}
+	if u.Scheme == "http" {
+		ip := net.ParseIP(u.Hostname())
+		if u.Hostname() != "localhost" && (ip == nil || !ip.IsLoopback()) {
+			return errors.New("plain http is allowed only to a loopback server; use https")
+		}
+	}
+	return nil
 }
 
 func readPrivate(path string) (string, error) {
@@ -194,7 +211,7 @@ func readPrivate(path string) (string, error) {
 		return "", fmt.Errorf("the token file %s must not be readable by group or others (chmod 600)", path)
 	}
 	raw, err := os.ReadFile(path)
-	return string(raw), err
+	return strings.TrimSpace(string(raw)), err
 }
 
 // problem turns an unexpected response into an error with the server's code and message.
@@ -228,9 +245,15 @@ func (e *env) printJSON(v any) error {
 
 func (e *env) note(format string, args ...any) { fmt.Fprintf(e.errOut, format+"\n", args...) }
 
+// flags returns a flag set for a command whose --help prints the command's usage lines; every command accepts --json.
 func flags(name string, e *env) *flag.FlagSet {
 	fs := flag.NewFlagSet("samuori "+name, flag.ContinueOnError)
 	fs.SetOutput(e.errOut)
+	fs.BoolVar(&e.json, "json", e.json, "print JSON results")
+	fs.Usage = func() {
+		printUsage(e.errOut, name)
+		fs.PrintDefaults()
+	}
 	return fs
 }
 
@@ -248,6 +271,27 @@ func parse(fs *flag.FlagSet, args []string) ([]string, error) {
 		pos, args = append(pos, args[0]), args[1:]
 	}
 }
+
+// subcommand runs the named subcommand, or def when args start with a flag or are empty.
+func (e *env) subcommand(args []string, def string, subs map[string]func([]string) error, group string) error {
+	name := def
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		name, args = args[0], args[1:]
+	}
+	run, ok := subs[name]
+	if !ok {
+		printUsage(e.errOut, group)
+		if name == "" {
+			return flag.ErrHelp
+		}
+		return failf(ExitUsage, "unknown %s command %q", group, name)
+	}
+	return run(args)
+}
+
+var idPattern = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{26}$`)
+
+func isID(s string) bool { return idPattern.MatchString(s) }
 
 func (e *env) whoami(ctx context.Context, args []string) error {
 	if _, err := parse(flags("whoami", e), args); err != nil {
@@ -272,62 +316,4 @@ func (e *env) whoami(ctx context.Context, args []string) error {
 		fmt.Fprintf(e.out, "  %s on %s %s\n", b.Role, b.ScopeType, b.ScopeId)
 	}
 	return nil
-}
-
-func (e *env) projects(ctx context.Context, args []string) error {
-	if _, err := parse(flags("projects", e), args); err != nil {
-		return err
-	}
-	limit := 200
-	r, err := e.api.ListProjectsWithResponse(ctx, &apiclient.ListProjectsParams{Limit: &limit})
-	if err != nil {
-		return err
-	}
-	if r.JSON200 == nil {
-		return problem("listing projects", r.StatusCode(), r.Body)
-	}
-	if e.json {
-		return e.printJSON(r.JSON200.Items)
-	}
-	for _, p := range r.JSON200.Items {
-		fmt.Fprintf(e.out, "%s\t%s\n", p.Id, p.Name)
-	}
-	return nil
-}
-
-func (e *env) status(ctx context.Context, args []string) error {
-	pos, err := parse(flags("status", e), args)
-	if err != nil {
-		return err
-	}
-	if len(pos) != 1 {
-		return failf(ExitUsage, "usage: samuori status BUILD")
-	}
-	r, err := e.api.GetBuildWithResponse(ctx, pos[0])
-	if err != nil {
-		return err
-	}
-	if r.JSON200 == nil {
-		return problem("reading the build", r.StatusCode(), r.Body)
-	}
-	return e.printJSON(r.JSON200)
-}
-
-func (e *env) logs(ctx context.Context, args []string) error {
-	pos, err := parse(flags("logs", e), args)
-	if err != nil {
-		return err
-	}
-	if len(pos) != 1 {
-		return failf(ExitUsage, "usage: samuori logs BUILD")
-	}
-	r, err := e.api.GetBuildLogsWithResponse(ctx, pos[0])
-	if err != nil {
-		return err
-	}
-	if r.StatusCode() != http.StatusOK {
-		return problem("reading the log", r.StatusCode(), r.Body)
-	}
-	_, err = e.out.Write(r.Body)
-	return err
 }

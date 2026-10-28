@@ -28,7 +28,7 @@ func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
 
 func (e *env) upload(ctx context.Context, args []string) error {
 	fs := flags("upload", e)
-	project := fs.String("project", "", "project ID")
+	project := fs.String("project", "", "project ID or name")
 	var extra multiFlag
 	fs.Var(&extra, "exclude", "additional exclusion pattern (repeatable)")
 	pos, err := parse(fs, args)
@@ -36,9 +36,13 @@ func (e *env) upload(ctx context.Context, args []string) error {
 		return err
 	}
 	if *project == "" || len(pos) != 1 {
-		return failf(ExitUsage, "usage: samuori upload --project ID [--exclude PATTERN]... PATH")
+		return failf(ExitUsage, "usage: samuori upload --project PROJECT [--exclude PATTERN]... PATH")
 	}
-	id, err := e.uploadPath(ctx, *project, pos[0], extra)
+	pid, err := e.projectID(ctx, *project)
+	if err != nil {
+		return err
+	}
+	id, err := e.uploadPath(ctx, pid, pos[0], extra)
 	if err != nil {
 		return err
 	}
