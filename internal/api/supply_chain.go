@@ -33,7 +33,7 @@ func (a *API) signingStore(w http.ResponseWriter) bool {
 	return true
 }
 
-func (a *API) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListSigningKeys(w http.ResponseWriter, r *http.Request, params apigen.ListSigningKeysParams) {
 	if !a.signingStore(w) {
 		return
 	}
@@ -43,10 +43,15 @@ func (a *API) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := struct {
-		Items []signingKeyView `json:"items"`
+		Items      []signingKeyView `json:"items"`
+		NextCursor *string          `json:"nextCursor,omitempty"`
 	}{Items: []signingKeyView{}}
 	for _, k := range list {
 		out.Items = append(out.Items, toKey(k))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x signingKeyView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -121,22 +126,27 @@ func toException(e validation.Exception) exceptionView {
 	return exceptionView{e.ID, e.ProjectID, nonNil(e.Classes), nonNil(e.PathPatterns), e.Justification, e.State, e.RequestedBy, e.DecidedBy, e.DecisionReason, e.ExpiresAt, e.CreatedAt, e.DecidedAt}
 }
 
-func writeExceptions(w http.ResponseWriter, list []validation.Exception) {
+func writeExceptions(w http.ResponseWriter, list []validation.Exception, limit *int, cursor *string) {
 	out := struct {
-		Items []exceptionView `json:"items"`
+		Items      []exceptionView `json:"items"`
+		NextCursor *string         `json:"nextCursor,omitempty"`
 	}{Items: []exceptionView{}}
 	for _, e := range list {
 		out.Items = append(out.Items, toException(e))
 	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, limit, cursor, func(x exceptionView) string { return x.ID }); !ok {
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (a *API) ListOutputExceptions(w http.ResponseWriter, r *http.Request, id apigen.Id) {
+func (a *API) ListOutputExceptions(w http.ResponseWriter, r *http.Request, id apigen.Id, params apigen.ListOutputExceptionsParams) {
 	list, err := a.validations.Exceptions(r.Context(), principal(r), operationRoles(r.Context()), id)
 	if a.exceptionError(w, r, err) {
 		return
 	}
-	writeExceptions(w, list)
+	writeExceptions(w, list, params.Limit, params.Cursor)
 }
 
 func (a *API) RequestOutputException(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.RequestOutputExceptionParams) {
@@ -157,12 +167,12 @@ func (a *API) RequestOutputException(w http.ResponseWriter, r *http.Request, id 
 	writeJSON(w, http.StatusCreated, toException(e))
 }
 
-func (a *API) ListPendingOutputExceptions(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListPendingOutputExceptions(w http.ResponseWriter, r *http.Request, params apigen.ListPendingOutputExceptionsParams) {
 	list, err := a.validations.PendingExceptions(r.Context(), principal(r))
 	if a.exceptionError(w, r, err) {
 		return
 	}
-	writeExceptions(w, list)
+	writeExceptions(w, list, params.Limit, params.Cursor)
 }
 
 func (a *API) DecideOutputException(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.DecideOutputExceptionParams) {

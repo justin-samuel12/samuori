@@ -50,7 +50,7 @@ func (a *API) GetStorageStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (a *API) ListBuildCaches(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListBuildCaches(w http.ResponseWriter, r *http.Request, params apigen.ListBuildCachesParams) {
 	p := principal(r)
 	list, err := a.artifacts.Caches(r.Context(), p.OrgID)
 	if err != nil {
@@ -67,14 +67,19 @@ func (a *API) ListBuildCaches(w http.ResponseWriter, r *http.Request) {
 		LastUsedAt  *time.Time `json:"lastUsedAt,omitempty"`
 	}
 	out := struct {
-		TTLHours      int    `json:"ttlHours"`
-		MaxScopeBytes int64  `json:"maxScopeBytes"`
-		Items         []item `json:"items"`
+		TTLHours      int     `json:"ttlHours"`
+		MaxScopeBytes int64   `json:"maxScopeBytes"`
+		Items         []item  `json:"items"`
+		NextCursor    *string `json:"nextCursor,omitempty"`
 	}{TTLHours: int(a.artifacts.CacheLimits.TTL.Hours()), MaxScopeBytes: a.artifacts.CacheLimits.MaxScopeBytes, Items: []item{}}
 	for _, c := range list {
 		var name string
 		_ = a.db.SQL.QueryRowContext(r.Context(), a.db.Rebind(`SELECT name FROM projects WHERE id = ? AND org_id = ?`), c.ProjectID, p.OrgID).Scan(&name)
 		out.Items = append(out.Items, item{c.Scope, c.ProjectID, name, c.Entries, c.Bytes, c.Newest, c.LastUsed})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x item) string { return x.Scope }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

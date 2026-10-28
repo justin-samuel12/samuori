@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
 	"time"
 
@@ -100,7 +101,7 @@ func (s *Service) attempt(ctx context.Context, id, claim string) error {
 }
 
 // Deliveries lists recent deliveries of the organization, optionally in one state.
-func (s *Service) Deliveries(ctx context.Context, actor authz.Principal, state string, limit int) ([]Delivery, error) {
+func (s *Service) Deliveries(ctx context.Context, actor authz.Principal, state, before string, limit int) ([]Delivery, error) {
 	if !actor.IsOrgAdmin() {
 		return nil, ErrForbidden
 	}
@@ -108,10 +109,13 @@ func (s *Service) Deliveries(ctx context.Context, actor authz.Principal, state s
 	if state != "" {
 		q, args = q+` AND state = ?`, append(args, state)
 	}
-	if limit <= 0 || limit > 200 {
+	if before != "" {
+		q, args = q+` AND `+db.NewestBefore("notification_deliveries", "notification_deliveries"), append(args, before, before, before)
+	}
+	if limit <= 0 || limit > 201 {
 		limit = 100
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC LIMIT ?`), append(args, limit)...)
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC, id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}
@@ -173,15 +177,18 @@ type Notification struct {
 }
 
 // Inbox lists a user's notifications, newest first.
-func (s *Service) Inbox(ctx context.Context, p authz.Principal, unreadOnly bool, limit int) ([]Notification, error) {
-	q := `SELECT id, message, read_at, created_at FROM notifications WHERE user_id = ? AND org_id = ?`
+func (s *Service) Inbox(ctx context.Context, p authz.Principal, unreadOnly bool, before string, limit int) ([]Notification, error) {
+	q, args := `SELECT id, message, read_at, created_at FROM notifications WHERE user_id = ? AND org_id = ?`, []any{p.ID, p.OrgID}
 	if unreadOnly {
 		q += ` AND read_at IS NULL`
 	}
-	if limit <= 0 || limit > 200 {
+	if before != "" {
+		q, args = q+` AND `+db.NewestBefore("notifications", "notifications"), append(args, before, before, before)
+	}
+	if limit <= 0 || limit > 201 {
 		limit = 50
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC LIMIT ?`), p.ID, p.OrgID, limit)
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC, id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}

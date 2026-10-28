@@ -43,17 +43,22 @@ func toImageSource(s imagesources.Source) imageSourceView {
 	return imageSourceView{s.ID, s.Name, s.Upstream, s.Mirror, s.Patterns, s.TeamIDs, s.PullProfileID, s.Status}
 }
 
-func (a *API) ListImageSources(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListImageSources(w http.ResponseWriter, r *http.Request, params apigen.ListImageSourcesParams) {
 	list, err := a.imageSources.List(r.Context(), principal(r))
 	if err != nil {
 		a.imageSourceError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []imageSourceView `json:"items"`
+		Items      []imageSourceView `json:"items"`
+		NextCursor *string           `json:"nextCursor,omitempty"`
 	}{Items: []imageSourceView{}}
 	for _, s := range list {
 		out.Items = append(out.Items, toImageSource(s))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x imageSourceView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

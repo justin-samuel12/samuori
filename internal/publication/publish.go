@@ -14,6 +14,7 @@ import (
 	"samuori.invalid/samuori/internal/approvals"
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/authz"
+	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
 	"samuori.invalid/samuori/internal/signing"
 	"samuori.invalid/samuori/internal/telemetry"
@@ -770,13 +771,17 @@ type Image struct {
 
 // Images is the project's Image Library: images its builds produced, with their newest validation and
 // publications.
-func (s *Service) Images(ctx context.Context, p authz.Principal, roles []authz.Role, projectID string, limit int) ([]Image, error) {
+func (s *Service) Images(ctx context.Context, p authz.Principal, roles []authz.Role, projectID, before string, limit int) ([]Image, error) {
 	if _, err := s.tenancy.GetProject(ctx, p, roles, projectID); err != nil {
 		return nil, ErrNotFound
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT a.id, a.digest, a.run_id, a.size, a.created_at, COALESCE(r.version, ''), COALESCE(sp.name, '') FROM build_artifacts a JOIN build_runs r ON r.id = a.run_id
+	q, args := `SELECT a.id, a.digest, a.run_id, a.size, a.created_at, COALESCE(r.version, ''), COALESCE(sp.name, '') FROM build_artifacts a JOIN build_runs r ON r.id = a.run_id
 		LEFT JOIN build_specs sp ON sp.id = r.spec_id
-		WHERE r.project_id = ? AND r.org_id = ? AND a.kind = 'image' AND r.state = 'succeeded' AND r.id NOT IN (SELECT run_id FROM build_run_deletions) ORDER BY a.created_at DESC LIMIT ?`), projectID, p.OrgID, limit)
+		WHERE r.project_id = ? AND r.org_id = ? AND a.kind = 'image' AND r.state = 'succeeded' AND r.id NOT IN (SELECT run_id FROM build_run_deletions)`, []any{projectID, p.OrgID}
+	if before != "" {
+		q, args = q+` AND `+db.NewestBefore("a", "build_artifacts"), append(args, before, before, before)
+	}
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY a.created_at DESC, a.id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}

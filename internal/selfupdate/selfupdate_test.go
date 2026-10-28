@@ -414,7 +414,7 @@ func TestRolloutWavesAndRollback(t *testing.T) {
 		if _, err := s.Cancel(ctx, op, r.ID, ""); !errors.Is(err, ErrForbidden) {
 			t.Errorf("an operator stopped a rollout: %v", err)
 		}
-		if _, err := s.List(ctx, op, 10); !errors.Is(err, ErrForbidden) {
+		if _, err := s.List(ctx, op, "", 10); !errors.Is(err, ErrForbidden) {
 			t.Errorf("an operator listed rollouts: %v", err)
 		}
 
@@ -465,7 +465,7 @@ func TestRolloutWavesAndRollback(t *testing.T) {
 		if got, err = s.Resume(ctx, admin, r.ID, ""); err != nil || got.Paused || got.Steps[1].State != "pending" {
 			t.Fatalf("resume = %v, paused %v, failed host %s; want it retried", err, got.Paused, got.Steps[1].State)
 		}
-		hist, err := s.List(ctx, admin, 10)
+		hist, err := s.List(ctx, admin, "", 10)
 		if err != nil || len(hist) != 1 {
 			t.Fatalf("history = %v, %v", hist, err)
 		}
@@ -538,7 +538,7 @@ func TestPurgeHistory(t *testing.T) {
 	if n, err := s.PurgeHistory(ctx, admin, ""); err != nil || n != 0 {
 		t.Fatalf("purge with only a running rollout = %d, %v", n, err)
 	}
-	if list, _ := s.List(ctx, admin, 20); len(list) != 1 {
+	if list, _ := s.List(ctx, admin, "", 20); len(list) != 1 {
 		t.Fatalf("the running rollout was purged: %d left", len(list))
 	}
 	if _, err := s.Cancel(ctx, admin, r.ID, ""); err != nil {
@@ -551,7 +551,7 @@ func TestPurgeHistory(t *testing.T) {
 	if err := d.SQL.QueryRowContext(ctx, `SELECT COUNT(*) FROM rollout_steps`).Scan(&steps); err != nil || steps != 0 {
 		t.Errorf("steps left behind: %d, %v", steps, err)
 	}
-	if list, _ := s.List(ctx, admin, 20); len(list) != 0 {
+	if list, _ := s.List(ctx, admin, "", 20); len(list) != 0 {
 		t.Errorf("history after purge = %d rollouts", len(list))
 	}
 }

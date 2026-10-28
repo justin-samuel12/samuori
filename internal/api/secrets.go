@@ -67,7 +67,7 @@ func toSecretProvider(p secrets.Provider) apigen.SecretProvider {
 	return out
 }
 
-func (a *API) ListSecretProviders(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListSecretProviders(w http.ResponseWriter, r *http.Request, params apigen.ListSecretProvidersParams) {
 	list, err := a.secrets.Providers(r.Context(), principal(r))
 	if err != nil {
 		a.secretsError(w, r, err)
@@ -76,6 +76,10 @@ func (a *API) ListSecretProviders(w http.ResponseWriter, r *http.Request) {
 	out := apigen.SecretProviderList{Items: []apigen.SecretProvider{}}
 	for _, p := range list {
 		out.Items = append(out.Items, toSecretProvider(p))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.SecretProvider) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -161,7 +165,7 @@ func toLocalSecret(s secrets.Secret) apigen.LocalSecret {
 	return out
 }
 
-func (a *API) ListLocalSecrets(w http.ResponseWriter, r *http.Request, providerID apigen.Id) {
+func (a *API) ListLocalSecrets(w http.ResponseWriter, r *http.Request, providerID apigen.Id, params apigen.ListLocalSecretsParams) {
 	list, err := a.secrets.ListSecrets(r.Context(), principal(r))
 	if err != nil {
 		a.secretsError(w, r, err)
@@ -179,6 +183,10 @@ func (a *API) ListLocalSecrets(w http.ResponseWriter, r *http.Request, providerI
 	out := apigen.LocalSecretList{Items: []apigen.LocalSecret{}}
 	for _, s := range list {
 		out.Items = append(out.Items, toLocalSecret(s))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.LocalSecret) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -297,7 +305,7 @@ func toBinding(b secrets.Binding) apigen.SecretBinding {
 	return out
 }
 
-func (a *API) ListSecretBindings(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListSecretBindings(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListSecretBindingsParams) {
 	list, err := a.secrets.ListBindings(r.Context(), principal(r), projectID)
 	if err != nil {
 		a.secretsError(w, r, err)
@@ -306,6 +314,10 @@ func (a *API) ListSecretBindings(w http.ResponseWriter, r *http.Request, project
 	out := apigen.SecretBindingList{Items: []apigen.SecretBinding{}}
 	for _, b := range list {
 		out.Items = append(out.Items, toBinding(b))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.SecretBinding) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

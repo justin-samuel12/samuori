@@ -33,17 +33,22 @@ func (a *API) toRepositoryRequest(r *http.Request, x approvals.RepositoryRequest
 	return v
 }
 
-func (a *API) ListRepositoryRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListRepositoryRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListRepositoryRequestsParams) {
 	list, err := a.approvals.RepositoryRequests(r.Context(), principal(r), operationRoles(r.Context()), projectID)
 	if err != nil {
 		a.approvalError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []repositoryRequestView `json:"items"`
+		Items      []repositoryRequestView `json:"items"`
+		NextCursor *string                 `json:"nextCursor,omitempty"`
 	}{Items: []repositoryRequestView{}}
 	for _, x := range list {
 		out.Items = append(out.Items, a.toRepositoryRequest(r, x))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x repositoryRequestView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

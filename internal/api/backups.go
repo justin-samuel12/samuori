@@ -22,7 +22,7 @@ func toBackup(r backup.Record) apigen.Backup {
 	return out
 }
 
-func (a *API) ListBackups(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListBackups(w http.ResponseWriter, r *http.Request, params apigen.ListBackupsParams) {
 	p := principal(r)
 	if !p.IsOrgAdmin() {
 		apigen.WriteProblem(w, http.StatusForbidden, "forbidden", backup.ErrForbidden.Error())
@@ -42,6 +42,10 @@ func (a *API) ListBackups(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, b := range list {
 		out.Items = append(out.Items, toBackup(b))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Backup) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

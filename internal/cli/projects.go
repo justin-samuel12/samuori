@@ -278,17 +278,24 @@ func (e *env) teamID(ctx context.Context, ref string) (string, error) {
 		return ref, nil
 	}
 	limit := 200
-	r, err := e.api.ListTeamsWithResponse(ctx, &apiclient.ListTeamsParams{Limit: &limit})
-	if err != nil {
-		return "", err
-	}
-	if r.JSON200 == nil {
-		return "", problem("listing teams", r.StatusCode(), r.Body)
-	}
-	for _, t := range r.JSON200.Items {
-		if t.Name == ref {
-			return t.Id, nil
+	params := &apiclient.ListTeamsParams{Limit: &limit}
+	for {
+		r, err := e.api.ListTeamsWithResponse(ctx, params)
+		if err != nil {
+			return "", err
 		}
+		if r.JSON200 == nil {
+			return "", problem("listing teams", r.StatusCode(), r.Body)
+		}
+		for _, t := range r.JSON200.Items {
+			if t.Name == ref {
+				return t.Id, nil
+			}
+		}
+		if r.JSON200.NextCursor == nil || *r.JSON200.NextCursor == "" {
+			break
+		}
+		params.Cursor = r.JSON200.NextCursor
 	}
 	return "", failf(ExitError, "no team named %q is visible to this token", ref)
 }

@@ -44,7 +44,7 @@ func convert(from, to any) {
 	_ = json.Unmarshal(raw, to)
 }
 
-func (a *API) ListRegistries(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListRegistries(w http.ResponseWriter, r *http.Request, params apigen.ListRegistriesParams) {
 	list, err := a.publications.Registries(r.Context(), principal(r))
 	if err != nil {
 		a.publicationError(w, r, err)
@@ -53,6 +53,10 @@ func (a *API) ListRegistries(w http.ResponseWriter, r *http.Request) {
 	out := apigen.RegistryList{Items: []apigen.Registry{}}
 	for _, x := range list {
 		out.Items = append(out.Items, toRegistry(x))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Registry) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -134,7 +138,7 @@ func toProfile(p publication.Profile) apigen.RegistryCredentialProfile {
 	return out
 }
 
-func (a *API) ListRegistryCredentialProfiles(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListRegistryCredentialProfiles(w http.ResponseWriter, r *http.Request, params apigen.ListRegistryCredentialProfilesParams) {
 	list, err := a.publications.Profiles(r.Context(), principal(r))
 	if err != nil {
 		a.publicationError(w, r, err)
@@ -143,6 +147,10 @@ func (a *API) ListRegistryCredentialProfiles(w http.ResponseWriter, r *http.Requ
 	out := apigen.RegistryCredentialProfileList{Items: []apigen.RegistryCredentialProfile{}}
 	for _, p := range list {
 		out.Items = append(out.Items, toProfile(p))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.RegistryCredentialProfile) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -226,7 +234,7 @@ func toDestination(d publication.Destination) apigen.Destination {
 		SignImages: ptr(d.SignImages), AttachProvenance: ptr(d.AttachProvenance), PromotionOnly: ptr(d.PromotionOnly)}
 }
 
-func (a *API) ListDestinations(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListDestinations(w http.ResponseWriter, r *http.Request, params apigen.ListDestinationsParams) {
 	list, err := a.publications.Destinations(r.Context(), principal(r))
 	if err != nil {
 		a.publicationError(w, r, err)
@@ -235,6 +243,10 @@ func (a *API) ListDestinations(w http.ResponseWriter, r *http.Request) {
 	out := apigen.DestinationList{Items: []apigen.Destination{}}
 	for _, d := range list {
 		out.Items = append(out.Items, toDestination(d))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Destination) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -278,7 +290,7 @@ func (a *API) UpdateDestination(w http.ResponseWriter, r *http.Request, id apige
 	writeJSON(w, http.StatusOK, toDestination(out))
 }
 
-func (a *API) ListProjectDestinations(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListProjectDestinations(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListProjectDestinationsParams) {
 	list, err := a.publications.ProjectDestinations(r.Context(), principal(r), operationRoles(r.Context()), projectID)
 	if err != nil {
 		a.publicationError(w, r, err)
@@ -287,6 +299,10 @@ func (a *API) ListProjectDestinations(w http.ResponseWriter, r *http.Request, pr
 	out := apigen.DestinationSummaryList{Items: []apigen.DestinationSummary{}}
 	for _, d := range list {
 		out.Items = append(out.Items, apigen.DestinationSummary{Id: d.ID, Name: d.Name, Repository: d.Repository, AcceptsRestricted: ptr(d.AcceptsRestricted), RequiresApproval: ptr(d.RequiresApproval)})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.DestinationSummary) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -14,6 +14,14 @@ independently testable, not scope cuts. Update task status in the same PR that d
   Go derivation and the wizard's are checked against one fixture. Runnable: API and CLI; `TestSuggest`,
   `TestSuggestMatchesWizard`, `TestSpecSuggestions`, `TestCLI` and `model.test.ts` pass on SQLite. Not yet run:
   PostgreSQL, a real worker build of a suggested recipe spec.
+- **Consistent API (2026-10-28, owner request, ADR 0066).** Every list takes `limit` and `cursor` and returns
+  `nextCursor` (50 lists added; nine bounded ones allowlisted), with stable ordering; lists that used to be complete
+  still are without `limit`. Every create accepts `Idempotency-Key` (36 added as optional, replayed through the
+  operations record as `409 idempotent_replay`); every non-2xx is documented with `Problem`, every `429` with
+  `Retry-After`. Additive, nothing deprecated (`docs/developers/api-changelog.md`). The CLI follows `nextCursor`.
+  Runnable: API, CLI and UI; `TestContractConsistency`, `TestCreateIdempotencyKeyReplays` and
+  `TestPaginationOfWholeLists` pass on SQLite. Not yet run: PostgreSQL. Open: request bodies are inconsistent about
+  unknown fields (61 reject them, 59 accept them); not changed because rejecting is breaking.
 - **API usable from outside the repository (2026-10-28, owner request, ADR 0066).** The server publishes its
   contract at `GET /api/v1/openapi.yml` and `/openapi.json` to any signed-in caller (ETag, private caching); Help →
   API reference renders it with search, roles, parameters, schemas, the error format and curl examples for API

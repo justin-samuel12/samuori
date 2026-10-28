@@ -203,7 +203,7 @@ func (a *API) specsError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func (a *API) ListRecipes(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListRecipes(w http.ResponseWriter, r *http.Request, params apigen.ListRecipesParams) {
 	p := principal(r)
 	all, statuses, err := a.recipes.All(r.Context(), p.OrgID)
 	if err != nil {
@@ -254,6 +254,10 @@ func (a *API) ListRecipes(w http.ResponseWriter, r *http.Request) {
 		}
 		out.Items = append(out.Items, item)
 	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Recipe) string { return x.Id + "@" + x.Version }); !ok {
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -281,7 +285,7 @@ func toPolicy(p policy.Policy) apigen.Policy {
 	return apigen.Policy{Id: p.ID, Kind: apigen.PolicyKind(p.Kind), Version: p.Version, Document: doc, UpdatedAt: &p.CreatedAt, UpdatedBy: ptr(p.CreatedBy)}
 }
 
-func (a *API) ListPolicies(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
 	list, err := a.policies.List(r.Context(), principal(r).OrgID)
 	if err != nil {
 		a.internalError(w, r, err)
@@ -290,6 +294,10 @@ func (a *API) ListPolicies(w http.ResponseWriter, r *http.Request) {
 	out := apigen.PolicyList{Items: make([]apigen.Policy, 0, len(list))}
 	for _, p := range list {
 		out.Items = append(out.Items, toPolicy(p))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Policy) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

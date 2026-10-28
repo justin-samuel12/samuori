@@ -20,7 +20,7 @@ func (a *API) toBaseImageRequest(r *http.Request, x approvals.BaseImageRequest) 
 	return v
 }
 
-func (a *API) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListBaseImageRequestsParams) {
 	list, err := a.approvals.BaseImageRequests(r.Context(), principal(r), operationRoles(r.Context()), projectID)
 	if err != nil {
 		a.approvalError(w, r, err)
@@ -29,6 +29,10 @@ func (a *API) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, proj
 	out := apigen.BaseImageRequestList{Items: []apigen.BaseImageRequest{}}
 	for _, x := range list {
 		out.Items = append(out.Items, a.toBaseImageRequest(r, x))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.BaseImageRequest) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

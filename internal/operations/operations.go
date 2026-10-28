@@ -56,6 +56,12 @@ func (s *Store) Finish(ctx context.Context, tx *sql.Tx, id, status, resourceType
 	return err
 }
 
+// Discard removes an operation whose request was rejected without effect, so its key can be used again.
+func (s *Store) Discard(ctx context.Context, tx *sql.Tx, id string) error {
+	_, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM operations WHERE id = ? AND status = ?`), id, Pending)
+	return err
+}
+
 func (s *Store) SetStatus(ctx context.Context, tx *sql.Tx, id, status string) error {
 	_, err := tx.ExecContext(ctx, s.db.Rebind(`UPDATE operations SET status = ?, updated_at = ? WHERE id = ?`), status, time.Now().UTC(), id)
 	return err

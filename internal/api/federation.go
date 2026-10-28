@@ -56,7 +56,7 @@ func toPeer(x federation.Peer) apigen.FederationPeer {
 	return apigen.FederationPeer{Id: x.ID, Name: x.Name, Endpoint: x.Endpoint, CaPin: x.CAPin, OrganizationId: x.RemoteOrgID, CreatedAt: x.CreatedAt, Disabled: x.Disabled}
 }
 
-func (a *API) ListFederationPeers(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListFederationPeers(w http.ResponseWriter, r *http.Request, params apigen.ListFederationPeersParams) {
 	list, err := a.federation.Peers(r.Context(), principal(r))
 	if err != nil {
 		a.federationError(w, r, err)
@@ -66,7 +66,11 @@ func (a *API) ListFederationPeers(w http.ResponseWriter, r *http.Request) {
 	for _, x := range list {
 		items = append(items, toPeer(x))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	page, next, ok := pageOf(w, items, params.Limit, params.Cursor, func(x apigen.FederationPeer) string { return x.Id })
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": page, "nextCursor": next})
 }
 
 func (a *API) CreateFederationPeer(w http.ResponseWriter, r *http.Request, _ apigen.CreateFederationPeerParams) {
@@ -98,7 +102,7 @@ func toGrant(g federation.Grant) apigen.FederationGrant {
 	return apigen.FederationGrant{Id: g.ID, PeerId: g.PeerID, ProjectId: g.ProjectID, Locations: g.Locations, MaxActive: g.MaxActive, CreatedAt: g.CreatedAt, Revoked: g.Revoked}
 }
 
-func (a *API) ListFederationGrants(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListFederationGrants(w http.ResponseWriter, r *http.Request, params apigen.ListFederationGrantsParams) {
 	list, err := a.federation.Grants(r.Context(), principal(r))
 	if err != nil {
 		a.federationError(w, r, err)
@@ -108,7 +112,11 @@ func (a *API) ListFederationGrants(w http.ResponseWriter, r *http.Request) {
 	for _, g := range list {
 		items = append(items, toGrant(g))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	page, next, ok := pageOf(w, items, params.Limit, params.Cursor, func(x apigen.FederationGrant) string { return x.Id })
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": page, "nextCursor": next})
 }
 
 func (a *API) CreateFederationGrant(w http.ResponseWriter, r *http.Request, _ apigen.CreateFederationGrantParams) {
@@ -140,7 +148,7 @@ func toRoute(x federation.Route) apigen.FederationRoute {
 	return apigen.FederationRoute{Id: x.ID, PeerId: x.PeerID, Location: x.Location, RemoteLocation: x.RemoteLocation, CreatedAt: x.CreatedAt}
 }
 
-func (a *API) ListFederationRoutes(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListFederationRoutes(w http.ResponseWriter, r *http.Request, params apigen.ListFederationRoutesParams) {
 	list, err := a.federation.Routes(r.Context(), principal(r))
 	if err != nil {
 		a.federationError(w, r, err)
@@ -150,7 +158,11 @@ func (a *API) ListFederationRoutes(w http.ResponseWriter, r *http.Request) {
 	for _, x := range list {
 		items = append(items, toRoute(x))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	page, next, ok := pageOf(w, items, params.Limit, params.Cursor, func(x apigen.FederationRoute) string { return x.Id })
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": page, "nextCursor": next})
 }
 
 func (a *API) CreateFederationRoute(w http.ResponseWriter, r *http.Request, _ apigen.CreateFederationRouteParams) {
@@ -174,7 +186,7 @@ func (a *API) DeleteFederationRoute(w http.ResponseWriter, r *http.Request, id a
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *API) ListFederationDelegations(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListFederationDelegations(w http.ResponseWriter, r *http.Request, params apigen.ListFederationDelegationsParams) {
 	list, err := a.federation.Delegations(r.Context(), principal(r), 200)
 	if err != nil {
 		a.federationError(w, r, err)
@@ -185,7 +197,11 @@ func (a *API) ListFederationDelegations(w http.ResponseWriter, r *http.Request) 
 		items = append(items, apigen.FederationDelegation{Id: d.ID, RunId: d.RunID, PeerId: d.PeerID, RemoteLocation: d.RemoteLocation, State: apigen.FederationDelegationState(d.State),
 			RemoteRunId: opt(d.RemoteRunID), RemoteState: opt(d.RemoteState), Detail: opt(d.Detail), LastContactAt: d.LastContactAt, UnreachableSince: d.UnreachableSince, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	page, next, ok := pageOf(w, items, params.Limit, params.Cursor, func(x apigen.FederationDelegation) string { return x.Id })
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": page, "nextCursor": next})
 }
 
 func (a *API) AbandonFederationDelegation(w http.ResponseWriter, r *http.Request, id apigen.Id, _ apigen.AbandonFederationDelegationParams) {

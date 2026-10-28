@@ -4519,6 +4519,7 @@ export interface components {
         };
         IdentityProviderList: {
             items: components["schemas"]["IdentityProvider"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         EnabledState: {
             enabled: boolean;
@@ -4540,6 +4541,7 @@ export interface components {
         };
         GroupMappingList: {
             items: components["schemas"]["GroupMapping"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         IdentitySettingsUpdate: {
             /**
@@ -4586,6 +4588,7 @@ export interface components {
         };
         ServiceIdentityList: {
             items: components["schemas"]["ServiceIdentity"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         SetupStatus: {
             completed: boolean;
@@ -4748,6 +4751,7 @@ export interface components {
         };
         ImageSummaryList: {
             items: components["schemas"]["ImageSummary"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         Project: {
             id: components["schemas"]["Id"];
@@ -4901,6 +4905,7 @@ export interface components {
         };
         DiscoveryList: {
             items: components["schemas"]["Discovery"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         DetectorFinding: {
             detectorId: string;
@@ -5358,6 +5363,7 @@ export interface components {
         };
         ValidationRunList: {
             items: components["schemas"]["ValidationRun"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         CheckResult: {
             checkId: string;
@@ -5413,6 +5419,7 @@ export interface components {
         };
         DestinationSummaryList: {
             items: components["schemas"]["DestinationSummary"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         /** @description publish needs artifactId; promote needs sourcePublicationId, a published publication of the image; rollback needs sourcePublicationId at destinationId and the tags to move back to it */
         PublicationRequest: {
@@ -5616,6 +5623,7 @@ export interface components {
         };
         LocationList: {
             items: components["schemas"]["Location"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ProjectLocations: {
             locations: string[];
@@ -5658,6 +5666,7 @@ export interface components {
         };
         ArtifactQuarantineList: {
             items: components["schemas"]["ArtifactQuarantine"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         StorageStatus: {
             /**
@@ -5700,6 +5709,7 @@ export interface components {
                 newestAt: components["schemas"]["Timestamp"];
                 lastUsedAt?: components["schemas"]["Timestamp"];
             }[];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         Backup: {
             id: components["schemas"]["Id"];
@@ -5869,6 +5879,7 @@ export interface components {
             /** @description Whether this controller has release signers; without them nothing can be uploaded */
             signersConfigured: boolean;
             items: components["schemas"]["Release"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         Preflight: {
             version: string;
@@ -5929,6 +5940,7 @@ export interface components {
         };
         RolloutList: {
             items: components["schemas"]["Rollout"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         UpgradeStatus: {
             /** @description This controller's release */
@@ -6001,6 +6013,7 @@ export interface components {
         };
         ControllerJoinTokenList: {
             items: components["schemas"]["ControllerJoinToken"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ControllerJoinTokenIssued: {
             id: components["schemas"]["Id"];
@@ -6031,6 +6044,7 @@ export interface components {
         };
         ControllerJoinRequestList: {
             items: components["schemas"]["ControllerJoinRequest"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ControllerJoinDecision: {
             /** @enum {string} */
@@ -6065,6 +6079,7 @@ export interface components {
             intervalHours?: number;
             keep?: number;
             items: components["schemas"]["Backup"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         GarbageCollection: {
             deleted: number;
@@ -6240,6 +6255,7 @@ export interface components {
         };
         WorkerPoolList: {
             items: components["schemas"]["WorkerPool"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         /** @description The worker the token enrols starts unassigned (ADR 0045) */
         EnrollmentTokenRequest: {
@@ -6269,6 +6285,7 @@ export interface components {
         };
         EnrollmentTokenList: {
             items: components["schemas"]["EnrollmentToken"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         SecretProviderCreate: {
             name: string;
@@ -6323,6 +6340,7 @@ export interface components {
         };
         AllowedSecretList: {
             items: components["schemas"]["AllowedSecret"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         SecretProviderUpdate: {
             name: string;
@@ -6367,6 +6385,7 @@ export interface components {
         };
         SecretProviderList: {
             items: components["schemas"]["SecretProvider"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         LocalSecretWrite: {
             name: string;
@@ -6393,6 +6412,7 @@ export interface components {
         };
         LocalSecretList: {
             items: components["schemas"]["LocalSecret"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         SecretBindingCreate: {
             logicalId: components["schemas"]["LogicalSecretId"];
@@ -6451,6 +6471,7 @@ export interface components {
         };
         SecretBindingList: {
             items: components["schemas"]["SecretBinding"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         HelpTopicSummary: {
             id: string;
@@ -6539,6 +6560,7 @@ export interface components {
             items: components["schemas"]["SecretGrant"][];
             /** @description The project's active bindings; grantId is absent for a binding an administrator made directly */
             uses: components["schemas"]["SecretGrantUse"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         SecretGrantBind: {
             logicalId: components["schemas"]["LogicalSecretId"];
@@ -6582,6 +6604,7 @@ export interface components {
         };
         RepositoryRequestList: {
             items: components["schemas"]["RepositoryRequest"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         BaseImageRequestCreate: {
             /** @description Registry host and path without tag or digest, such as mcr.microsoft.com/mssql/server; short Docker Hub names are expanded */
@@ -6606,6 +6629,7 @@ export interface components {
         };
         BaseImageRequestList: {
             items: components["schemas"]["BaseImageRequest"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         EgressEntries: {
             presets: string[];
@@ -6675,6 +6699,7 @@ export interface components {
         };
         EgressAccessRequestList: {
             items: components["schemas"]["EgressAccessRequest"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         EgressAllowance: {
             id: components["schemas"]["Id"];
@@ -6702,6 +6727,7 @@ export interface components {
         };
         EgressAllowanceList: {
             items: components["schemas"]["EgressAllowance"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         GrantedDestinations: {
             destinations: {
@@ -6781,6 +6807,7 @@ export interface components {
         };
         RegistryList: {
             items: components["schemas"]["Registry"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         EcrRepository: {
             name: string;
@@ -6837,6 +6864,7 @@ export interface components {
         };
         RegistryCredentialProfileList: {
             items: components["schemas"]["RegistryCredentialProfile"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         DestinationCreate: {
             name: string;
@@ -6894,6 +6922,7 @@ export interface components {
         };
         SigningKeyList: {
             items: components["schemas"]["SigningKey"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         OutputException: {
             id: components["schemas"]["Id"];
@@ -6912,6 +6941,7 @@ export interface components {
         };
         OutputExceptionList: {
             items: components["schemas"]["OutputException"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         OutputExceptionRequest: {
             classes?: ("database-secrets" | "database-data" | "credential-file" | "credential-content" | "metadata" | "private-key")[];
@@ -6925,6 +6955,7 @@ export interface components {
         };
         DestinationList: {
             items: components["schemas"]["Destination"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ImageSourceCreate: {
             name: string;
@@ -6955,6 +6986,7 @@ export interface components {
         };
         ImageSourceList: {
             items: components["schemas"]["ImageSource"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ConnectionTest: {
             /** @enum {string} */
@@ -6988,6 +7020,7 @@ export interface components {
         };
         PolicyList: {
             items: components["schemas"]["Policy"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         /** @description Exactly one of document or yaml */
         SpecDocumentInput: {
@@ -7141,6 +7174,7 @@ export interface components {
         };
         CustomRecipeList: {
             items: components["schemas"]["CustomRecipe"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         CustomRecipeWrite: {
             /** @description The definition as YAML or JSON */
@@ -7167,6 +7201,7 @@ export interface components {
         };
         RecipeList: {
             items: components["schemas"]["Recipe"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         ShippedRuntimeStatusWrite: {
             /** @enum {string} */
@@ -7229,6 +7264,7 @@ export interface components {
         NotificationList: {
             items: components["schemas"]["Notification"][];
             unread: number;
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         NotificationChannelCreate: {
             name: string;
@@ -7272,6 +7308,7 @@ export interface components {
         };
         NotificationChannelList: {
             items: components["schemas"]["NotificationChannel"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         NotificationRuleCreate: {
             channelId: components["schemas"]["Id"];
@@ -7288,6 +7325,7 @@ export interface components {
         };
         NotificationRuleList: {
             items: components["schemas"]["NotificationRule"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         NotificationDelivery: {
             id: components["schemas"]["Id"];
@@ -7304,6 +7342,7 @@ export interface components {
         };
         NotificationDeliveryList: {
             items: components["schemas"]["NotificationDelivery"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         PipelineCreate: {
             name: string;
@@ -7369,6 +7408,7 @@ export interface components {
         };
         PipelineList: {
             items: components["schemas"]["Pipeline"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         PipelineRunCreate: {
             /** @description Full ref such as refs/heads/main */
@@ -7395,6 +7435,7 @@ export interface components {
         };
         PipelineRunList: {
             items: components["schemas"]["PipelineRun"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         PipelineHookResult: {
             /** @enum {string} */
@@ -7596,6 +7637,7 @@ export interface components {
         };
         KubeConversionRunList: {
             items: components["schemas"]["KubeConversionRun"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         KubeConversion: {
             id: components["schemas"]["Id"];
@@ -7615,6 +7657,7 @@ export interface components {
         };
         KubeConversionList: {
             items: components["schemas"]["KubeConversion"][];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
         KubeConversionFinding: {
             /** @enum {string} */
@@ -7691,6 +7734,7 @@ export interface components {
                 createdBy: string;
                 createdAt: components["schemas"]["Timestamp"];
             }[];
+            nextCursor?: components["schemas"]["NextCursor"];
         };
     };
     responses: {
@@ -7703,10 +7747,22 @@ export interface components {
                 "application/json": components["schemas"]["Problem"];
             };
         };
+        /** @description Too many requests (codes rate_limited, busy, too_many_uploads); retry after Retry-After seconds */
+        RateLimited: {
+            headers: {
+                "Retry-After": components["headers"]["RetryAfter"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Problem"];
+            };
+        };
     };
     parameters: {
         Cursor: string;
         Limit: number;
+        /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+        LimitOrAll: number;
         AuditResourceType: string;
         AuditResourceId: string;
         AuditSince: string;
@@ -7719,6 +7775,8 @@ export interface components {
         /** @description Text found in the event's reason */
         AuditText: string;
         IdempotencyKey: string;
+        /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+        IdempotencyKeyOptional: string;
         IfMatch: string;
         /** @description Required with session cookies; ignored with bearer tokens. */
         CsrfToken: string;
@@ -7739,6 +7797,8 @@ export interface components {
     requestBodies: never;
     headers: {
         ETag: string;
+        /** @description Seconds to wait before retrying */
+        RetryAfter: number;
     };
     pathItems: never;
 }
@@ -7790,6 +7850,8 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getApiContractJson: {
@@ -7820,6 +7882,8 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getStorageStatus: {
@@ -7840,6 +7904,9 @@ export interface operations {
                     "application/json": components["schemas"]["StorageStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     collectGarbage: {
@@ -7863,11 +7930,19 @@ export interface operations {
                     "application/json": components["schemas"]["GarbageCollection"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listBuildCaches: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7883,6 +7958,10 @@ export interface operations {
                     "application/json": components["schemas"]["BuildCacheList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     purgeBuildCache: {
@@ -7906,12 +7985,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listBackups: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7927,6 +8014,10 @@ export interface operations {
                     "application/json": components["schemas"]["BackupList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createBackup: {
@@ -7935,6 +8026,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -7950,7 +8043,11 @@ export interface operations {
                     "application/json": components["schemas"]["Backup"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
             503: components["responses"]["Problem"];
         };
     };
@@ -7977,7 +8074,11 @@ export interface operations {
                     "application/json": components["schemas"]["Backup"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getFederationIdentity: {
@@ -7998,11 +8099,18 @@ export interface operations {
                     "application/json": components["schemas"]["FederationIdentity"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listFederationPeers: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8017,9 +8125,14 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["FederationPeer"][];
+                        nextCursor?: components["schemas"]["NextCursor"];
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createFederationPeer: {
@@ -8028,6 +8141,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8047,8 +8162,12 @@ export interface operations {
                     "application/json": components["schemas"]["FederationPeer"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     disableFederationPeer: {
@@ -8076,12 +8195,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listFederationGrants: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8096,9 +8223,14 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["FederationGrant"][];
+                        nextCursor?: components["schemas"]["NextCursor"];
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createFederationGrant: {
@@ -8107,6 +8239,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8126,8 +8260,13 @@ export interface operations {
                     "application/json": components["schemas"]["FederationGrant"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeFederationGrant: {
@@ -8155,12 +8294,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listFederationRoutes: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8175,9 +8322,14 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["FederationRoute"][];
+                        nextCursor?: components["schemas"]["NextCursor"];
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createFederationRoute: {
@@ -8186,6 +8338,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8205,9 +8359,13 @@ export interface operations {
                     "application/json": components["schemas"]["FederationRoute"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteFederationRoute: {
@@ -8231,13 +8389,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listFederationDelegations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8252,9 +8418,14 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["FederationDelegation"][];
+                        nextCursor?: components["schemas"]["NextCursor"];
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     abandonFederationDelegation: {
@@ -8282,8 +8453,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listProviders: {
@@ -8304,6 +8479,9 @@ export interface operations {
                     "application/json": components["schemas"]["ProviderList"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     configureProvider: {
@@ -8333,7 +8511,12 @@ export interface operations {
                     "application/json": components["schemas"]["ProviderList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setBuildMethodPolicy: {
@@ -8361,7 +8544,11 @@ export interface operations {
                     "application/json": components["schemas"]["ProviderList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getTopology: {
@@ -8382,6 +8569,9 @@ export interface operations {
                     "application/json": components["schemas"]["TopologyStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setTopologyPlan: {
@@ -8409,7 +8599,11 @@ export interface operations {
                     "application/json": components["schemas"]["TopologyStatus"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getUpgradeStatus: {
@@ -8430,6 +8624,9 @@ export interface operations {
                     "application/json": components["schemas"]["UpgradeStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getCapacity: {
@@ -8450,6 +8647,9 @@ export interface operations {
                     "application/json": components["schemas"]["CapacityOverview"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     removeController: {
@@ -8481,13 +8681,21 @@ export interface operations {
                     "application/json": components["schemas"]["ControllerRemoval"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listControllerJoinTokens: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8503,6 +8711,10 @@ export interface operations {
                     "application/json": components["schemas"]["ControllerJoinTokenList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createControllerJoinToken: {
@@ -8511,6 +8723,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8530,7 +8744,11 @@ export interface operations {
                     "application/json": components["schemas"]["ControllerJoinTokenIssued"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeControllerJoinToken: {
@@ -8554,12 +8772,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listControllerJoinRequests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8575,6 +8801,10 @@ export interface operations {
                     "application/json": components["schemas"]["ControllerJoinRequestList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     decideControllerJoinRequest: {
@@ -8604,8 +8834,12 @@ export interface operations {
                     "application/json": components["schemas"]["ControllerJoinRequest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     joinCluster: {
@@ -8630,9 +8864,10 @@ export interface operations {
                     "application/json": components["schemas"]["ClusterJoinPending"];
                 };
             };
+            400: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     pollClusterJoin: {
@@ -8659,9 +8894,11 @@ export interface operations {
                     "application/json": components["schemas"]["ClusterJoinPollResult"];
                 };
             };
+            400: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getDatabaseStatus: {
@@ -8682,6 +8919,9 @@ export interface operations {
                     "application/json": components["schemas"]["DatabaseStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     testDatabaseConnection: {
@@ -8705,7 +8945,11 @@ export interface operations {
                     "application/json": components["schemas"]["DatabaseTestResult"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateDatabasePassword: {
@@ -8733,13 +8977,21 @@ export interface operations {
                     "application/json": components["schemas"]["DatabaseStatus"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listReleases: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8755,6 +9007,10 @@ export interface operations {
                     "application/json": components["schemas"]["ReleaseList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     uploadRelease: {
@@ -8763,6 +9019,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8785,9 +9043,13 @@ export interface operations {
                     "application/json": components["schemas"]["Release"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             413: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteRelease: {
@@ -8811,8 +9073,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     preflightRelease: {
@@ -8838,13 +9104,18 @@ export interface operations {
                     "application/json": components["schemas"]["Preflight"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRollouts: {
         parameters: {
             query?: {
-                limit?: number;
+                limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path?: never;
@@ -8861,6 +9132,10 @@ export interface operations {
                     "application/json": components["schemas"]["RolloutList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     startRollout: {
@@ -8869,6 +9144,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -8888,8 +9165,12 @@ export interface operations {
                     "application/json": components["schemas"]["Rollout"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     purgeRollouts: {
@@ -8916,6 +9197,10 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getRollout: {
@@ -8938,7 +9223,11 @@ export interface operations {
                     "application/json": components["schemas"]["Rollout"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     pauseRollout: {
@@ -8964,8 +9253,12 @@ export interface operations {
                     "application/json": components["schemas"]["Rollout"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     resumeRollout: {
@@ -8991,8 +9284,12 @@ export interface operations {
                     "application/json": components["schemas"]["Rollout"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     cancelRollout: {
@@ -9018,8 +9315,12 @@ export interface operations {
                     "application/json": components["schemas"]["Rollout"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getDiagnostics: {
@@ -9040,6 +9341,9 @@ export interface operations {
                     "application/json": components["schemas"]["Diagnostics"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getMessagingStatus: {
@@ -9060,6 +9364,9 @@ export interface operations {
                     "application/json": components["schemas"]["MessagingStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getEngineStatus: {
@@ -9080,6 +9387,9 @@ export interface operations {
                     "application/json": components["schemas"]["EngineStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getEgressStatus: {
@@ -9100,6 +9410,9 @@ export interface operations {
                     "application/json": components["schemas"]["EgressStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     login: {
@@ -9125,7 +9438,7 @@ export interface operations {
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSignInProviders: {
@@ -9166,8 +9479,9 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     finishOidcSignIn: {
@@ -9190,11 +9504,16 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
         };
     };
     listIdentityProviders: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9210,6 +9529,10 @@ export interface operations {
                     "application/json": components["schemas"]["IdentityProviderList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createIdentityProvider: {
@@ -9218,6 +9541,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -9237,8 +9562,12 @@ export interface operations {
                     "application/json": components["schemas"]["IdentityProvider"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateIdentityProvider: {
@@ -9268,8 +9597,12 @@ export interface operations {
                     "application/json": components["schemas"]["IdentityProvider"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteIdentityProvider: {
@@ -9293,8 +9626,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setIdentityProviderState: {
@@ -9324,7 +9661,11 @@ export interface operations {
                     "application/json": components["schemas"]["IdentityProvider"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     testIdentityProvider: {
@@ -9350,12 +9691,20 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listGroupMappings: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 providerId: components["schemas"]["Id"];
@@ -9373,7 +9722,11 @@ export interface operations {
                     "application/json": components["schemas"]["GroupMappingList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createGroupMapping: {
@@ -9382,6 +9735,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 providerId: components["schemas"]["Id"];
@@ -9403,9 +9758,13 @@ export interface operations {
                     "application/json": components["schemas"]["GroupMapping"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteGroupMapping: {
@@ -9430,7 +9789,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getIdentitySettings: {
@@ -9451,6 +9814,9 @@ export interface operations {
                     "application/json": components["schemas"]["IdentitySettings"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setIdentitySettings: {
@@ -9478,11 +9844,19 @@ export interface operations {
                     "application/json": components["schemas"]["IdentitySettings"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listServiceIdentities: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9498,6 +9872,10 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceIdentityList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createServiceIdentity: {
@@ -9506,6 +9884,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -9525,8 +9905,12 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceIdentity"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateServiceIdentity: {
@@ -9556,8 +9940,12 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceIdentity"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setServiceIdentityState: {
@@ -9585,7 +9973,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createServiceToken: {
@@ -9594,6 +9986,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 identityId: components["schemas"]["Id"];
@@ -9616,7 +10010,11 @@ export interface operations {
                 };
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeServiceToken: {
@@ -9641,7 +10039,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     logout: {
@@ -9663,6 +10065,10 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getSession: {
@@ -9683,7 +10089,9 @@ export interface operations {
                     "application/json": components["schemas"]["SessionStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     extendSession: {
@@ -9707,7 +10115,11 @@ export interface operations {
                     "application/json": components["schemas"]["SessionStatus"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getSetupStatus: {
@@ -9773,6 +10185,8 @@ export interface operations {
                     "application/json": components["schemas"]["HelpTopicList"];
                 };
             };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getHelpTopic: {
@@ -9795,7 +10209,10 @@ export interface operations {
                     "application/json": components["schemas"]["HelpTopic"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getMe: {
@@ -9816,6 +10233,8 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateMe: {
@@ -9841,8 +10260,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     changePassword: {
@@ -9869,9 +10291,10 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listApiTokens: {
@@ -9895,6 +10318,9 @@ export interface operations {
                     "application/json": components["schemas"]["ApiTokenList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createApiToken: {
@@ -9903,6 +10329,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -9922,6 +10350,11 @@ export interface operations {
                     "application/json": components["schemas"]["ApiTokenIssued"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeApiToken: {
@@ -9945,14 +10378,19 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listTeams: {
         parameters: {
             query?: {
                 cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
             };
             header?: never;
             path?: never;
@@ -9969,6 +10407,9 @@ export interface operations {
                     "application/json": components["schemas"]["TeamList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createTeam: {
@@ -9977,6 +10418,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -9996,7 +10439,11 @@ export interface operations {
                     "application/json": components["schemas"]["Team"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteTeam: {
@@ -10020,8 +10467,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateTeam: {
@@ -10051,13 +10502,21 @@ export interface operations {
                     "application/json": components["schemas"]["Team"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listUsers: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10073,6 +10532,10 @@ export interface operations {
                     "application/json": components["schemas"]["UserList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createUser: {
@@ -10081,6 +10544,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -10101,7 +10566,10 @@ export interface operations {
                 };
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateUser: {
@@ -10129,8 +10597,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setUserState: {
@@ -10158,8 +10630,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     resetUserPassword: {
@@ -10185,8 +10661,12 @@ export interface operations {
                     "application/json": components["schemas"]["TemporaryPassword"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createRoleBinding: {
@@ -10195,6 +10675,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -10214,8 +10696,12 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBinding"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     changeRoleBinding: {
@@ -10245,8 +10731,12 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBinding"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeRoleBinding: {
@@ -10270,8 +10760,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listProjects: {
@@ -10296,6 +10790,10 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createProject: {
@@ -10304,6 +10802,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -10323,6 +10823,11 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getProject: {
@@ -10345,7 +10850,11 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateProject: {
@@ -10375,10 +10884,13 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     archiveProject: {
@@ -10408,10 +10920,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectArchive"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     restoreProject: {
@@ -10437,9 +10952,12 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     purgeProject: {
@@ -10466,10 +10984,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectPurge"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             428: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
             500: components["responses"]["Problem"];
         };
     };
@@ -10477,6 +10998,7 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path: {
@@ -10495,7 +11017,11 @@ export interface operations {
                     "application/json": components["schemas"]["ImageSummaryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getProjectDeploymentFiles: {
@@ -10521,8 +11047,12 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectDeploymentFiles"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadProjectDeploymentCompose: {
@@ -10548,8 +11078,12 @@ export interface operations {
                     "application/yaml": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadProjectDeploymentHelmChart: {
@@ -10575,8 +11109,12 @@ export interface operations {
                     "application/gzip": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getProjectBuildMethods: {
@@ -10599,7 +11137,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildMethodOptions"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createUploadSession: {
@@ -10608,6 +11150,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -10629,9 +11173,13 @@ export interface operations {
                     "application/json": components["schemas"]["UploadSession"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getUploadPolicy: {
@@ -10652,6 +11200,9 @@ export interface operations {
                     "application/json": components["schemas"]["UploadPolicy"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getUploadSession: {
@@ -10674,7 +11225,11 @@ export interface operations {
                     "application/json": components["schemas"]["UploadSession"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     putUploadChunk: {
@@ -10703,10 +11258,14 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             413: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     commitUpload: {
@@ -10733,9 +11292,13 @@ export interface operations {
                     "application/json": components["schemas"]["Operation"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSnapshots: {
@@ -10761,6 +11324,11 @@ export interface operations {
                     "application/json": components["schemas"]["SourceSnapshotList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getSnapshot: {
@@ -10783,7 +11351,11 @@ export interface operations {
                     "application/json": components["schemas"]["SourceSnapshot"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteSnapshot: {
@@ -10807,14 +11379,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSnapshotDiscoveries: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 snapshotId: components["parameters"]["SnapshotId"];
@@ -10832,7 +11411,11 @@ export interface operations {
                     "application/json": components["schemas"]["DiscoveryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     startDiscovery: {
@@ -10858,7 +11441,11 @@ export interface operations {
                     "application/json": components["schemas"]["Operation"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSpecSuggestions: {
@@ -10918,7 +11505,11 @@ export interface operations {
                     "application/json": components["schemas"]["Discovery"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSpecs: {
@@ -10946,6 +11537,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSpecList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSpec: {
@@ -10954,6 +11550,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -10976,6 +11574,9 @@ export interface operations {
                     "application/json": components["schemas"]["SpecRevision"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             /** @description A spec with this metadata.name exists in the project (code spec_exists); add a revision to it instead */
             409: {
@@ -10987,6 +11588,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     validateSpecDocument: {
@@ -11014,6 +11616,10 @@ export interface operations {
                     "application/json": components["schemas"]["SpecValidation"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getWizardDraft: {
@@ -11036,7 +11642,11 @@ export interface operations {
                     "application/json": components["schemas"]["WizardDraft"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     saveWizardDraft: {
@@ -11066,9 +11676,13 @@ export interface operations {
                     "application/json": components["schemas"]["WizardDraft"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteWizardDraft: {
@@ -11092,6 +11706,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getSpec: {
@@ -11114,7 +11733,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSpec"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSpecRevisions: {
@@ -11140,6 +11763,11 @@ export interface operations {
                     "application/json": components["schemas"]["SpecRevisionList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSpecRevision: {
@@ -11148,6 +11776,8 @@ export interface operations {
             header: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
                 "If-Match": components["parameters"]["IfMatch"];
             };
             path: {
@@ -11171,8 +11801,14 @@ export interface operations {
                     "application/json": components["schemas"]["SpecRevision"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             412: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getSpecRevision: {
@@ -11197,7 +11833,11 @@ export interface operations {
                     "application/json": components["schemas"]["SpecRevision"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     checkAdmission: {
@@ -11228,12 +11868,20 @@ export interface operations {
                     "application/json": components["schemas"]["AdmissionReport"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRecipes: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11249,6 +11897,10 @@ export interface operations {
                     "application/json": components["schemas"]["RecipeList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setRecipeStatus: {
@@ -11277,7 +11929,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRecipeRuntimes: {
@@ -11301,7 +11957,11 @@ export interface operations {
                     "application/json": components["schemas"]["RecipeRuntimes"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createRecipeRuntime: {
@@ -11310,6 +11970,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 recipeId: string;
@@ -11332,9 +11994,13 @@ export interface operations {
                     "application/json": components["schemas"]["OrganizationRuntime"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     decideRecipeRuntime: {
@@ -11366,8 +12032,12 @@ export interface operations {
                     "application/json": components["schemas"]["OrganizationRuntime"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setShippedRuntimeStatus: {
@@ -11397,13 +12067,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listCustomRecipes: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11419,6 +12097,10 @@ export interface operations {
                     "application/json": components["schemas"]["CustomRecipeList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createCustomRecipe: {
@@ -11427,6 +12109,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -11446,8 +12130,12 @@ export interface operations {
                     "application/json": components["schemas"]["CustomRecipe"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     previewCustomRecipe: {
@@ -11475,6 +12163,10 @@ export interface operations {
                     "application/json": components["schemas"]["CustomRecipePreview"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     replaceCustomRecipeDraft: {
@@ -11505,9 +12197,13 @@ export interface operations {
                     "application/json": components["schemas"]["CustomRecipe"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     discardCustomRecipeDraft: {
@@ -11532,8 +12228,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     decideCustomRecipe: {
@@ -11564,8 +12264,12 @@ export interface operations {
                     "application/json": components["schemas"]["CustomRecipe"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listBuilds: {
@@ -11591,6 +12295,10 @@ export interface operations {
                     "application/json": components["schemas"]["BuildRunList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createBuild: {
@@ -11619,8 +12327,12 @@ export interface operations {
                     "application/json": components["schemas"]["BuildRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getBuild: {
@@ -11663,7 +12375,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     cancelBuild: {
@@ -11690,6 +12406,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteBuild: {
@@ -11721,9 +12442,12 @@ export interface operations {
                     "application/json": components["schemas"]["BuildDeletion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listBuildAttempts: {
@@ -11746,6 +12470,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildAttemptList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     streamBuildEvents: {
@@ -11770,6 +12499,11 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getBuildLogs: {
@@ -11792,6 +12526,11 @@ export interface operations {
                     "text/plain": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getBuildRailpack: {
@@ -11814,7 +12553,11 @@ export interface operations {
                     "application/json": components["schemas"]["RailpackLineage"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getBuildBuildpacks: {
@@ -11837,7 +12580,11 @@ export interface operations {
                     "application/json": components["schemas"]["BuildpacksLineage"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getBuildBuildpacksSbom: {
@@ -11862,7 +12609,11 @@ export interface operations {
                     "application/x-tar": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getArtifact: {
@@ -11885,6 +12636,11 @@ export interface operations {
                     "application/json": components["schemas"]["ImageArtifact"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadArtifact: {
@@ -11907,9 +12663,12 @@ export interface operations {
                     "application/x-tar": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getDeploymentFiles: {
@@ -11935,8 +12694,12 @@ export interface operations {
                     "application/json": components["schemas"]["DeploymentFiles"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadDeploymentCompose: {
@@ -11962,8 +12725,12 @@ export interface operations {
                     "application/yaml": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadDeploymentHelmChart: {
@@ -11989,13 +12756,21 @@ export interface operations {
                     "application/gzip": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listValidations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 artifactId: components["parameters"]["ArtifactId"];
@@ -12013,6 +12788,11 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationRunList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     startRevalidation: {
@@ -12039,6 +12819,11 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getValidation: {
@@ -12061,11 +12846,20 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listProjectDestinations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -12083,6 +12877,11 @@ export interface operations {
                     "application/json": components["schemas"]["DestinationSummaryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listPublications: {
@@ -12106,6 +12905,10 @@ export interface operations {
                     "application/json": components["schemas"]["PublicationList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestPublication: {
@@ -12134,7 +12937,10 @@ export interface operations {
                     "application/json": components["schemas"]["Publication"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getPublication: {
@@ -12157,6 +12963,11 @@ export interface operations {
                     "application/json": components["schemas"]["Publication"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setPublicationDeprecation: {
@@ -12186,8 +12997,12 @@ export interface operations {
                     "application/json": components["schemas"]["Publication"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     retirePublication: {
@@ -12219,8 +13034,12 @@ export interface operations {
                     "application/json": components["schemas"]["Publication"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listApprovals: {
@@ -12245,6 +13064,10 @@ export interface operations {
                     "application/json": components["schemas"]["ApprovalList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     decideApproval: {
@@ -12275,6 +13098,11 @@ export interface operations {
                     "application/json": components["schemas"]["Approval"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     withdrawApproval: {
@@ -12304,10 +13132,13 @@ export interface operations {
                     "application/json": components["schemas"]["Approval"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listWorkers: {
@@ -12331,6 +13162,10 @@ export interface operations {
                     "application/json": components["schemas"]["WorkerList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getWorker: {
@@ -12390,6 +13225,11 @@ export interface operations {
                     "application/json": components["schemas"]["Worker"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     runWorkerSelfTest: {
@@ -12415,8 +13255,12 @@ export interface operations {
                     "application/json": components["schemas"]["Operation"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     assignWorkerPool: {
@@ -12446,8 +13290,12 @@ export interface operations {
                     "application/json": components["schemas"]["Worker"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     applyWorkerAction: {
@@ -12478,11 +13326,20 @@ export interface operations {
                     "application/json": components["schemas"]["Worker"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listWorkerPools: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12498,6 +13355,10 @@ export interface operations {
                     "application/json": components["schemas"]["WorkerPoolList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createWorkerPool: {
@@ -12506,6 +13367,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -12525,6 +13388,11 @@ export interface operations {
                     "application/json": components["schemas"]["WorkerPool"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteWorkerPool: {
@@ -12548,8 +13416,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateWorkerPool: {
@@ -12579,14 +13451,22 @@ export interface operations {
                     "application/json": components["schemas"]["WorkerPool"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listLocations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12602,6 +13482,10 @@ export interface operations {
                     "application/json": components["schemas"]["LocationList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createLocation: {
@@ -12610,6 +13494,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -12629,8 +13515,12 @@ export interface operations {
                     "application/json": components["schemas"]["Location"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteLocation: {
@@ -12654,8 +13544,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getProjectLocations: {
@@ -12678,7 +13572,11 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectLocations"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setProjectLocations: {
@@ -12708,8 +13606,12 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectLocations"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getTrustBundle: {
@@ -12730,6 +13632,9 @@ export interface operations {
                     "application/json": components["schemas"]["TrustBundleStatus"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     startCaRotation: {
@@ -12757,7 +13662,11 @@ export interface operations {
                     "application/json": components["schemas"]["TrustBundleStatus"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     switchCaRotation: {
@@ -12781,12 +13690,20 @@ export interface operations {
                     "application/json": components["schemas"]["TrustBundleStatus"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSigningKeys: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12802,6 +13719,10 @@ export interface operations {
                     "application/json": components["schemas"]["SigningKeyList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSigningKey: {
@@ -12810,6 +13731,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -12833,8 +13756,12 @@ export interface operations {
                     "application/json": components["schemas"]["SigningKey"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     retireSigningKey: {
@@ -12858,12 +13785,19 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listOutputExceptions: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["schemas"]["Id"];
@@ -12881,7 +13815,11 @@ export interface operations {
                     "application/json": components["schemas"]["OutputExceptionList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestOutputException: {
@@ -12890,6 +13828,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 projectId: components["schemas"]["Id"];
@@ -12911,13 +13851,21 @@ export interface operations {
                     "application/json": components["schemas"]["OutputException"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listPendingOutputExceptions: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12933,6 +13881,10 @@ export interface operations {
                     "application/json": components["schemas"]["OutputExceptionList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     decideOutputException: {
@@ -12962,8 +13914,12 @@ export interface operations {
                     "application/json": components["schemas"]["OutputException"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeOutputException: {
@@ -12993,13 +13949,20 @@ export interface operations {
                     "application/json": components["schemas"]["OutputException"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listArtifactQuarantines: {
         parameters: {
             query?: {
                 active?: boolean;
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path?: never;
@@ -13016,6 +13979,10 @@ export interface operations {
                     "application/json": components["schemas"]["ArtifactQuarantineList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     releaseArtifactQuarantine: {
@@ -13047,7 +14014,11 @@ export interface operations {
                     "application/json": components["schemas"]["ArtifactQuarantine"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setPoolApproval: {
@@ -13077,7 +14048,11 @@ export interface operations {
                     "application/json": components["schemas"]["WorkerPool"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     runPoolSelfTest: {
@@ -13105,13 +14080,21 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listEnrollmentTokens: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -13127,6 +14110,10 @@ export interface operations {
                     "application/json": components["schemas"]["EnrollmentTokenList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createEnrollmentToken: {
@@ -13155,6 +14142,10 @@ export interface operations {
                     "application/json": components["schemas"]["EnrollmentTokenIssued"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeEnrollmentToken: {
@@ -13178,13 +14169,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSecretProviders: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -13200,6 +14199,10 @@ export interface operations {
                     "application/json": components["schemas"]["SecretProviderList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSecretProvider: {
@@ -13208,6 +14211,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -13227,11 +14232,20 @@ export interface operations {
                     "application/json": components["schemas"]["SecretProvider"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listAllowedSecrets: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -13247,6 +14261,10 @@ export interface operations {
                     "application/json": components["schemas"]["AllowedSecretList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     allowSecret: {
@@ -13255,6 +14273,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -13274,6 +14294,11 @@ export interface operations {
                     "application/json": components["schemas"]["AllowedSecret"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateAllowedSecret: {
@@ -13303,8 +14328,12 @@ export interface operations {
                     "application/json": components["schemas"]["AllowedSecret"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     removeAllowedSecret: {
@@ -13328,6 +14357,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateSecretProvider: {
@@ -13357,6 +14391,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretProvider"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteSecretProvider: {
@@ -13380,13 +14419,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
             /** @description Grants, bindings or signing keys use or used the store */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
             };
+            429: components["responses"]["RateLimited"];
         };
     };
     testSecretProvider: {
@@ -13412,11 +14458,20 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listLocalSecrets: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 providerId: components["schemas"]["Id"];
@@ -13434,6 +14489,11 @@ export interface operations {
                     "application/json": components["schemas"]["LocalSecretList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     storeLocalSecret: {
@@ -13464,6 +14524,11 @@ export interface operations {
                     "application/json": components["schemas"]["LocalSecret"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteLocalSecret: {
@@ -13488,13 +14553,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSecretBindings: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13512,6 +14585,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretBindingList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSecretBinding: {
@@ -13542,11 +14620,20 @@ export interface operations {
                     "application/json": components["schemas"]["SecretBinding"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listSecretGrants: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13564,6 +14651,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrantList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createSecretGrant: {
@@ -13594,6 +14686,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrant"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateSecretGrant: {
@@ -13624,8 +14721,12 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrantUpdated"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeSecretGrant: {
@@ -13655,7 +14756,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     refreshSecretGrantKeys: {
@@ -13682,6 +14787,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrant"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     bindSecretGrant: {
@@ -13712,6 +14822,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretGrantUse"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     applySecretBindingAction: {
@@ -13742,6 +14857,11 @@ export interface operations {
                     "application/json": components["schemas"]["SecretBinding"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestSecretBinding: {
@@ -13772,11 +14892,20 @@ export interface operations {
                     "application/json": components["schemas"]["Approval"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRepositoryRequests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13794,7 +14923,11 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRequestList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestRepository: {
@@ -13824,13 +14957,21 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRequest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listBaseImageRequests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13848,7 +14989,11 @@ export interface operations {
                     "application/json": components["schemas"]["BaseImageRequestList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestBaseImage: {
@@ -13878,14 +15023,22 @@ export interface operations {
                     "application/json": components["schemas"]["BaseImageRequest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listEgressAccessRequests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13903,7 +15056,11 @@ export interface operations {
                     "application/json": components["schemas"]["EgressAccessRequestList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     requestEgressAccess: {
@@ -13933,14 +15090,22 @@ export interface operations {
                     "application/json": components["schemas"]["EgressAccessRequest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listEgressAllowances: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -13958,7 +15123,11 @@ export interface operations {
                     "application/json": components["schemas"]["EgressAllowanceList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokeEgressAllowance: {
@@ -13988,10 +15157,13 @@ export interface operations {
                     "application/json": components["schemas"]["EgressAllowance"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listGrantedDestinations: {
@@ -14012,7 +15184,9 @@ export interface operations {
                     "application/json": components["schemas"]["GrantedDestinations"];
                 };
             };
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     promoteEgressDestination: {
@@ -14040,10 +15214,13 @@ export interface operations {
                     "application/json": components["schemas"]["EgressPromotion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     fulfillRepositoryRequest: {
@@ -14073,15 +15250,22 @@ export interface operations {
                     "application/json": components["schemas"]["Approval"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRegistries: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14097,6 +15281,10 @@ export interface operations {
                     "application/json": components["schemas"]["RegistryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createRegistry: {
@@ -14105,6 +15293,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14124,6 +15314,11 @@ export interface operations {
                     "application/json": components["schemas"]["Registry"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateRegistry: {
@@ -14153,9 +15348,13 @@ export interface operations {
                     "application/json": components["schemas"]["Registry"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteRegistry: {
@@ -14179,8 +15378,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listEcrRepositories: {
@@ -14205,8 +15408,12 @@ export interface operations {
                     "application/json": components["schemas"]["EcrRepositoryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createEcrRepository: {
@@ -14215,6 +15422,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path: {
                 registryId: components["schemas"]["Id"];
@@ -14243,13 +15452,22 @@ export interface operations {
                     "application/json": components["schemas"]["EcrRepository"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listRegistryCredentialProfiles: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14265,6 +15483,10 @@ export interface operations {
                     "application/json": components["schemas"]["RegistryCredentialProfileList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createRegistryCredentialProfile: {
@@ -14273,6 +15495,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14292,6 +15516,11 @@ export interface operations {
                     "application/json": components["schemas"]["RegistryCredentialProfile"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateRegistryCredentialProfile: {
@@ -14321,9 +15550,13 @@ export interface operations {
                     "application/json": components["schemas"]["RegistryCredentialProfile"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteRegistryCredentialProfile: {
@@ -14347,8 +15580,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     testRegistryCredentialProfile: {
@@ -14374,11 +15611,20 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listDestinations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14394,6 +15640,10 @@ export interface operations {
                     "application/json": components["schemas"]["DestinationList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createDestination: {
@@ -14402,6 +15652,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14421,6 +15673,11 @@ export interface operations {
                     "application/json": components["schemas"]["Destination"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateDestination: {
@@ -14450,9 +15707,13 @@ export interface operations {
                     "application/json": components["schemas"]["Destination"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteDestination: {
@@ -14476,18 +15737,29 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
             /** @description Publications or repository requests refer to it */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
             };
+            429: components["responses"]["RateLimited"];
         };
     };
     listImageSources: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14503,6 +15775,10 @@ export interface operations {
                     "application/json": components["schemas"]["ImageSourceList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createImageSource: {
@@ -14511,6 +15787,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14530,8 +15808,12 @@ export interface operations {
                     "application/json": components["schemas"]["ImageSource"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateImageSource: {
@@ -14561,9 +15843,13 @@ export interface operations {
                     "application/json": components["schemas"]["ImageSource"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteImageSource: {
@@ -14587,8 +15873,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setImageSourceState: {
@@ -14616,7 +15906,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getImageSourceMirrorConfig: {
@@ -14643,7 +15937,11 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     rotateMirrorTokenKey: {
@@ -14652,6 +15950,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14669,11 +15969,20 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listPolicies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14689,6 +15998,10 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     replacePolicy: {
@@ -14721,10 +16034,14 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             412: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
             428: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     dryRunPolicy: {
@@ -14754,8 +16071,12 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyImpact"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listNotifications: {
@@ -14763,6 +16084,7 @@ export interface operations {
             query?: {
                 unread?: boolean;
                 limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path?: never;
@@ -14779,6 +16101,9 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     markNotificationsRead: {
@@ -14806,11 +16131,19 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listNotificationChannels: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14826,6 +16159,10 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationChannelList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createNotificationChannel: {
@@ -14834,6 +16171,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -14853,8 +16192,12 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationChannelCreated"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateNotificationChannel: {
@@ -14884,9 +16227,13 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationChannel"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteNotificationChannel: {
@@ -14910,8 +16257,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setNotificationChannelState: {
@@ -14939,7 +16290,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     testNotificationChannel: {
@@ -14965,12 +16320,20 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listNotificationRules: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14986,6 +16349,10 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationRuleList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createNotificationRule: {
@@ -14994,6 +16361,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -15013,7 +16382,12 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationRule"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateNotificationRule: {
@@ -15043,8 +16417,12 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationRule"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteNotificationRule: {
@@ -15068,7 +16446,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listNotificationDeliveries: {
@@ -15076,6 +16458,7 @@ export interface operations {
             query?: {
                 state?: "pending" | "delivered" | "dead";
                 limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path?: never;
@@ -15092,6 +16475,10 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationDeliveryList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     retryNotificationDelivery: {
@@ -15115,13 +16502,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listPipelines: {
         parameters: {
             query?: {
                 projectId?: components["schemas"]["Id"];
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path?: never;
@@ -15138,7 +16532,11 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createPipeline: {
@@ -15147,6 +16545,8 @@ export interface operations {
             header?: {
                 /** @description Required with session cookies; ignored with bearer tokens. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
             };
             path?: never;
             cookie?: never;
@@ -15166,8 +16566,12 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineCreated"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getPipeline: {
@@ -15190,7 +16594,11 @@ export interface operations {
                     "application/json": components["schemas"]["Pipeline"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deletePipeline: {
@@ -15214,9 +16622,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updatePipeline: {
@@ -15246,10 +16657,13 @@ export interface operations {
                     "application/json": components["schemas"]["Pipeline"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setPipelineState: {
@@ -15277,7 +16691,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     rotatePipelineHookSecret: {
@@ -15303,13 +16721,18 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineSecretIssued"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listPipelineRuns: {
         parameters: {
             query?: {
                 limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path: {
@@ -15328,7 +16751,11 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineRunList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     startPipelineRun: {
@@ -15359,9 +16786,12 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineRun"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     receivePipelineHook: {
@@ -15388,8 +16818,10 @@ export interface operations {
                     "application/json": components["schemas"]["PipelineHookResult"];
                 };
             };
+            400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
-            429: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listAuditEvents: {
@@ -15425,6 +16857,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     exportAuditEvents: {
@@ -15458,6 +16893,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getAuditPolicy: {
@@ -15478,6 +16916,9 @@ export interface operations {
                     "application/json": components["schemas"]["AuditPolicy"];
                 };
             };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     setAuditPolicy: {
@@ -15505,8 +16946,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuditPolicy"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getOperation: {
@@ -15529,7 +16973,10 @@ export interface operations {
                     "application/json": components["schemas"]["Operation"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listKubeProviders: {
@@ -15552,13 +16999,18 @@ export interface operations {
                     "application/json": components["schemas"]["KubeProviderList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listKubeConversions: {
         parameters: {
             query?: {
                 limit?: components["parameters"]["Limit"];
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path: {
@@ -15577,7 +17029,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     createKubeConversion: {
@@ -15608,9 +17064,12 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getKubeConversion: {
@@ -15633,7 +17092,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     deleteKubeConversion: {
@@ -15657,9 +17120,12 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     updateKubeConversion: {
@@ -15689,15 +17155,22 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listKubeConversionRuns: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 conversionId: components["parameters"]["ConversionId"];
@@ -15715,7 +17188,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionRunList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     rerunKubeConversion: {
@@ -15746,15 +17223,22 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversion"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listKubeConversionRevisions: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page size. Without limit or cursor this list returns every item, as it did before it was paginated. */
+                limit?: components["parameters"]["LimitOrAll"];
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
                 conversionId: components["parameters"]["ConversionId"];
@@ -15772,7 +17256,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionRevisionList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getKubeConversionRevision: {
@@ -15796,7 +17284,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionRevision"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getKubeConversionFindings: {
@@ -15820,7 +17312,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionFindingList"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getKubeConversionFile: {
@@ -15846,7 +17342,11 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionFile"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     editKubeConversionFile: {
@@ -15879,9 +17379,12 @@ export interface operations {
                     "application/json": components["schemas"]["KubeConversionRevision"];
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
     downloadKubeConversionBundle: {
@@ -15905,7 +17408,11 @@ export interface operations {
                     "application/zip": string;
                 };
             };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
         };
     };
 }

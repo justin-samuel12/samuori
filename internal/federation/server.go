@@ -251,6 +251,7 @@ func (e *Executor) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if active >= g.MaxActive {
+		w.Header().Set("Retry-After", "60")
 		http.Error(w, fmt.Sprintf("the grant allows %d active builds; try again later", g.MaxActive), http.StatusTooManyRequests)
 		return
 	}

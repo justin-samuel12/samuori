@@ -87,10 +87,15 @@ func (a *API) ListPipelines(w http.ResponseWriter, r *http.Request, params apige
 		return
 	}
 	out := struct {
-		Items []pipelineView `json:"items"`
+		Items      []pipelineView `json:"items"`
+		NextCursor *string        `json:"nextCursor,omitempty"`
 	}{Items: []pipelineView{}}
 	for _, p := range list {
 		out.Items = append(out.Items, toPipeline(p))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x pipelineView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -182,15 +187,17 @@ func (a *API) RotatePipelineHookSecret(w http.ResponseWriter, r *http.Request, i
 }
 
 func (a *API) ListPipelineRuns(w http.ResponseWriter, r *http.Request, id apigen.Id, params apigen.ListPipelineRunsParams) {
-	limit, _ := pageParams(params.Limit, nil)
-	list, err := a.pipelines.Runs(r.Context(), principal(r), id, limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.pipelines.Runs(r.Context(), principal(r), id, cursor, limit+1)
 	if err != nil {
 		a.pipelineError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []pipelineRunView `json:"items"`
+		Items      []pipelineRunView `json:"items"`
+		NextCursor *string           `json:"nextCursor,omitempty"`
 	}{Items: []pipelineRunView{}}
+	list, out.NextCursor = pageLimited(list, limit, func(x pipelines.Run) string { return x.ID })
 	for _, x := range list {
 		out.Items = append(out.Items, toPipelineRun(x))
 	}

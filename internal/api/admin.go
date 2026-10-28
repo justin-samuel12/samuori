@@ -24,7 +24,7 @@ func (a *API) CreateTeam(w http.ResponseWriter, r *http.Request, _ apigen.Create
 	writeJSON(w, http.StatusCreated, apigen.Team{Id: t.ID, Name: t.Name})
 }
 
-func (a *API) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListUsers(w http.ResponseWriter, r *http.Request, params apigen.ListUsersParams) {
 	users, err := a.tenancy.ListUsers(r.Context(), principal(r))
 	if err != nil {
 		a.tenancyError(w, r, err)
@@ -33,6 +33,10 @@ func (a *API) ListUsers(w http.ResponseWriter, r *http.Request) {
 	out := apigen.UserList{Items: make([]apigen.User, 0, len(users))}
 	for _, u := range users {
 		out.Items = append(out.Items, toUser(u))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.User) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

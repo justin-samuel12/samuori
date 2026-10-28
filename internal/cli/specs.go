@@ -23,7 +23,7 @@ func (e *env) discovery(ctx context.Context, snapshot string, rerun bool, timeou
 	defer cancel()
 	id := ""
 	if !rerun {
-		list, err := e.api.ListSnapshotDiscoveriesWithResponse(ctx, snapshot)
+		list, err := e.api.ListSnapshotDiscoveriesWithResponse(ctx, snapshot, nil)
 		if err != nil {
 			return nil, err
 		}

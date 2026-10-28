@@ -305,7 +305,7 @@ func TestConversionAuthorization(t *testing.T) {
 	if _, err := e.svc.Edit(e.ctx, e.other, c.ID, 0, "manifests/x.yml", "kind: ConfigMap", ""); !errors.Is(err, ErrNotFound) {
 		t.Errorf("other team edit: %v", err)
 	}
-	if _, err := e.svc.List(e.ctx, e.other, e.project, 10); !errors.Is(err, ErrNotFound) {
+	if _, err := e.svc.List(e.ctx, e.other, e.project, "", 10); !errors.Is(err, ErrNotFound) {
 		t.Errorf("other team list: %v", err)
 	}
 	if _, err := e.svc.Create(e.ctx, e.other, e.project, CreateRequest{Name: "x", Provider: "kompose", Input: Input{Kind: InputCompose, SnapshotID: e.snap, ComposePath: "compose.yml"}}, ids.New(), ""); !errors.Is(err, ErrNotFound) {

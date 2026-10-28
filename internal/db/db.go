@@ -244,3 +244,10 @@ func sslRootCert(dsn string) string {
 	}
 	return u.Query().Get("sslrootcert")
 }
+
+// NewestBefore is a keyset condition for a list ordered by created_at DESC, id DESC: the rows after the row whose id
+// is the cursor. Bind the cursor three times; an unknown cursor matches nothing.
+func NewestBefore(alias, table string) string {
+	at := "(SELECT created_at FROM " + table + " WHERE id = ?)"
+	return "(" + alias + ".created_at < " + at + " OR (" + alias + ".created_at = " + at + " AND " + alias + ".id < ?))"
+}

@@ -43,7 +43,7 @@ func (a *API) joinProblem(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func (a *API) ListControllerJoinTokens(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListControllerJoinTokens(w http.ResponseWriter, r *http.Request, params apigen.ListControllerJoinTokensParams) {
 	if a.clusterJoin.Tokens == nil {
 		writeJSON(w, http.StatusOK, apigen.ControllerJoinTokenList{Items: []apigen.ControllerJoinToken{}})
 		return
@@ -56,6 +56,10 @@ func (a *API) ListControllerJoinTokens(w http.ResponseWriter, r *http.Request) {
 	out := apigen.ControllerJoinTokenList{Items: []apigen.ControllerJoinToken{}}
 	for _, t := range list {
 		out.Items = append(out.Items, toJoinToken(t))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.ControllerJoinToken) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -188,7 +192,7 @@ func toJoinRequest(q clusterjoin.Request) apigen.ControllerJoinRequest {
 	return out
 }
 
-func (a *API) ListControllerJoinRequests(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListControllerJoinRequests(w http.ResponseWriter, r *http.Request, params apigen.ListControllerJoinRequestsParams) {
 	out := apigen.ControllerJoinRequestList{Items: []apigen.ControllerJoinRequest{}}
 	if a.clusterJoin.Tokens == nil {
 		writeJSON(w, http.StatusOK, out)
@@ -201,6 +205,10 @@ func (a *API) ListControllerJoinRequests(w http.ResponseWriter, r *http.Request)
 	}
 	for _, q := range list {
 		out.Items = append(out.Items, toJoinRequest(q))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.ControllerJoinRequest) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

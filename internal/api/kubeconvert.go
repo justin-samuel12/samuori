@@ -117,18 +117,17 @@ func (a *API) ListKubeProviders(w http.ResponseWriter, r *http.Request, projectI
 }
 
 func (a *API) ListKubeConversions(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListKubeConversionsParams) {
-	limit := 50
-	if params.Limit != nil {
-		limit = *params.Limit
-	}
-	list, err := a.kube.List(r.Context(), principal(r), projectID, limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.kube.List(r.Context(), principal(r), projectID, cursor, limit+1)
 	if err != nil {
 		a.kubeError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []kubeConversionView `json:"items"`
+		Items      []kubeConversionView `json:"items"`
+		NextCursor *string              `json:"nextCursor,omitempty"`
 	}{Items: []kubeConversionView{}}
+	list, out.NextCursor = pageLimited(list, limit, func(x kubeconvert.Conversion) string { return x.ID })
 	for _, c := range list {
 		out.Items = append(out.Items, toKubeConversion(c))
 	}
@@ -157,17 +156,22 @@ func (a *API) GetKubeConversion(w http.ResponseWriter, r *http.Request, id apige
 	writeJSON(w, http.StatusOK, toKubeConversion(c))
 }
 
-func (a *API) ListKubeConversionRuns(w http.ResponseWriter, r *http.Request, id apigen.ConversionId) {
+func (a *API) ListKubeConversionRuns(w http.ResponseWriter, r *http.Request, id apigen.ConversionId, params apigen.ListKubeConversionRunsParams) {
 	runs, err := a.kube.Runs(r.Context(), principal(r), id)
 	if err != nil {
 		a.kubeError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []kubeRunView `json:"items"`
+		Items      []kubeRunView `json:"items"`
+		NextCursor *string       `json:"nextCursor,omitempty"`
 	}{Items: []kubeRunView{}}
 	for _, run := range runs {
 		out.Items = append(out.Items, toKubeRun(run))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x kubeRunView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -188,7 +192,7 @@ func (a *API) RerunKubeConversion(w http.ResponseWriter, r *http.Request, id api
 	writeJSON(w, http.StatusAccepted, toKubeConversion(c))
 }
 
-func (a *API) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request, id apigen.ConversionId) {
+func (a *API) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request, id apigen.ConversionId, params apigen.ListKubeConversionRevisionsParams) {
 	revs, err := a.kube.Revisions(r.Context(), principal(r), id)
 	if err != nil {
 		a.kubeError(w, r, err)
@@ -205,10 +209,15 @@ func (a *API) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request
 		CreatedAt time.Time `json:"createdAt"`
 	}
 	out := struct {
-		Items []item `json:"items"`
+		Items      []item  `json:"items"`
+		NextCursor *string `json:"nextCursor,omitempty"`
 	}{Items: []item{}}
 	for _, rev := range revs {
 		out.Items = append(out.Items, item{Number: rev.Number, RunID: rev.RunID, Parent: rev.Parent, Origin: rev.Origin, Errors: rev.Errors, Findings: len(rev.Findings), CreatedBy: rev.CreatedBy, CreatedAt: rev.CreatedAt})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x item) string { return strconv.Itoa(x.Number) }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

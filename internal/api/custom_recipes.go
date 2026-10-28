@@ -40,7 +40,7 @@ func (a *API) customRecipeError(w http.ResponseWriter, r *http.Request, err erro
 	}
 }
 
-func (a *API) ListCustomRecipes(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListCustomRecipes(w http.ResponseWriter, r *http.Request, params apigen.ListCustomRecipesParams) {
 	list, err := a.recipes.ListCustom(r.Context(), principal(r))
 	if err != nil {
 		a.customRecipeError(w, r, err)
@@ -49,6 +49,10 @@ func (a *API) ListCustomRecipes(w http.ResponseWriter, r *http.Request) {
 	out := apigen.CustomRecipeList{Items: []apigen.CustomRecipe{}}
 	for _, v := range list {
 		out.Items = append(out.Items, toCustomRecipe(v))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.CustomRecipe) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

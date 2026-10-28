@@ -106,7 +106,7 @@ func (a *API) selfUpdateProblem(w http.ResponseWriter, r *http.Request, err erro
 	}
 }
 
-func (a *API) ListReleases(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListReleases(w http.ResponseWriter, r *http.Request, params apigen.ListReleasesParams) {
 	list, err := a.selfUpdate.Releases(r.Context(), principal(r))
 	if err != nil {
 		a.selfUpdateProblem(w, r, err)
@@ -115,6 +115,10 @@ func (a *API) ListReleases(w http.ResponseWriter, r *http.Request) {
 	out := apigen.ReleaseList{SignersConfigured: a.selfUpdate.SignersConfigured(), Items: []apigen.Release{}}
 	for _, rel := range list {
 		out.Items = append(out.Items, toRelease(rel))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Release) string { return x.Version }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -218,18 +222,17 @@ func (a *API) StartRollout(w http.ResponseWriter, r *http.Request, _ apigen.Star
 }
 
 func (a *API) ListRollouts(w http.ResponseWriter, r *http.Request, params apigen.ListRolloutsParams) {
-	limit := 20
-	if params.Limit != nil && *params.Limit >= 1 && *params.Limit <= 100 {
-		limit = *params.Limit
-	}
-	list, err := a.selfUpdate.List(r.Context(), principal(r), limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.selfUpdate.List(r.Context(), principal(r), cursor, limit+1)
 	if err != nil {
 		a.selfUpdateProblem(w, r, err)
 		return
 	}
 	out := struct {
-		Items []rolloutOut `json:"items"`
+		Items      []rolloutOut `json:"items"`
+		NextCursor *string      `json:"nextCursor,omitempty"`
 	}{Items: []rolloutOut{}}
+	list, out.NextCursor = pageLimited(list, limit, func(x selfupdate.Rollout) string { return x.ID })
 	for _, ro := range list {
 		out.Items = append(out.Items, a.toRollout(r, ro))
 	}

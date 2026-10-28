@@ -466,7 +466,8 @@ func (e *env) pipelines(ctx context.Context, args []string) error {
 		if _, err := parse(fs, args); err != nil {
 			return err
 		}
-		params := &apiclient.ListPipelinesParams{}
+		limit := 200
+		params := &apiclient.ListPipelinesParams{Limit: &limit}
 		if *project != "" {
 			id, err := e.projectID(ctx, *project)
 			if err != nil {
@@ -474,21 +475,29 @@ func (e *env) pipelines(ctx context.Context, args []string) error {
 			}
 			params.ProjectId = &id
 		}
-		r, err := e.api.ListPipelinesWithResponse(ctx, params)
-		if err != nil {
-			return err
-		}
-		if r.JSON200 == nil {
-			return problem("listing pipelines", r.StatusCode(), r.Body)
+		var items []apiclient.Pipeline
+		for {
+			r, err := e.api.ListPipelinesWithResponse(ctx, params)
+			if err != nil {
+				return err
+			}
+			if r.JSON200 == nil {
+				return problem("listing pipelines", r.StatusCode(), r.Body)
+			}
+			items = append(items, r.JSON200.Items...)
+			if r.JSON200.NextCursor == nil || *r.JSON200.NextCursor == "" {
+				break
+			}
+			params.Cursor = r.JSON200.NextCursor
 		}
 		var rows [][]string
-		for _, p := range r.JSON200.Items {
+		for _, p := range items {
 			state := "enabled"
 			if !p.Enabled {
 				state = "disabled"
 			}
 			rows = append(rows, []string{p.Id, p.Name, p.RepoUrl, strings.Join(p.Refs, ","), state})
 		}
-		return e.table(r.JSON200.Items, []string{"ID", "NAME", "REPOSITORY", "REFS", "STATE"}, rows)
+		return e.table(items, []string{"ID", "NAME", "REPOSITORY", "REFS", "STATE"}, rows)
 	}}, "pipelines")
 }

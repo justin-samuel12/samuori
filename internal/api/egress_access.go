@@ -86,32 +86,42 @@ func toEgressAllowance(x approvals.EgressAllowance) egressAllowanceView {
 	return v
 }
 
-func (a *API) ListEgressAccessRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListEgressAccessRequests(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListEgressAccessRequestsParams) {
 	list, err := a.approvals.EgressAccessRequests(r.Context(), principal(r), operationRoles(r.Context()), projectID)
 	if err != nil {
 		a.approvalError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []egressRequestView `json:"items"`
+		Items      []egressRequestView `json:"items"`
+		NextCursor *string             `json:"nextCursor,omitempty"`
 	}{Items: []egressRequestView{}}
 	for _, x := range list {
 		out.Items = append(out.Items, a.toEgressRequest(r, x))
 	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x egressRequestView) string { return x.ID }); !ok {
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (a *API) ListEgressAllowances(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListEgressAllowances(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListEgressAllowancesParams) {
 	list, err := a.approvals.EgressAllowances(r.Context(), principal(r), operationRoles(r.Context()), projectID)
 	if err != nil {
 		a.approvalError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []egressAllowanceView `json:"items"`
+		Items      []egressAllowanceView `json:"items"`
+		NextCursor *string               `json:"nextCursor,omitempty"`
 	}{Items: []egressAllowanceView{}}
 	for _, x := range list {
 		out.Items = append(out.Items, toEgressAllowance(x))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x egressAllowanceView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

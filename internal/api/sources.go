@@ -125,6 +125,7 @@ func (a *API) sourcesError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, sources.ErrState):
 		apigen.WriteProblem(w, http.StatusConflict, "upload_closed", "this upload is no longer accepting changes; start a new upload")
 	case errors.Is(err, sources.ErrQuota):
+		w.Header().Set("Retry-After", "60")
 		apigen.WriteProblem(w, http.StatusTooManyRequests, "too_many_uploads", "finish or let your other uploads expire before starting another")
 	case errors.Is(err, storage.ErrCorrupt):
 		a.log.Error("snapshot integrity failure", "id", requestID(w), "path", r.URL.Path)

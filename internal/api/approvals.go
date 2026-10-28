@@ -6,6 +6,7 @@ import (
 
 	"samuori.invalid/samuori/internal/api/apigen"
 	"samuori.invalid/samuori/internal/approvals"
+	"samuori.invalid/samuori/internal/publication"
 	"samuori.invalid/samuori/internal/tenancy"
 )
 
@@ -143,8 +144,8 @@ func (a *API) UpdateProject(w http.ResponseWriter, r *http.Request, id apigen.Pr
 }
 
 func (a *API) ListProjectImages(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListProjectImagesParams) {
-	limit, _ := pageParams(params.Limit, nil)
-	list, err := a.publications.Images(r.Context(), principal(r), operationRoles(r.Context()), projectID, limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.publications.Images(r.Context(), principal(r), operationRoles(r.Context()), projectID, cursor, limit+1)
 	if err != nil {
 		a.publicationError(w, r, err)
 		return
@@ -169,8 +170,10 @@ func (a *API) ListProjectImages(w http.ResponseWriter, r *http.Request, projectI
 		Publications []pubView        `json:"publications"`
 	}
 	out := struct {
-		Items []imageView `json:"items"`
+		Items      []imageView `json:"items"`
+		NextCursor *string     `json:"nextCursor,omitempty"`
 	}{Items: []imageView{}}
+	list, out.NextCursor = pageLimited(list, limit, func(x publication.Image) string { return x.ArtifactID })
 	for _, img := range list {
 		v := imageView{ArtifactID: img.ArtifactID, Digest: img.Digest, BuildRunID: img.BuildRunID, Version: img.Version, App: img.App, SizeBytes: img.Size, CreatedAt: img.CreatedAt, Publications: []pubView{}}
 		if img.Validation != nil {

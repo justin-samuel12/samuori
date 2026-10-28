@@ -49,7 +49,7 @@ func toGrantUse(u secrets.GrantUse) apigen.SecretGrantUse {
 }
 
 // ListSecretGrants shows the project's granted keys to its members. Provider references stay with administrators.
-func (a *API) ListSecretGrants(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId) {
+func (a *API) ListSecretGrants(w http.ResponseWriter, r *http.Request, projectID apigen.ProjectId, params apigen.ListSecretGrantsParams) {
 	p := principal(r)
 	grants, uses, err := a.secrets.ListGrants(r.Context(), p, projectID)
 	if err != nil {
@@ -62,6 +62,10 @@ func (a *API) ListSecretGrants(w http.ResponseWriter, r *http.Request, projectID
 	}
 	for _, u := range uses {
 		out.Uses = append(out.Uses, toGrantUse(u))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.SecretGrant) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -239,7 +243,7 @@ func toAllowedSecret(x secrets.AllowedSecret) apigen.AllowedSecret {
 	return out
 }
 
-func (a *API) ListAllowedSecrets(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListAllowedSecrets(w http.ResponseWriter, r *http.Request, params apigen.ListAllowedSecretsParams) {
 	list, err := a.secrets.AllowedSecrets(r.Context(), principal(r))
 	if err != nil {
 		a.secretsError(w, r, err)
@@ -248,6 +252,10 @@ func (a *API) ListAllowedSecrets(w http.ResponseWriter, r *http.Request) {
 	out := apigen.AllowedSecretList{Items: []apigen.AllowedSecret{}}
 	for _, x := range list {
 		out.Items = append(out.Items, toAllowedSecret(x))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.AllowedSecret) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

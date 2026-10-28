@@ -42,17 +42,22 @@ type discoveryView struct {
 	CreatedAt   time.Time                      `json:"createdAt"`
 }
 
-func (a *API) ListSnapshotDiscoveries(w http.ResponseWriter, r *http.Request, snapshotID apigen.SnapshotId) {
+func (a *API) ListSnapshotDiscoveries(w http.ResponseWriter, r *http.Request, snapshotID apigen.SnapshotId, params apigen.ListSnapshotDiscoveriesParams) {
 	list, err := a.discovery.List(r.Context(), principal(r), operationRoles(r.Context()), snapshotID)
 	if err != nil {
 		a.sourcesError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []discoveryView `json:"items"`
+		Items      []discoveryView `json:"items"`
+		NextCursor *string         `json:"nextCursor,omitempty"`
 	}{Items: make([]discoveryView, 0, len(list))}
 	for _, d := range list {
 		out.Items = append(out.Items, view(d, requestID(w), false))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x discoveryView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

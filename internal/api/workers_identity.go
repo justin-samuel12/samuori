@@ -107,17 +107,22 @@ type locationView struct {
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
-func (a *API) ListLocations(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListLocations(w http.ResponseWriter, r *http.Request, params apigen.ListLocationsParams) {
 	list, err := a.workers.Locations(r.Context(), principal(r).OrgID)
 	if err != nil {
 		a.internalError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []locationView `json:"items"`
+		Items      []locationView `json:"items"`
+		NextCursor *string        `json:"nextCursor,omitempty"`
 	}{Items: []locationView{}}
 	for _, l := range list {
 		out.Items = append(out.Items, locationView{l.Name, l.Description, l.CreatedAt})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x locationView) string { return x.Name }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -308,10 +313,15 @@ func (a *API) ListArtifactQuarantines(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 	out := struct {
-		Items []quarantineView `json:"items"`
+		Items      []quarantineView `json:"items"`
+		NextCursor *string          `json:"nextCursor,omitempty"`
 	}{Items: []quarantineView{}}
 	for _, q := range list {
 		out.Items = append(out.Items, toQuarantine(q))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x quarantineView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

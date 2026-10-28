@@ -36,13 +36,17 @@ curl -H "Authorization: Bearer $SAMUORI_TOKEN" https://samuori.example.com/api/v
 ## Requests and responses
 
 - **Errors** are JSON `Problem` objects: `code` (stable, for matching), `message` (for people), optional `details`
-  and `requestId`. Quote the request ID to an operator; the same ID is in the `X-Request-ID` response header.
-- **Pagination.** Lists that can grow take `limit` (1–200, default 50) and `cursor`, and return `nextCursor` while
-  more remain; pass it back as `cursor`. Not every list is paginated yet; those return all items.
+  and `requestId`. Every operation documents its error statuses with this schema. Quote the request ID to an operator; the same ID is in the `X-Request-ID` response header.
+- **Pagination.** Lists take `limit` (1–200, default 50) and `cursor`, and return `nextCursor` while more remain; pass
+  it back as `cursor`. Items keep a stable order (newest first for histories). Lists that were complete before
+  2026-10-28 still return every item when called without `limit` or `cursor`. A few bounded lists, such as help
+  topics and provider catalogues, are not paginated. An unknown cursor answers `400 invalid_cursor`.
 - **Changes to specs and policies** need `If-Match` with the `ETag` you read (412 on a mismatch).
 - **Idempotency.** Starting builds, cancelling them, publishing, deciding approvals, committing uploads and a few
   other state changes require an `Idempotency-Key` header; repeating a request with the same key does not repeat the
-  change. The contract marks each one.
+  change. Every other create accepts the header as optional: a repeat with the same key answers
+  `409 idempotent_replay` with the first resource's ID in `details`, and a key whose request was refused with a 4xx
+  can be reused. Keys belong to the caller and the operation. The contract marks each one.
 - **Asynchronous work** answers `202` with an `Operation` to poll at `/operations/{id}`.
 - **Body size.** Request bodies are limited to 1 MiB unless an operation declares another limit
   (`x-samuori-max-body-bytes`), such as upload chunks and update bundles.

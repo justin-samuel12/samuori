@@ -224,35 +224,51 @@ func (e *env) requests(ctx context.Context, args []string) error {
 			Created  string `json:"createdAt"`
 		}
 		var items []row
-		repo, err := e.api.ListRepositoryRequestsWithResponse(ctx, id)
-		if err != nil {
-			return err
+		limit := 200
+		for cursor := (*string)(nil); ; {
+			repo, err := e.api.ListRepositoryRequestsWithResponse(ctx, id, &apiclient.ListRepositoryRequestsParams{Limit: &limit, Cursor: cursor})
+			if err != nil {
+				return err
+			}
+			if repo.JSON200 == nil {
+				return problem("listing repository requests", repo.StatusCode(), repo.Body)
+			}
+			for _, r := range repo.JSON200.Items {
+				items = append(items, row{"repository", r.ApprovalId, r.Id, string(r.State), r.Repository, when(r.CreatedAt)})
+			}
+			if cursor = repo.JSON200.NextCursor; cursor == nil || *cursor == "" {
+				break
+			}
 		}
-		if repo.JSON200 == nil {
-			return problem("listing repository requests", repo.StatusCode(), repo.Body)
+		for cursor := (*string)(nil); ; {
+			base, err := e.api.ListBaseImageRequestsWithResponse(ctx, id, &apiclient.ListBaseImageRequestsParams{Limit: &limit, Cursor: cursor})
+			if err != nil {
+				return err
+			}
+			if base.JSON200 == nil {
+				return problem("listing base-image requests", base.StatusCode(), base.Body)
+			}
+			for _, r := range base.JSON200.Items {
+				items = append(items, row{"base-image", r.ApprovalId, r.Id, string(r.State), r.Repository, when(r.CreatedAt)})
+			}
+			if cursor = base.JSON200.NextCursor; cursor == nil || *cursor == "" {
+				break
+			}
 		}
-		for _, r := range repo.JSON200.Items {
-			items = append(items, row{"repository", r.ApprovalId, r.Id, string(r.State), r.Repository, when(r.CreatedAt)})
-		}
-		base, err := e.api.ListBaseImageRequestsWithResponse(ctx, id)
-		if err != nil {
-			return err
-		}
-		if base.JSON200 == nil {
-			return problem("listing base-image requests", base.StatusCode(), base.Body)
-		}
-		for _, r := range base.JSON200.Items {
-			items = append(items, row{"base-image", r.ApprovalId, r.Id, string(r.State), r.Repository, when(r.CreatedAt)})
-		}
-		egress, err := e.api.ListEgressAccessRequestsWithResponse(ctx, id)
-		if err != nil {
-			return err
-		}
-		if egress.JSON200 == nil {
-			return problem("listing egress requests", egress.StatusCode(), egress.Body)
-		}
-		for _, r := range egress.JSON200.Items {
-			items = append(items, row{"egress", r.ApprovalId, r.Id, string(r.State), strings.Join(append(append([]string{}, r.Presets...), r.Destinations...), ","), when(r.CreatedAt)})
+		for cursor := (*string)(nil); ; {
+			egress, err := e.api.ListEgressAccessRequestsWithResponse(ctx, id, &apiclient.ListEgressAccessRequestsParams{Limit: &limit, Cursor: cursor})
+			if err != nil {
+				return err
+			}
+			if egress.JSON200 == nil {
+				return problem("listing egress requests", egress.StatusCode(), egress.Body)
+			}
+			for _, r := range egress.JSON200.Items {
+				items = append(items, row{"egress", r.ApprovalId, r.Id, string(r.State), strings.Join(append(append([]string{}, r.Presets...), r.Destinations...), ","), when(r.CreatedAt)})
+			}
+			if cursor = egress.JSON200.NextCursor; cursor == nil || *cursor == "" {
+				break
+			}
 		}
 		var rows [][]string
 		for _, r := range items {

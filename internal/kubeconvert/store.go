@@ -662,14 +662,18 @@ func (s *Service) Get(ctx context.Context, p authz.Principal, id string) (Conver
 	return s.load(ctx, p, id, false)
 }
 
-func (s *Service) List(ctx context.Context, p authz.Principal, projectID string, limit int) ([]Conversion, error) {
+func (s *Service) List(ctx context.Context, p authz.Principal, projectID, before string, limit int) ([]Conversion, error) {
 	if _, err := s.project(ctx, p, projectID, false); err != nil {
 		return nil, err
 	}
-	if limit <= 0 || limit > 200 {
+	if limit <= 0 || limit > 201 {
 		limit = 50
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(selectConversion+` WHERE project_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT ?`), projectID, p.OrgID, limit)
+	q, args := selectConversion+` WHERE project_id = ? AND org_id = ?`, []any{projectID, p.OrgID}
+	if before != "" {
+		q, args = q+` AND `+db.NewestBefore("kube_conversions", "kube_conversions"), append(args, before, before, before)
+	}
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC, id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}

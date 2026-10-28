@@ -9,7 +9,7 @@ type Unimplemented struct{}
 
 var _ ServerInterface = Unimplemented{}
 
-func (Unimplemented) ListAllowedSecrets(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListAllowedSecrets(w http.ResponseWriter, r *http.Request, _ ListAllowedSecretsParams) {
 	NotImplemented(w, r, "ListAllowedSecrets")
 }
 
@@ -69,7 +69,7 @@ func (Unimplemented) DownloadArtifact(w http.ResponseWriter, r *http.Request, _ 
 	NotImplemented(w, r, "DownloadArtifact")
 }
 
-func (Unimplemented) ListValidations(w http.ResponseWriter, r *http.Request, _ ArtifactId) {
+func (Unimplemented) ListValidations(w http.ResponseWriter, r *http.Request, _ ArtifactId, _ ListValidationsParams) {
 	NotImplemented(w, r, "ListValidations")
 }
 
@@ -119,7 +119,7 @@ func (Unimplemented) ExtendSession(w http.ResponseWriter, r *http.Request, _ Ext
 	NotImplemented(w, r, "ExtendSession")
 }
 
-func (Unimplemented) ListBuildCaches(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListBuildCaches(w http.ResponseWriter, r *http.Request, _ ListBuildCachesParams) {
 	NotImplemented(w, r, "ListBuildCaches")
 }
 
@@ -183,7 +183,7 @@ func (Unimplemented) PollClusterJoin(w http.ResponseWriter, r *http.Request, _ I
 	NotImplemented(w, r, "PollClusterJoin")
 }
 
-func (Unimplemented) ListCustomRecipes(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListCustomRecipes(w http.ResponseWriter, r *http.Request, _ ListCustomRecipesParams) {
 	NotImplemented(w, r, "ListCustomRecipes")
 }
 
@@ -207,7 +207,7 @@ func (Unimplemented) DecideCustomRecipe(w http.ResponseWriter, r *http.Request, 
 	NotImplemented(w, r, "DecideCustomRecipe")
 }
 
-func (Unimplemented) ListDestinations(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListDestinations(w http.ResponseWriter, r *http.Request, _ ListDestinationsParams) {
 	NotImplemented(w, r, "ListDestinations")
 }
 
@@ -239,7 +239,7 @@ func (Unimplemented) RevokeEgressAllowance(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "RevokeEgressAllowance")
 }
 
-func (Unimplemented) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request, _ ListEnrollmentTokensParams) {
 	NotImplemented(w, r, "ListEnrollmentTokens")
 }
 
@@ -251,7 +251,7 @@ func (Unimplemented) RevokeEnrollmentToken(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "RevokeEnrollmentToken")
 }
 
-func (Unimplemented) ListFederationDelegations(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListFederationDelegations(w http.ResponseWriter, r *http.Request, _ ListFederationDelegationsParams) {
 	NotImplemented(w, r, "ListFederationDelegations")
 }
 
@@ -259,7 +259,7 @@ func (Unimplemented) AbandonFederationDelegation(w http.ResponseWriter, r *http.
 	NotImplemented(w, r, "AbandonFederationDelegation")
 }
 
-func (Unimplemented) ListFederationGrants(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListFederationGrants(w http.ResponseWriter, r *http.Request, _ ListFederationGrantsParams) {
 	NotImplemented(w, r, "ListFederationGrants")
 }
 
@@ -275,7 +275,7 @@ func (Unimplemented) GetFederationIdentity(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "GetFederationIdentity")
 }
 
-func (Unimplemented) ListFederationPeers(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListFederationPeers(w http.ResponseWriter, r *http.Request, _ ListFederationPeersParams) {
 	NotImplemented(w, r, "ListFederationPeers")
 }
 
@@ -287,7 +287,7 @@ func (Unimplemented) DisableFederationPeer(w http.ResponseWriter, r *http.Reques
 	NotImplemented(w, r, "DisableFederationPeer")
 }
 
-func (Unimplemented) ListFederationRoutes(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListFederationRoutes(w http.ResponseWriter, r *http.Request, _ ListFederationRoutesParams) {
 	NotImplemented(w, r, "ListFederationRoutes")
 }
 
@@ -311,7 +311,7 @@ func (Unimplemented) ReceivePipelineHook(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "ReceivePipelineHook")
 }
 
-func (Unimplemented) ListIdentityProviders(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListIdentityProviders(w http.ResponseWriter, r *http.Request, _ ListIdentityProvidersParams) {
 	NotImplemented(w, r, "ListIdentityProviders")
 }
 
@@ -327,7 +327,7 @@ func (Unimplemented) UpdateIdentityProvider(w http.ResponseWriter, r *http.Reque
 	NotImplemented(w, r, "UpdateIdentityProvider")
 }
 
-func (Unimplemented) ListGroupMappings(w http.ResponseWriter, r *http.Request, _ Id) {
+func (Unimplemented) ListGroupMappings(w http.ResponseWriter, r *http.Request, _ Id, _ ListGroupMappingsParams) {
 	NotImplemented(w, r, "ListGroupMappings")
 }
 
@@ -355,7 +355,7 @@ func (Unimplemented) SetIdentitySettings(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "SetIdentitySettings")
 }
 
-func (Unimplemented) ListImageSources(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListImageSources(w http.ResponseWriter, r *http.Request, _ ListImageSourcesParams) {
 	NotImplemented(w, r, "ListImageSources")
 }
 
@@ -391,7 +391,7 @@ func (Unimplemented) UpdateKubeConversion(w http.ResponseWriter, r *http.Request
 	NotImplemented(w, r, "UpdateKubeConversion")
 }
 
-func (Unimplemented) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request, _ ConversionId) {
+func (Unimplemented) ListKubeConversionRevisions(w http.ResponseWriter, r *http.Request, _ ConversionId, _ ListKubeConversionRevisionsParams) {
 	NotImplemented(w, r, "ListKubeConversionRevisions")
 }
 
@@ -415,7 +415,7 @@ func (Unimplemented) GetKubeConversionFindings(w http.ResponseWriter, r *http.Re
 	NotImplemented(w, r, "GetKubeConversionFindings")
 }
 
-func (Unimplemented) ListKubeConversionRuns(w http.ResponseWriter, r *http.Request, _ ConversionId) {
+func (Unimplemented) ListKubeConversionRuns(w http.ResponseWriter, r *http.Request, _ ConversionId, _ ListKubeConversionRunsParams) {
 	NotImplemented(w, r, "ListKubeConversionRuns")
 }
 
@@ -423,7 +423,7 @@ func (Unimplemented) RerunKubeConversion(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "RerunKubeConversion")
 }
 
-func (Unimplemented) ListLocations(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListLocations(w http.ResponseWriter, r *http.Request, _ ListLocationsParams) {
 	NotImplemented(w, r, "ListLocations")
 }
 
@@ -461,7 +461,7 @@ func (Unimplemented) RotateMirrorTokenKey(w http.ResponseWriter, r *http.Request
 	NotImplemented(w, r, "RotateMirrorTokenKey")
 }
 
-func (Unimplemented) ListNotificationChannels(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListNotificationChannels(w http.ResponseWriter, r *http.Request, _ ListNotificationChannelsParams) {
 	NotImplemented(w, r, "ListNotificationChannels")
 }
 
@@ -493,7 +493,7 @@ func (Unimplemented) RetryNotificationDelivery(w http.ResponseWriter, r *http.Re
 	NotImplemented(w, r, "RetryNotificationDelivery")
 }
 
-func (Unimplemented) ListNotificationRules(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListNotificationRules(w http.ResponseWriter, r *http.Request, _ ListNotificationRulesParams) {
 	NotImplemented(w, r, "ListNotificationRules")
 }
 
@@ -529,7 +529,7 @@ func (Unimplemented) GetOperation(w http.ResponseWriter, r *http.Request, _ Id) 
 	NotImplemented(w, r, "GetOperation")
 }
 
-func (Unimplemented) ListPendingOutputExceptions(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListPendingOutputExceptions(w http.ResponseWriter, r *http.Request, _ ListPendingOutputExceptionsParams) {
 	NotImplemented(w, r, "ListPendingOutputExceptions")
 }
 
@@ -589,7 +589,7 @@ func (Unimplemented) SwitchCaRotation(w http.ResponseWriter, r *http.Request, _ 
 	NotImplemented(w, r, "SwitchCaRotation")
 }
 
-func (Unimplemented) ListPolicies(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListPolicies(w http.ResponseWriter, r *http.Request, _ ListPoliciesParams) {
 	NotImplemented(w, r, "ListPolicies")
 }
 
@@ -621,7 +621,7 @@ func (Unimplemented) ArchiveProject(w http.ResponseWriter, r *http.Request, _ Pr
 	NotImplemented(w, r, "ArchiveProject")
 }
 
-func (Unimplemented) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListBaseImageRequests(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListBaseImageRequestsParams) {
 	NotImplemented(w, r, "ListBaseImageRequests")
 }
 
@@ -645,11 +645,11 @@ func (Unimplemented) DownloadProjectDeploymentHelmChart(w http.ResponseWriter, r
 	NotImplemented(w, r, "DownloadProjectDeploymentHelmChart")
 }
 
-func (Unimplemented) ListProjectDestinations(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListProjectDestinations(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListProjectDestinationsParams) {
 	NotImplemented(w, r, "ListProjectDestinations")
 }
 
-func (Unimplemented) ListEgressAccessRequests(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListEgressAccessRequests(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListEgressAccessRequestsParams) {
 	NotImplemented(w, r, "ListEgressAccessRequests")
 }
 
@@ -657,7 +657,7 @@ func (Unimplemented) RequestEgressAccess(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "RequestEgressAccess")
 }
 
-func (Unimplemented) ListEgressAllowances(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListEgressAllowances(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListEgressAllowancesParams) {
 	NotImplemented(w, r, "ListEgressAllowances")
 }
 
@@ -685,7 +685,7 @@ func (Unimplemented) SetProjectLocations(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "SetProjectLocations")
 }
 
-func (Unimplemented) ListOutputExceptions(w http.ResponseWriter, r *http.Request, _ Id) {
+func (Unimplemented) ListOutputExceptions(w http.ResponseWriter, r *http.Request, _ Id, _ ListOutputExceptionsParams) {
 	NotImplemented(w, r, "ListOutputExceptions")
 }
 
@@ -697,7 +697,7 @@ func (Unimplemented) PurgeProject(w http.ResponseWriter, r *http.Request, _ Proj
 	NotImplemented(w, r, "PurgeProject")
 }
 
-func (Unimplemented) ListRepositoryRequests(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListRepositoryRequests(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListRepositoryRequestsParams) {
 	NotImplemented(w, r, "ListRepositoryRequests")
 }
 
@@ -709,7 +709,7 @@ func (Unimplemented) RestoreProject(w http.ResponseWriter, r *http.Request, _ Pr
 	NotImplemented(w, r, "RestoreProject")
 }
 
-func (Unimplemented) ListSecretBindings(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListSecretBindings(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListSecretBindingsParams) {
 	NotImplemented(w, r, "ListSecretBindings")
 }
 
@@ -721,7 +721,7 @@ func (Unimplemented) BindSecretGrant(w http.ResponseWriter, r *http.Request, _ P
 	NotImplemented(w, r, "BindSecretGrant")
 }
 
-func (Unimplemented) ListSecretGrants(w http.ResponseWriter, r *http.Request, _ ProjectId) {
+func (Unimplemented) ListSecretGrants(w http.ResponseWriter, r *http.Request, _ ProjectId, _ ListSecretGrantsParams) {
 	NotImplemented(w, r, "ListSecretGrants")
 }
 
@@ -801,7 +801,7 @@ func (Unimplemented) RetirePublication(w http.ResponseWriter, r *http.Request, _
 	NotImplemented(w, r, "RetirePublication")
 }
 
-func (Unimplemented) ListRecipes(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListRecipes(w http.ResponseWriter, r *http.Request, _ ListRecipesParams) {
 	NotImplemented(w, r, "ListRecipes")
 }
 
@@ -825,7 +825,7 @@ func (Unimplemented) SetRecipeStatus(w http.ResponseWriter, r *http.Request, _ s
 	NotImplemented(w, r, "SetRecipeStatus")
 }
 
-func (Unimplemented) ListRegistries(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListRegistries(w http.ResponseWriter, r *http.Request, _ ListRegistriesParams) {
 	NotImplemented(w, r, "ListRegistries")
 }
 
@@ -849,7 +849,7 @@ func (Unimplemented) CreateEcrRepository(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "CreateEcrRepository")
 }
 
-func (Unimplemented) ListRegistryCredentialProfiles(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListRegistryCredentialProfiles(w http.ResponseWriter, r *http.Request, _ ListRegistryCredentialProfilesParams) {
 	NotImplemented(w, r, "ListRegistryCredentialProfiles")
 }
 
@@ -885,7 +885,7 @@ func (Unimplemented) ApplySecretBindingAction(w http.ResponseWriter, r *http.Req
 	NotImplemented(w, r, "ApplySecretBindingAction")
 }
 
-func (Unimplemented) ListSecretProviders(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListSecretProviders(w http.ResponseWriter, r *http.Request, _ ListSecretProvidersParams) {
 	NotImplemented(w, r, "ListSecretProviders")
 }
 
@@ -901,7 +901,7 @@ func (Unimplemented) UpdateSecretProvider(w http.ResponseWriter, r *http.Request
 	NotImplemented(w, r, "UpdateSecretProvider")
 }
 
-func (Unimplemented) ListLocalSecrets(w http.ResponseWriter, r *http.Request, _ Id) {
+func (Unimplemented) ListLocalSecrets(w http.ResponseWriter, r *http.Request, _ Id, _ ListLocalSecretsParams) {
 	NotImplemented(w, r, "ListLocalSecrets")
 }
 
@@ -917,7 +917,7 @@ func (Unimplemented) TestSecretProvider(w http.ResponseWriter, r *http.Request, 
 	NotImplemented(w, r, "TestSecretProvider")
 }
 
-func (Unimplemented) ListServiceIdentities(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListServiceIdentities(w http.ResponseWriter, r *http.Request, _ ListServiceIdentitiesParams) {
 	NotImplemented(w, r, "ListServiceIdentities")
 }
 
@@ -949,7 +949,7 @@ func (Unimplemented) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	NotImplemented(w, r, "GetSetupStatus")
 }
 
-func (Unimplemented) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListSigningKeys(w http.ResponseWriter, r *http.Request, _ ListSigningKeysParams) {
 	NotImplemented(w, r, "ListSigningKeys")
 }
 
@@ -969,7 +969,7 @@ func (Unimplemented) GetSnapshot(w http.ResponseWriter, r *http.Request, _ Snaps
 	NotImplemented(w, r, "GetSnapshot")
 }
 
-func (Unimplemented) ListSnapshotDiscoveries(w http.ResponseWriter, r *http.Request, _ SnapshotId) {
+func (Unimplemented) ListSnapshotDiscoveries(w http.ResponseWriter, r *http.Request, _ SnapshotId, _ ListSnapshotDiscoveriesParams) {
 	NotImplemented(w, r, "ListSnapshotDiscoveries")
 }
 
@@ -1005,7 +1005,7 @@ func (Unimplemented) CheckAdmission(w http.ResponseWriter, r *http.Request, _ Sp
 	NotImplemented(w, r, "CheckAdmission")
 }
 
-func (Unimplemented) ListBackups(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListBackups(w http.ResponseWriter, r *http.Request, _ ListBackupsParams) {
 	NotImplemented(w, r, "ListBackups")
 }
 
@@ -1025,7 +1025,7 @@ func (Unimplemented) RemoveController(w http.ResponseWriter, r *http.Request, _ 
 	NotImplemented(w, r, "RemoveController")
 }
 
-func (Unimplemented) ListControllerJoinRequests(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListControllerJoinRequests(w http.ResponseWriter, r *http.Request, _ ListControllerJoinRequestsParams) {
 	NotImplemented(w, r, "ListControllerJoinRequests")
 }
 
@@ -1033,7 +1033,7 @@ func (Unimplemented) DecideControllerJoinRequest(w http.ResponseWriter, r *http.
 	NotImplemented(w, r, "DecideControllerJoinRequest")
 }
 
-func (Unimplemented) ListControllerJoinTokens(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListControllerJoinTokens(w http.ResponseWriter, r *http.Request, _ ListControllerJoinTokensParams) {
 	NotImplemented(w, r, "ListControllerJoinTokens")
 }
 
@@ -1077,7 +1077,7 @@ func (Unimplemented) GetMessagingStatus(w http.ResponseWriter, r *http.Request) 
 	NotImplemented(w, r, "GetMessagingStatus")
 }
 
-func (Unimplemented) ListReleases(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListReleases(w http.ResponseWriter, r *http.Request, _ ListReleasesParams) {
 	NotImplemented(w, r, "ListReleases")
 }
 
@@ -1173,7 +1173,7 @@ func (Unimplemented) CommitUpload(w http.ResponseWriter, r *http.Request, _ Uplo
 	NotImplemented(w, r, "CommitUpload")
 }
 
-func (Unimplemented) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListUsers(w http.ResponseWriter, r *http.Request, _ ListUsersParams) {
 	NotImplemented(w, r, "ListUsers")
 }
 
@@ -1197,7 +1197,7 @@ func (Unimplemented) GetValidation(w http.ResponseWriter, r *http.Request, _ Id)
 	NotImplemented(w, r, "GetValidation")
 }
 
-func (Unimplemented) ListWorkerPools(w http.ResponseWriter, r *http.Request) {
+func (Unimplemented) ListWorkerPools(w http.ResponseWriter, r *http.Request, _ ListWorkerPoolsParams) {
 	NotImplemented(w, r, "ListWorkerPools")
 }
 

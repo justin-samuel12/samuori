@@ -19,6 +19,7 @@ import (
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/builds"
+	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
 	"samuori.invalid/samuori/internal/sources"
 	"samuori.invalid/samuori/internal/tenancy"
@@ -242,11 +243,15 @@ func (s *Service) run(ctx context.Context, id string) (Run, error) {
 }
 
 // Runs lists a pipeline's runs, newest first.
-func (s *Service) Runs(ctx context.Context, actor authz.Principal, id string, limit int) ([]Run, error) {
+func (s *Service) Runs(ctx context.Context, actor authz.Principal, id, before string, limit int) ([]Run, error) {
 	if _, err := s.Get(ctx, actor, id); err != nil {
 		return nil, err
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT `+runCols+` FROM pipeline_runs WHERE pipeline_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`), id, limit)
+	q, args := `SELECT `+runCols+` FROM pipeline_runs WHERE pipeline_id = ?`, []any{id}
+	if before != "" {
+		q, args = q+` AND `+db.NewestBefore("pipeline_runs", "pipeline_runs"), append(args, before, before, before)
+	}
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC, id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}

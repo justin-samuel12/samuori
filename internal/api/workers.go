@@ -50,7 +50,7 @@ func toPool(p workers.Pool, list []workers.Worker) poolView {
 	return v
 }
 
-func (a *API) ListWorkerPools(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListWorkerPools(w http.ResponseWriter, r *http.Request, params apigen.ListWorkerPoolsParams) {
 	pools, err := a.workers.ListPools(r.Context(), principal(r).OrgID)
 	if err != nil {
 		a.internalError(w, r, err)
@@ -62,10 +62,15 @@ func (a *API) ListWorkerPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := struct {
-		Items []poolView `json:"items"`
+		Items      []poolView `json:"items"`
+		NextCursor *string    `json:"nextCursor,omitempty"`
 	}{Items: make([]poolView, 0, len(pools))}
 	for _, p := range pools {
 		out.Items = append(out.Items, toPool(p, list))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x poolView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -127,7 +132,7 @@ func (a *API) CreateEnrollmentToken(w http.ResponseWriter, r *http.Request, para
 	writeJSON(w, http.StatusCreated, out)
 }
 
-func (a *API) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request, params apigen.ListEnrollmentTokensParams) {
 	list, err := a.workers.ListTokens(r.Context(), principal(r), 100)
 	if err != nil {
 		a.workersError(w, r, err)
@@ -137,6 +142,10 @@ func (a *API) ListEnrollmentTokens(w http.ResponseWriter, r *http.Request) {
 	for _, t := range list {
 		out.Items = append(out.Items, apigen.EnrollmentToken{Id: t.ID, PoolId: opt(t.PoolID), CreatedBy: t.CreatedBy, CreatedAt: t.CreatedAt, ExpiresAt: t.ExpiresAt,
 			UsedAt: t.UsedAt, WorkerId: opt(t.WorkerID), WorkerName: opt(t.WorkerName), RevokedAt: t.RevokedAt, RevokedBy: opt(t.RevokedBy)})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.EnrollmentToken) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

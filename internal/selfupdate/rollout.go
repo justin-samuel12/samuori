@@ -10,6 +10,7 @@ import (
 
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/authz"
+	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/ids"
 	workerv1 "samuori.invalid/samuori/internal/workerproto/workerv1"
 	"samuori.invalid/samuori/internal/workers"
@@ -232,11 +233,15 @@ func (s *Service) control(ctx context.Context, actor authz.Principal, id, action
 }
 
 // List returns the newest rollouts first, without their steps.
-func (s *Service) List(ctx context.Context, actor authz.Principal, limit int) ([]Rollout, error) {
+func (s *Service) List(ctx context.Context, actor authz.Principal, before string, limit int) ([]Rollout, error) {
 	if !actor.IsOrgAdmin() {
 		return nil, ErrForbidden
 	}
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT id FROM rollouts ORDER BY created_at DESC LIMIT ?`), limit)
+	q, args := `SELECT id FROM rollouts`, []any{}
+	if before != "" {
+		q, args = q+` WHERE `+db.NewestBefore("rollouts", "rollouts"), append(args, before, before, before)
+	}
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(q+` ORDER BY created_at DESC, id DESC LIMIT ?`), append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}

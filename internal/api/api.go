@@ -180,7 +180,7 @@ func Handler(a *API, authn Authenticator) (http.Handler, error) {
 			apigen.WriteProblem(w, http.StatusBadRequest, "invalid_request", err.Error())
 		},
 	})
-	return guard(inner, authn, newLimiter(a.rateLimit))
+	return guard(a.replayCreates(inner), authn, newLimiter(a.rateLimit))
 }
 
 func (a *API) GetHealth(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +228,7 @@ func (a *API) GetMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, me)
 }
 
-func (a *API) ListTeams(w http.ResponseWriter, r *http.Request, _ apigen.ListTeamsParams) {
+func (a *API) ListTeams(w http.ResponseWriter, r *http.Request, params apigen.ListTeamsParams) {
 	teams, err := a.tenancy.ListTeams(r.Context(), principal(r))
 	if err != nil {
 		a.internalError(w, r, err)
@@ -237,6 +237,10 @@ func (a *API) ListTeams(w http.ResponseWriter, r *http.Request, _ apigen.ListTea
 	out := apigen.TeamList{Items: make([]apigen.Team, 0, len(teams))}
 	for _, t := range teams {
 		out.Items = append(out.Items, apigen.Team{Id: t.ID, Name: t.Name})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x apigen.Team) string { return x.Id }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -277,7 +277,7 @@ func TestHooks(t *testing.T) {
 		if len(f.builds.calls) != 1 || !strings.HasPrefix(f.builds.calls[0], f.robot.ID+" "+f.specID+" snap-1 pipeline-") || !strings.HasSuffix(f.builds.calls[0], " 3") {
 			t.Fatalf("build calls = %v", f.builds.calls)
 		}
-		runs, _ := f.svc.Runs(f.ctx, f.admin, p.ID, 50)
+		runs, _ := f.svc.Runs(f.ctx, f.admin, p.ID, "", 50)
 		var started Run
 		for _, r := range runs {
 			if r.State == Started {
@@ -297,7 +297,7 @@ func TestHooks(t *testing.T) {
 			t.Fatalf("tag push = %+v", res)
 		}
 		_, _ = f.svc.ProcessNext(f.ctx)
-		runs, _ := f.svc.Runs(f.ctx, f.admin, p.ID, 1)
+		runs, _ := f.svc.Runs(f.ctx, f.admin, p.ID, "", 1)
 		if runs[0].State != Skipped || len(f.builds.calls) != 1 {
 			t.Fatalf("run = %+v", runs[0])
 		}

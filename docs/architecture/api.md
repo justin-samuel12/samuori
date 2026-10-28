@@ -59,10 +59,10 @@ Status: **M0 skeleton** (2026-10-19). Contract: `api/openapi/samuori.v1.yml` (Op
 | Concern | Rule |
 |---|---|
 | IDs | ULIDs (`Id` schema) |
-| Pagination | `cursor` and `limit` (1–200); responses carry `nextCursor` |
-| Errors | `Problem` (`code`, `message`, `details[]`, `requestId`); cross-scope reads return 404 |
+| Pagination | `cursor` and `limit` (1–200, default 50); responses carry `nextCursor`; lists paginated on 2026-10-28 return every item without `limit` or `cursor`; bounded lists are exempt (`TestContractConsistency`) |
+| Errors | `Problem` (`code`, `message`, `details[]`, `requestId`) for every documented non-2xx; `429` declares `Retry-After`; cross-scope reads return 404 |
 | Concurrency | `ETag` on specs and policies; `If-Match` is required to change them (412 on mismatch) |
-| Idempotency | `Idempotency-Key` header, required on build, cancel, publication, approval decision, upload commit, enrollment token, secret binding and worker action operations |
+| Idempotency | `Idempotency-Key` header, required on build, cancel, publication, approval decision, upload commit, enrollment token, secret binding and worker action operations; optional on every other create, where the shared operations record answers a repeat with `409 idempotent_replay` (`replayCreates`) |
 | Async work | `202` with an `Operation` resource |
 | Browser auth | `samuori_session` cookie, plus `X-CSRF-Token` on unsafe methods |
 | API clients | Bearer tokens (scoped, expiring API tokens or OIDC) |
@@ -84,6 +84,10 @@ Status: **M0 skeleton** (2026-10-19). Contract: `api/openapi/samuori.v1.yml` (Op
    operations (`receivePipelineHook`).
 
 The checker's own negative tests prove each rule fires. See `docs/developers/testing.md`.
+
+`TestContractConsistency` (`internal/api`) walks the contract and fails when a list lacks `limit`, `cursor` or
+`nextCursor`, a non-2xx response does not use `Problem`, a `429` lacks `Retry-After`, or a create lacks
+`Idempotency-Key`. Its allowlists name each exception with a reason; stale entries fail too.
 
 ## Not in this skeleton yet
 

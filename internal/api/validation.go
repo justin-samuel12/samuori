@@ -120,17 +120,22 @@ func (a *API) GetArtifact(w http.ResponseWriter, r *http.Request, id apigen.Arti
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (a *API) ListValidations(w http.ResponseWriter, r *http.Request, id apigen.ArtifactId) {
+func (a *API) ListValidations(w http.ResponseWriter, r *http.Request, id apigen.ArtifactId, params apigen.ListValidationsParams) {
 	list, err := a.validations.List(r.Context(), principal(r), operationRoles(r.Context()), id)
 	if err != nil {
 		a.validationError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []validationView `json:"items"`
+		Items      []validationView `json:"items"`
+		NextCursor *string          `json:"nextCursor,omitempty"`
 	}{Items: []validationView{}}
 	for _, v := range list {
 		out.Items = append(out.Items, toValidation(v))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x validationView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

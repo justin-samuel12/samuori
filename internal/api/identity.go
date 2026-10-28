@@ -61,6 +61,7 @@ func (a *API) ListSignInProviders(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) StartOidcSignIn(w http.ResponseWriter, r *http.Request, providerID apigen.Id) {
 	if a.signIn == nil || !a.auth.AllowOIDCStart(auth.ClientIP(r)) {
+		w.Header().Set("Retry-After", "60")
 		apigen.WriteProblem(w, http.StatusTooManyRequests, "rate_limited", "too many sign-in attempts; try again later")
 		return
 	}
@@ -125,17 +126,22 @@ func toProvider(p identity.Provider) providerView {
 	return providerView{ID: p.ID, Kind: p.Kind, Name: p.Name, DisplayName: p.DisplayName, Enabled: p.Enabled, HasSecret: p.SecretID != "", OIDC: p.OIDC, LDAP: p.LDAP, CreatedAt: p.CreatedAt}
 }
 
-func (a *API) ListIdentityProviders(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListIdentityProviders(w http.ResponseWriter, r *http.Request, params apigen.ListIdentityProvidersParams) {
 	list, err := a.idStore.List(r.Context(), principal(r))
 	if err != nil {
 		a.identityError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []providerView `json:"items"`
+		Items      []providerView `json:"items"`
+		NextCursor *string        `json:"nextCursor,omitempty"`
 	}{Items: []providerView{}}
 	for _, p := range list {
 		out.Items = append(out.Items, toProvider(p))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x providerView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -220,17 +226,22 @@ type mappingView struct {
 	ScopeID   string `json:"scopeId"`
 }
 
-func (a *API) ListGroupMappings(w http.ResponseWriter, r *http.Request, id apigen.Id) {
+func (a *API) ListGroupMappings(w http.ResponseWriter, r *http.Request, id apigen.Id, params apigen.ListGroupMappingsParams) {
 	list, err := a.idStore.Mappings(r.Context(), principal(r), id)
 	if err != nil {
 		a.identityError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []mappingView `json:"items"`
+		Items      []mappingView `json:"items"`
+		NextCursor *string       `json:"nextCursor,omitempty"`
 	}{Items: []mappingView{}}
 	for _, m := range list {
 		out.Items = append(out.Items, mappingView{m.ID, m.Group, string(m.Binding.Role), string(m.Binding.ScopeType), m.Binding.ScopeID})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x mappingView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -343,14 +354,15 @@ func (a *API) serviceView(r *http.Request, si identity.ServiceIdentity) (service
 	return v, err
 }
 
-func (a *API) ListServiceIdentities(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListServiceIdentities(w http.ResponseWriter, r *http.Request, params apigen.ListServiceIdentitiesParams) {
 	list, err := a.idStore.Services(r.Context(), principal(r))
 	if err != nil {
 		a.identityError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []serviceView `json:"items"`
+		Items      []serviceView `json:"items"`
+		NextCursor *string       `json:"nextCursor,omitempty"`
 	}{Items: []serviceView{}}
 	for _, si := range list {
 		v, err := a.serviceView(r, si)
@@ -359,6 +371,10 @@ func (a *API) ListServiceIdentities(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		out.Items = append(out.Items, v)
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x serviceView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }

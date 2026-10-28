@@ -37,21 +37,23 @@ type notificationView struct {
 }
 
 func (a *API) ListNotifications(w http.ResponseWriter, r *http.Request, params apigen.ListNotificationsParams) {
-	limit, _ := pageParams(params.Limit, nil)
-	list, err := a.notify.Inbox(r.Context(), principal(r), params.Unread != nil && *params.Unread, limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.notify.Inbox(r.Context(), principal(r), params.Unread != nil && *params.Unread, cursor, limit+1)
 	if err != nil {
 		a.internalError(w, r, err)
 		return
 	}
-	unread, err := a.notify.Inbox(r.Context(), principal(r), true, 200)
+	unread, err := a.notify.Inbox(r.Context(), principal(r), true, "", 200)
 	if err != nil {
 		a.internalError(w, r, err)
 		return
 	}
 	out := struct {
-		Items  []notificationView `json:"items"`
-		Unread int                `json:"unread"`
+		Items      []notificationView `json:"items"`
+		Unread     int                `json:"unread"`
+		NextCursor *string            `json:"nextCursor,omitempty"`
 	}{Items: []notificationView{}, Unread: len(unread)}
+	list, out.NextCursor = pageLimited(list, limit, func(x notify.Notification) string { return x.ID })
 	for _, n := range list {
 		out.Items = append(out.Items, notificationView{n.ID, n.Message, n.ReadAt, n.CreatedAt})
 	}
@@ -88,17 +90,22 @@ func toChannel(c notify.Channel) channelView {
 	return channelView{ID: c.ID, Name: c.Name, Kind: c.Kind, URL: c.URL, Recipients: c.Recipients, AllowPrivateNetwork: c.AllowPrivateNetwork, Enabled: c.Enabled, CreatedAt: c.CreatedAt}
 }
 
-func (a *API) ListNotificationChannels(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListNotificationChannels(w http.ResponseWriter, r *http.Request, params apigen.ListNotificationChannelsParams) {
 	list, err := a.notify.Channels(r.Context(), principal(r))
 	if err != nil {
 		a.notifyError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []channelView `json:"items"`
+		Items      []channelView `json:"items"`
+		NextCursor *string       `json:"nextCursor,omitempty"`
 	}{Items: []channelView{}}
 	for _, c := range list {
 		out.Items = append(out.Items, toChannel(c))
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x channelView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -190,17 +197,22 @@ type ruleView struct {
 	ProjectID string   `json:"projectId,omitempty"`
 }
 
-func (a *API) ListNotificationRules(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListNotificationRules(w http.ResponseWriter, r *http.Request, params apigen.ListNotificationRulesParams) {
 	list, err := a.notify.Rules(r.Context(), principal(r))
 	if err != nil {
 		a.notifyError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []ruleView `json:"items"`
+		Items      []ruleView `json:"items"`
+		NextCursor *string    `json:"nextCursor,omitempty"`
 	}{Items: []ruleView{}}
 	for _, x := range list {
 		out.Items = append(out.Items, ruleView{x.ID, x.ChannelID, x.Events, x.TeamID, x.ProjectID})
+	}
+	var ok bool
+	if out.Items, out.NextCursor, ok = pageOf(w, out.Items, params.Limit, params.Cursor, func(x ruleView) string { return x.ID }); !ok {
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -267,15 +279,17 @@ func (a *API) ListNotificationDeliveries(w http.ResponseWriter, r *http.Request,
 	if params.State != nil {
 		state = string(*params.State)
 	}
-	limit, _ := pageParams(params.Limit, nil)
-	list, err := a.notify.Deliveries(r.Context(), principal(r), state, limit)
+	limit, cursor := pageParams(params.Limit, params.Cursor)
+	list, err := a.notify.Deliveries(r.Context(), principal(r), state, cursor, limit+1)
 	if err != nil {
 		a.notifyError(w, r, err)
 		return
 	}
 	out := struct {
-		Items []deliveryView `json:"items"`
+		Items      []deliveryView `json:"items"`
+		NextCursor *string        `json:"nextCursor,omitempty"`
 	}{Items: []deliveryView{}}
+	list, out.NextCursor = pageLimited(list, limit, func(x notify.Delivery) string { return x.ID })
 	for _, d := range list {
 		v := deliveryView{ID: d.ID, ChannelID: d.ChannelID, EventID: d.EventID, EventType: d.EventType, State: d.State, Attempts: d.Attempts, LastError: d.LastError, CreatedAt: d.CreatedAt, DeliveredAt: d.DeliveredAt}
 		if d.State == "pending" {

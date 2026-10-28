@@ -114,6 +114,7 @@ func guardSpec(spec *openapi3.T, next http.Handler, authn Authenticator, limit *
 			ctx = authz.WithPrincipal(ctx, p)
 			ctx = context.WithValue(ctx, rolesKey{}, roles)
 		}
+		ctx = context.WithValue(ctx, operationKey{}, op)
 
 		validated := lookup.WithContext(ctx)
 		input := &openapi3filter.RequestValidationInput{
