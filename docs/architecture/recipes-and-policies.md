@@ -55,7 +55,9 @@ them. A label may not repeat a shipped runtime or an active added one of that re
 An added runtime is a **draft** until an organization administrator approves it with a reason (the images are
 checked against the policy again); any administrator may approve, as for custom recipes. Approved runtimes appear in
 `GET /recipes` with `source: organization` and the wizard offers them; drafts and withdrawn runtimes never appear
-there. Withdrawing needs a reason, keeps the runtime as history and refuses new builds that ask for it.
+there. Withdrawing needs a reason, keeps the runtime as history and refuses new builds that ask for it. Approved
+runtimes never change; **Duplicate** opens the add form prefilled from an approved or withdrawn runtime and saves a
+new draft (the label must differ from any active runtime, so withdraw the original first to reuse it).
 
 A version constraint resolves to the newest matching non-withdrawn **shipped** runtime first, and only when none matches to the
 newest matching approved organization runtime, so adding a runtime never changes what an existing spec builds. If a
@@ -93,7 +95,9 @@ the recipe's presets. The final stage must end as a non-root user unless the rec
 
 A version is a **draft** until an administrator approves it with a reason, after the **Preview** shows the
 Dockerfile Samuori will build; approved versions never change (a change is a new version) and can be deprecated or
-withdrawn like built-ins. Developers choose approved versions in New image and fill in their parameters; the spec
+withdrawn like built-ins. **Discard draft** (`DELETE /custom-recipes/{recipeId}/versions/{version}`, administrators,
+audited as `recipe.discard`) deletes a version that was never approved; any other status answers `409`, so approved,
+deprecated and withdrawn versions stay as history. Developers choose approved versions in New image and fill in their parameters; the spec
 records them in `build.recipe.parameters`, admission checks them and the recipe's secrets, and the plan carries the
 definition and resolved values so the worker renders exactly what was previewed. Stage images go through the
 base-image and image-source policies. SEC-SPC-06 (rendering) and SEC-SPC-07 (lifecycle).
@@ -104,7 +108,8 @@ Not yet: a structured form editor, trial builds from the recipe page, and shared
 
 Each organization has one versioned policy per kind. Every change creates an immutable version and is audited.
 Edits must send the version they read in `If-Match`; a stale version gets `412`. Defaults are created the first
-time an organization is used.
+time an organization is used. `GET /policies` returns each policy's current version with `updatedAt` and `updatedBy`
+(the username that saved it, or `system` for a seeded default).
 
 | Kind | Document | Default |
 |---|---|---|
@@ -128,7 +133,15 @@ current version and that exact document. `PUT /policies/{id}` recomputes the imp
 newly blocked, it applies the change only with `X-Samuori-Confirm: <token>` and a `reason` of at least 10 characters,
 which is kept in the `policy.update` audit record; otherwise it answers `428 confirmation_required` with the impact.
 A change that blocks nothing needs neither. The Security & Secrets > Network egress page shows the impact and asks
-for the reason before applying such a change.
+for the reason before applying such a change, as do the other policy editors.
+
+**Where each kind is edited.** `base-images` under Recipes & base images, `egress` under Network egress,
+`publication` under Registries > Image downloads, and `frontends`, `build-args`, `validation` and
+`sensitive-content` under Registries & Recipes > **Build policies** (`/admin/policies`, administrators). Each editor
+adds, edits and removes list entries locally (frontends, build-argument rules, ignored vulnerabilities, extra
+sensitive-content path rules), checks the obvious mistakes in the browser (digest form, rule IDs, relative paths),
+and saves the whole document through the dry run and `PUT` above; the server validates every document again. The
+`build-secret` outcome is shown as fixed at `block`.
 
 ### Tag pinning
 

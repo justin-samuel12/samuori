@@ -53,7 +53,7 @@ export function RecipeRuntimes({
   onChange: () => void;
 }) {
   const [data, setData] = useState<Runtimes | null>();
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<{ from?: OrgRuntime }>();
   const [deciding, setDeciding] = useState<{
     runtime: OrgRuntime;
     action: "approve" | "withdraw";
@@ -73,7 +73,7 @@ export function RecipeRuntimes({
   }, [recipe.id, recipe.version]);
   useLoader(load);
   const done = () => {
-    setAdding(false);
+    setAdding(undefined);
     setDeciding(undefined);
     setSettingShipped(undefined);
     void load();
@@ -174,10 +174,12 @@ export function RecipeRuntimes({
                 <h3>Added by your organization</h3>
                 <p className="samuori-muted m-0">
                   Offered in New image once approved. Withdrawn runtimes stay
-                  here as history and are refused for new builds.
+                  here as history and are refused for new builds. Approved
+                  runtimes can&apos;t change; duplicate one to create a new
+                  draft.
                 </p>
               </div>
-              <Button variant="secondary" onPress={() => setAdding(true)}>
+              <Button variant="secondary" onPress={() => setAdding({})}>
                 Add runtime
               </Button>
             </div>
@@ -258,6 +260,15 @@ export function RecipeRuntimes({
                           Withdraw
                         </Button>
                       )}
+                      {r.status !== "draft" && (
+                        <Button
+                          variant="quiet"
+                          aria-label={`Duplicate runtime ${r.label} as a new draft`}
+                          onPress={() => setAdding({ from: r })}
+                        >
+                          Duplicate
+                        </Button>
+                      )}
                     </span>
                   ),
                 },
@@ -275,7 +286,8 @@ export function RecipeRuntimes({
       {adding && (
         <AddRuntime
           path={path}
-          onClose={() => setAdding(false)}
+          from={adding.from}
+          onClose={() => setAdding(undefined)}
           onDone={done}
         />
       )}
@@ -382,17 +394,21 @@ function SetShippedStatus({
 
 function AddRuntime({
   path,
+  from,
   onClose,
   onDone,
 }: {
   path: { recipeId: string; version: string };
+  from?: OrgRuntime;
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [label, setLabel] = useState("");
-  const [buildImage, setBuildImage] = useState("");
-  const [runImage, setRunImage] = useState("");
-  const [note, setNote] = useState("");
+  const [label, setLabel] = useState(from?.label ?? "");
+  const [buildImage, setBuildImage] = useState(from?.buildImage ?? "");
+  const [runImage, setRunImage] = useState(
+    from && from.runImage !== from.buildImage ? from.runImage : "",
+  );
+  const [note, setNote] = useState(from?.note ?? "");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   async function save() {
@@ -415,8 +431,19 @@ function AddRuntime({
     else setError(describeError(error, "The runtime could not be added."));
   }
   return (
-    <Dialog title="Add runtime" isOpen onOpenChange={(o) => !o && onClose()}>
+    <Dialog
+      title={from ? `Duplicate runtime ${from.label}` : "Add runtime"}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
       <p className="mt-0">
+        {from && (
+          <>
+            This creates a new draft; {from.label} is unchanged.
+            {from.status === "approved" &&
+              " Give it another runtime version, or withdraw the original first: only one runtime per version can be active."}{" "}
+          </>
+        )}
         Saved as a draft. Both images must be pinned by digest and allowed by
         the base-image policy. Find a digest with{" "}
         <code>docker buildx imagetools inspect node:26-bookworm-slim</code>.

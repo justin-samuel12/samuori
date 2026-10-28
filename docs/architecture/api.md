@@ -239,6 +239,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | policies | POST | `/projects/{projectId}/egress-access-requests` | `requestEgressAccess` | developer, maintainer |
 | policies | GET | `/projects/{projectId}/egress-allowances` | `listEgressAllowances` | developer, maintainer, publisher, administrator |
 | policies | POST | `/egress-allowances/{allowanceId}/revocation` | `revokeEgressAllowance` | administrator (organization) |
+| recipes | PUT | `/custom-recipes/{recipeId}/versions/{version}` | `replaceCustomRecipeDraft` | administrator (organization; drafts only, otherwise 409) |
+| recipes | DELETE | `/custom-recipes/{recipeId}/versions/{version}` | `discardCustomRecipeDraft` | administrator (organization; drafts only, otherwise 409; audited `recipe.discard`) |
 | registries | GET | `/projects/{projectId}/repository-requests` | `listRepositoryRequests` | developer, maintainer, publisher, administrator |
 | registries | POST | `/projects/{projectId}/repository-requests` | `requestRepository` | developer, maintainer |
 | registries | POST | `/approvals/{approvalId}/fulfillment` | `fulfillRepositoryRequest` | administrator |

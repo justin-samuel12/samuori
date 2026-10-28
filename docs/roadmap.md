@@ -33,6 +33,13 @@ independently testable, not scope cuts. Update task status in the same PR that d
   stored per organization (migration 00068) and audited. A same-label organization runtime stays shadowed. Runnable:
   API and the Runtimes dialog; `TestShippedRuntimeStatus`, `TestShippedRuntimeStatusAPI` and the `can` test pass on
   SQLite. Not yet run: PostgreSQL, a browser check of the dialog and New image, and a worker build.
+- **Policy and recipe editors (2026-10-28, owner request).** Registries & Recipes > Build policies edits the
+  `frontends`, `build-args`, `validation` and `sensitive-content` policies (add, edit and remove entries; dry run,
+  confirmation with reason, `If-Match`); `GET /policies` reports `updatedBy`. Organization runtimes get a Duplicate
+  action that saves a new draft; custom recipe drafts can be discarded (`DELETE /custom-recipes/{id}/versions/{v}`,
+  administrators, audited, 409 for non-drafts). Runnable: API and UI; `TestCustomRecipeLifecycle`,
+  `TestCustomRecipeAPI` and the policy-helper node test pass on SQLite. Not yet run: a browser check of the editors
+  and PostgreSQL.
 - **Name and brand (2026-10-27, owner decision, ADR 0057).** The logo and palette come from `docs/brand/`; the UI
   loading indicators animate the mark.
 - **Deployment files (2026-10-28, owner request, ADR 0059).** Next to "Download image", the build page and the Images

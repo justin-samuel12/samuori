@@ -112,6 +112,8 @@ type Policy struct {
 	Version   int
 	Document  json.RawMessage
 	CreatedAt time.Time
+	// CreatedBy is the username that saved this version, or "system" for seeded defaults.
+	CreatedBy string
 }
 
 var pinnedFrontend = regexp.MustCompile(`^[a-z0-9][a-z0-9._/:-]*@sha256:[a-f0-9]{64}$`)
@@ -403,7 +405,7 @@ func (s *Store) List(ctx context.Context, orgID string) ([]Policy, error) {
 }
 
 func (s *Store) list(ctx context.Context, orgID string) ([]Policy, error) {
-	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT p.id, p.kind, p.version, v.document, v.created_at FROM policies p JOIN policy_versions v ON v.policy_id = p.id AND v.version = p.version WHERE p.org_id = ? ORDER BY p.kind`), orgID)
+	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT p.id, p.kind, p.version, v.document, v.created_at, COALESCE(u.username, v.created_by) FROM policies p JOIN policy_versions v ON v.policy_id = p.id AND v.version = p.version LEFT JOIN users u ON u.id = v.created_by WHERE p.org_id = ? ORDER BY p.kind`), orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +414,7 @@ func (s *Store) list(ctx context.Context, orgID string) ([]Policy, error) {
 	for rows.Next() {
 		var p Policy
 		var doc string
-		if err := rows.Scan(&p.ID, &p.Kind, &p.Version, &doc, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Kind, &p.Version, &doc, &p.CreatedAt, &p.CreatedBy); err != nil {
 			return nil, err
 		}
 		p.Document = json.RawMessage(doc)
@@ -432,8 +434,8 @@ func (s *Store) ByKind(ctx context.Context, orgID, kind string) (Policy, error) 
 func (s *Store) one(ctx context.Context, where string, args ...any) (Policy, error) {
 	var p Policy
 	var doc string
-	err := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT p.id, p.kind, p.version, v.document, v.created_at FROM policies p JOIN policy_versions v ON v.policy_id = p.id AND v.version = p.version WHERE `+where), args...).
-		Scan(&p.ID, &p.Kind, &p.Version, &doc, &p.CreatedAt)
+	err := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT p.id, p.kind, p.version, v.document, v.created_at, COALESCE(u.username, v.created_by) FROM policies p JOIN policy_versions v ON v.policy_id = p.id AND v.version = p.version LEFT JOIN users u ON u.id = v.created_by WHERE `+where), args...).
+		Scan(&p.ID, &p.Kind, &p.Version, &doc, &p.CreatedAt, &p.CreatedBy)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Policy{}, ErrNotFound
 	}

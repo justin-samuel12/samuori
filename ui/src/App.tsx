@@ -17,6 +17,7 @@ import { PipelinesPage } from "./pages/PipelinesPage";
 import { NotificationChannelsPage } from "./pages/admin/NotificationChannelsPage";
 import { SetupPage } from "./pages/SetupPage";
 import { QueuePage } from "./pages/admin/QueuePage";
+import { BuildPoliciesPage } from "./pages/admin/BuildPolicies";
 import {
   EgressPage,
   EnginesPage,
@@ -243,6 +244,12 @@ const routes: Route[] = [
     path: "/admin/recipes",
     title: "Recipes & base images",
     render: () => <RecipesPage />,
+    admin: true,
+  },
+  {
+    path: "/admin/policies",
+    title: "Build policies",
+    render: () => <BuildPoliciesPage />,
     admin: true,
   },
   {

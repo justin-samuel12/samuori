@@ -78,6 +78,7 @@ export const operationAccess = {
   deleteWizardDraft: ["developer", "maintainer"],
   deleteWorkerPool: ["administrator"],
   disableFederationPeer: ["administrator"],
+  discardCustomRecipeDraft: ["administrator"],
   downloadArtifact: ["developer", "maintainer", "publisher", "administrator"],
   downloadDeploymentCompose: ["developer", "maintainer", "publisher", "security-reviewer", "administrator"],
   downloadDeploymentHelmChart: ["developer", "maintainer", "publisher", "security-reviewer", "administrator"],

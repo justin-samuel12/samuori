@@ -129,6 +129,31 @@ func (s *Statuses) ReplaceDraft(ctx context.Context, actor authz.Principal, id, 
 	return s.custom(ctx, actor.OrgID, id, version)
 }
 
+// DiscardDraft deletes a draft version; approved, deprecated and withdrawn versions stay (ADR 0041).
+func (s *Statuses) DiscardDraft(ctx context.Context, actor authz.Principal, id, version, requestID string) error {
+	if !actor.IsOrgAdmin() {
+		return ErrForbidden
+	}
+	cur, err := s.custom(ctx, actor.OrgID, id, version)
+	if err != nil {
+		return err
+	}
+	if cur.Status != Draft {
+		return ErrNotDraft
+	}
+	return s.db.InTx(ctx, func(tx *sql.Tx) error {
+		res, err := tx.ExecContext(ctx, s.db.Rebind(`DELETE FROM custom_recipes WHERE org_id = ? AND recipe_id = ? AND version = ? AND status = ?`),
+			actor.OrgID, id, version, Draft)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n != 1 {
+			return ErrNotDraft
+		}
+		return audit.Append(ctx, s.db, tx, audit.Event{Actor: actor, Action: "recipe.discard", ResourceType: "recipe", ResourceID: id + "@" + version, Outcome: "succeeded", Reason: cur.Definition.DisplayName, RequestID: requestID})
+	})
+}
+
 // DecideCustom approves a draft, or deprecates or withdraws an approved version, with a reason.
 func (s *Statuses) DecideCustom(ctx context.Context, actor authz.Principal, id, version, action, reason, requestID string) (CustomVersion, error) {
 	if !actor.IsOrgAdmin() {

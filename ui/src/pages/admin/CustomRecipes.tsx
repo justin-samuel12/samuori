@@ -64,6 +64,7 @@ function nextVersion(v: string): string {
 export function CustomRecipes({ onChange }: { onChange: () => void }) {
   const [items, setItems] = useState<Custom[]>();
   const [editing, setEditing] = useState<{ yaml: string; draft?: Custom }>();
+  const [discarding, setDiscarding] = useState<Custom>();
   const [deciding, setDeciding] = useState<{
     recipe: Custom;
     action: "approve" | "deprecate" | "withdraw";
@@ -75,6 +76,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
   const done = () => {
     setEditing(undefined);
     setDeciding(undefined);
+    setDiscarding(undefined);
     void load();
     onChange();
   };
@@ -89,7 +91,8 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
             Your organization's own builds: stages from images pinned by digest
             and a fixed set of steps that Samuori turns into a Dockerfile
             itself. Developers see approved versions in New image and fill in
-            their parameters.
+            their parameters. Approved versions can&apos;t change; create a new
+            version.
           </p>
         </div>
         <Button
@@ -177,6 +180,13 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
                         >
                           Approve
                         </Button>
+                        <Button
+                          variant="quiet"
+                          aria-label={`Discard draft ${r.displayName} ${r.version}`}
+                          onPress={() => setDiscarding(original)}
+                        >
+                          Discard draft
+                        </Button>
                       </>
                     ) : (
                       <Button
@@ -228,6 +238,13 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
           draft={editing.draft}
           onClose={() => setEditing(undefined)}
           onSaved={done}
+        />
+      )}
+      {discarding && (
+        <DiscardDialog
+          recipe={discarding}
+          onClose={() => setDiscarding(undefined)}
+          onDone={done}
         />
       )}
       {deciding && (
@@ -437,6 +454,54 @@ function DecideDialog({
           onPress={() => void decide()}
         >
           {verb}
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+
+function DiscardDialog({
+  recipe,
+  onClose,
+  onDone,
+}: {
+  recipe: Custom;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  async function discard() {
+    setBusy(true);
+    const { error } = await api.DELETE(
+      "/custom-recipes/{recipeId}/versions/{version}",
+      { params: { path: { recipeId: recipe.id, version: recipe.version } } },
+    );
+    setBusy(false);
+    if (error) setError(describeError(error));
+    else onDone();
+  }
+  return (
+    <Dialog
+      title={`Discard draft ${recipe.displayName} ${recipe.version}?`}
+      isOpen
+      onOpenChange={(o) => !o && onClose()}
+    >
+      <p className="mt-0">
+        The draft is deleted and cannot be recovered. Approved, deprecated and
+        withdrawn versions are not affected.
+      </p>
+      {error && <Alert>{error}</Alert>}
+      <div className="samuori-actions">
+        <Button variant="secondary" onPress={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          isDisabled={busy}
+          onPress={() => void discard()}
+        >
+          Discard draft
         </Button>
       </div>
     </Dialog>

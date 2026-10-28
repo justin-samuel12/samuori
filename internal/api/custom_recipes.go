@@ -79,6 +79,14 @@ func (a *API) ReplaceCustomRecipeDraft(w http.ResponseWriter, r *http.Request, i
 	writeJSON(w, http.StatusOK, toCustomRecipe(v))
 }
 
+func (a *API) DiscardCustomRecipeDraft(w http.ResponseWriter, r *http.Request, id, version string, _ apigen.DiscardCustomRecipeDraftParams) {
+	if err := a.recipes.DiscardDraft(r.Context(), principal(r), id, version, requestID(w)); err != nil {
+		a.customRecipeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (a *API) DecideCustomRecipe(w http.ResponseWriter, r *http.Request, id, version string, _ apigen.DecideCustomRecipeParams) {
 	var in apigen.CustomRecipeAction
 	if !decodeBody(w, r, &in) {

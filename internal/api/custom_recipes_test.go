@@ -41,6 +41,9 @@ stages:
 		if r := l.call(t, admin, "POST", "/custom-recipes/anything-base/versions/1.0.0/actions", `{"action":"approve","reason":"reviewed"}`, h); r.StatusCode != 200 {
 			t.Fatalf("approve = %d", r.StatusCode)
 		}
+		if r := l.call(t, admin, "DELETE", "/custom-recipes/anything-base/versions/1.0.0", "", h); r.StatusCode != 409 {
+			t.Errorf("discarding an approved version = %d, want 409", r.StatusCode)
+		}
 		var list struct {
 			Items []map[string]json.RawMessage `json:"items"`
 		}

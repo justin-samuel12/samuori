@@ -1912,7 +1912,8 @@ export interface paths {
         /** @description Changes a draft; approved versions never change. */
         put: operations["replaceCustomRecipeDraft"];
         post?: never;
-        delete?: never;
+        /** @description Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409. */
+        delete: operations["discardCustomRecipeDraft"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6689,6 +6690,8 @@ export interface components {
             id: components["schemas"]["Id"];
             version: number;
             updatedAt?: components["schemas"]["Timestamp"];
+            /** @description Username that saved the current version, or system for a seeded default */
+            updatedBy?: string;
         };
         PolicyList: {
             items: components["schemas"]["Policy"][];
@@ -10806,6 +10809,32 @@ export interface operations {
             404: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    discardCustomRecipeDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path: {
+                recipeId: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft discarded and audited */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
         };
     };
     decideCustomRecipe: {

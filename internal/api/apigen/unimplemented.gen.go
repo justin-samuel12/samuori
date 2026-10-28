@@ -191,6 +191,10 @@ func (Unimplemented) PreviewCustomRecipe(w http.ResponseWriter, r *http.Request,
 	NotImplemented(w, r, "PreviewCustomRecipe")
 }
 
+func (Unimplemented) DiscardCustomRecipeDraft(w http.ResponseWriter, r *http.Request, _ string, _ string, _ DiscardCustomRecipeDraftParams) {
+	NotImplemented(w, r, "DiscardCustomRecipeDraft")
+}
+
 func (Unimplemented) ReplaceCustomRecipeDraft(w http.ResponseWriter, r *http.Request, _ string, _ string, _ ReplaceCustomRecipeDraftParams) {
 	NotImplemented(w, r, "ReplaceCustomRecipeDraft")
 }

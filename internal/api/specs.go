@@ -278,7 +278,7 @@ func (a *API) SetRecipeStatus(w http.ResponseWriter, r *http.Request, id, versio
 func toPolicy(p policy.Policy) apigen.Policy {
 	var doc map[string]any
 	_ = json.Unmarshal(p.Document, &doc)
-	return apigen.Policy{Id: p.ID, Kind: apigen.PolicyKind(p.Kind), Version: p.Version, Document: doc, UpdatedAt: &p.CreatedAt}
+	return apigen.Policy{Id: p.ID, Kind: apigen.PolicyKind(p.Kind), Version: p.Version, Document: doc, UpdatedAt: &p.CreatedAt, UpdatedBy: ptr(p.CreatedBy)}
 }
 
 func (a *API) ListPolicies(w http.ResponseWriter, r *http.Request) {

@@ -7254,7 +7254,10 @@ type Policy struct {
 	// Reason Why the policy changes; required, with a dry-run confirmation, when the change would newly block specs (TM-92)
 	Reason    *string    `json:"reason,omitempty"`
 	UpdatedAt *Timestamp `json:"updatedAt,omitempty"`
-	Version   int        `json:"version"`
+
+	// UpdatedBy Username that saved the current version, or system for a seeded default
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+	Version   int     `json:"version"`
 }
 
 // PolicyKind defines model for Policy.Kind.
@@ -9481,6 +9484,12 @@ type PreviewCustomRecipeParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// DiscardCustomRecipeDraftParams defines parameters for DiscardCustomRecipeDraft.
+type DiscardCustomRecipeDraftParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // ReplaceCustomRecipeDraftParams defines parameters for ReplaceCustomRecipeDraft.
 type ReplaceCustomRecipeDraftParams struct {
 	// XCSRFToken Required with session cookies; ignored with bearer tokens.
@@ -11321,6 +11330,11 @@ type ClientInterface interface {
 	//
 	// Validates a definition and renders the Dockerfile Samuori would build, without saving anything.
 	PreviewCustomRecipe(ctx context.Context, params *PreviewCustomRecipeParams, body PreviewCustomRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DiscardCustomRecipeDraft performs a DELETE /custom-recipes/{recipeId}/versions/{version} (the `DiscardCustomRecipeDraft` operationId) request.
+	//
+	// Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409.
+	DiscardCustomRecipeDraft(ctx context.Context, recipeId string, version string, params *DiscardCustomRecipeDraftParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReplaceCustomRecipeDraftWithBody performs a PUT /custom-recipes/{recipeId}/versions/{version} (the `ReplaceCustomRecipeDraft` operationId) request,
 	// with any type of body and a specified content type.
@@ -13793,6 +13807,21 @@ func (c *Client) PreviewCustomRecipeWithBody(ctx context.Context, params *Previe
 // Validates a definition and renders the Dockerfile Samuori would build, without saving anything.
 func (c *Client) PreviewCustomRecipe(ctx context.Context, params *PreviewCustomRecipeParams, body PreviewCustomRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPreviewCustomRecipeRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DiscardCustomRecipeDraft performs a DELETE /custom-recipes/{recipeId}/versions/{version} (the `DiscardCustomRecipeDraft` operationId) request.
+//
+// Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409.
+func (c *Client) DiscardCustomRecipeDraft(ctx context.Context, recipeId string, version string, params *DiscardCustomRecipeDraftParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDiscardCustomRecipeDraftRequest(c.Server, recipeId, version, params)
 	if err != nil {
 		return nil, err
 	}
@@ -21270,6 +21299,62 @@ func NewPreviewCustomRecipeRequestWithBody(server string, params *PreviewCustomR
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDiscardCustomRecipeDraftRequest constructs an http.Request for the DiscardCustomRecipeDraft method
+func NewDiscardCustomRecipeDraftRequest(server string, recipeId string, version string, params *DiscardCustomRecipeDraftParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recipeId", recipeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "version", version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/custom-recipes/%s/versions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if params != nil {
 
@@ -33835,6 +33920,13 @@ type ClientWithResponsesInterface interface {
 	// Validates a definition and renders the Dockerfile Samuori would build, without saving anything.
 	PreviewCustomRecipeWithResponse(ctx context.Context, params *PreviewCustomRecipeParams, body PreviewCustomRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCustomRecipeResponse, error)
 
+	// DiscardCustomRecipeDraftWithResponse performs a DELETE /custom-recipes/{recipeId}/versions/{version} (the `DiscardCustomRecipeDraft` operationId) request.
+	//
+	// Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DiscardCustomRecipeDraftWithResponse(ctx context.Context, recipeId string, version string, params *DiscardCustomRecipeDraftParams, reqEditors ...RequestEditorFn) (*DiscardCustomRecipeDraftResponse, error)
+
 	// ReplaceCustomRecipeDraftWithBodyWithResponse performs a PUT /custom-recipes/{recipeId}/versions/{version} (the `ReplaceCustomRecipeDraft` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -38053,6 +38145,54 @@ func (r PreviewCustomRecipeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PreviewCustomRecipeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DiscardCustomRecipeDraftResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DiscardCustomRecipeDraftResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DiscardCustomRecipeDraftResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DiscardCustomRecipeDraftResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DiscardCustomRecipeDraftResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DiscardCustomRecipeDraftResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DiscardCustomRecipeDraftResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -50652,6 +50792,19 @@ func (c *ClientWithResponses) PreviewCustomRecipeWithResponse(ctx context.Contex
 	return ParsePreviewCustomRecipeResponse(rsp)
 }
 
+// DiscardCustomRecipeDraftWithResponse performs a DELETE /custom-recipes/{recipeId}/versions/{version} (the `DiscardCustomRecipeDraft` operationId) request.
+//
+// Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DiscardCustomRecipeDraftWithResponse(ctx context.Context, recipeId string, version string, params *DiscardCustomRecipeDraftParams, reqEditors ...RequestEditorFn) (*DiscardCustomRecipeDraftResponse, error) {
+	rsp, err := c.DiscardCustomRecipeDraft(ctx, recipeId, version, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDiscardCustomRecipeDraftResponse(rsp)
+}
+
 // ReplaceCustomRecipeDraftWithBodyWithResponse performs a PUT /custom-recipes/{recipeId}/versions/{version} (the `ReplaceCustomRecipeDraft` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -56225,6 +56378,42 @@ func ParsePreviewCustomRecipeResponse(rsp *http.Response) (*PreviewCustomRecipeR
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDiscardCustomRecipeDraftResponse parses an HTTP response from a DiscardCustomRecipeDraftWithResponse call
+func ParseDiscardCustomRecipeDraftResponse(rsp *http.Response) (*DiscardCustomRecipeDraftResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DiscardCustomRecipeDraftResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

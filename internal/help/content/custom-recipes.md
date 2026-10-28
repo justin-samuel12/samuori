@@ -37,11 +37,20 @@ does. Otherwise the runtime check fails with a permission error.
 
 6. **Preview** shows the Dockerfile Samuori will build, or exactly what is wrong. **Save draft** keeps it.
 
+A draft can be edited as often as you like. **Discard draft** deletes one you no longer need, after you confirm;
+it cannot be recovered.
+
 ## Approve and maintain
 
 **Approve** shows the Dockerfile once more and asks for a reason. After that, developers can use the version, and it
 never changes: **New version** copies it with the next version number. **Deprecate** warns developers; **Withdraw**
-refuses new builds. Every step is recorded in the audit log.
+refuses new builds. Approved versions can't be edited or discarded; they stay as history. Every step is recorded
+in the audit log.
+
+## Runtimes you add to built-in recipes
+
+Under **Runtimes**, an approved runtime can't change either. **Duplicate** opens the add form with its images and
+note filled in and saves a new draft; give it another runtime version, or withdraw the original first.
 
 Builds from custom recipes go through the same checks as any build: base-image and image-source rules, network
 rules, secret grants, validation and publication.

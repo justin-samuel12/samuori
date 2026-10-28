@@ -2172,6 +2172,16 @@ paths:
         "404": { $ref: "#/components/responses/Problem" }
         "409": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [recipes]
+      operationId: discardCustomRecipeDraft
+      description: Deletes a draft version. Approved, deprecated and withdrawn versions never change and answer 409.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Draft discarded and audited }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
 
   /custom-recipes/{recipeId}/versions/{version}/actions:
     parameters:
@@ -7752,6 +7762,7 @@ components:
             id: { $ref: "#/components/schemas/Id" }
             version: { type: integer }
             updatedAt: { $ref: "#/components/schemas/Timestamp" }
+            updatedBy: { type: string, description: "Username that saved the current version, or system for a seeded default" }
     PolicyList:
       type: object
       required: [items]

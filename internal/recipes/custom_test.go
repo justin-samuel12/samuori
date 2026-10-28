@@ -85,6 +85,26 @@ func TestCustomRecipeLifecycle(t *testing.T) {
 		if _, err := s.ReplaceDraft(ctx, admin, "tooling-base", "1.0.0", []byte(recipe), ""); !errors.Is(err, ErrNotDraft) {
 			t.Errorf("an approved version was changed: %v", err)
 		}
+		if err := s.DiscardDraft(ctx, admin, "tooling-base", "1.0.0", ""); !errors.Is(err, ErrNotDraft) {
+			t.Errorf("an approved version was discarded: %v", err)
+		}
+		draft2 := strings.Replace(recipe, "version: 1.0.0", "version: 1.1.0", 1)
+		if _, err := s.CreateCustom(ctx, admin, []byte(draft2), ""); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.DiscardDraft(ctx, maintainer, "tooling-base", "1.1.0", ""); !errors.Is(err, ErrForbidden) {
+			t.Errorf("a maintainer discarded a draft: %v", err)
+		}
+		if err := s.DiscardDraft(ctx, admin, "tooling-base", "1.1.0", ""); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.DiscardDraft(ctx, admin, "tooling-base", "1.1.0", ""); !errors.Is(err, ErrNotFound) {
+			t.Errorf("a discarded draft is still there: %v", err)
+		}
+		var discards int
+		if err := d.SQL.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_events WHERE action = 'recipe.discard' AND resource_id = 'tooling-base@1.1.0'`).Scan(&discards); err != nil || discards != 1 {
+			t.Errorf("discard audit records = %d, %v", discards, err)
+		}
 		r, st, err := s.Get(ctx, "o1", "tooling-base", "1.0.0")
 		if err != nil || r.Custom == nil || st.Status != Approved {
 			t.Fatalf("approved recipe = %+v, %+v, %v", r, st, err)

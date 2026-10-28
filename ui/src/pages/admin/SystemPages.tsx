@@ -721,7 +721,7 @@ function StatusDialog({
   );
 }
 
-function ConfirmPolicy({
+export function ConfirmPolicy({
   change,
   onClose,
   onConfirm,
