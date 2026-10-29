@@ -74,3 +74,4 @@ owner approval.
 | [0066](0066-api-stability-and-deprecation.md) | API stability and deprecation | Accepted (provisional) |
 | [0068](0068-renewing-a-session-by-re-authenticating.md) | Renewing a session by re-authenticating | Accepted (provisional) |
 | [0069](0069-exporting-and-importing-configuration.md) | Exporting and importing configuration | Accepted (provisional) |
+| [0070](0070-administration-sections.md) | Four administration sections and one worker status | Accepted (provisional) |

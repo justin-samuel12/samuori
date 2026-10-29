@@ -19,9 +19,9 @@ export function navigate(to: string, message?: string) {
   emit();
 }
 
-/** Replaces the current history entry, so Back skips a page that only forwards. */
+/** Replaces the current history entry, so Back skips a page that moved or only forwards. */
 export function redirect(to: string) {
-  window.history.replaceState(null, "", to);
+  window.history.replaceState(null, "", to + window.location.search);
   emit();
 }
 

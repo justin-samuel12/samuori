@@ -5597,7 +5597,7 @@ export interface components {
              */
             validUntil?: string;
         };
-        /** @description Enrollment never implies trust; see eligibility. poolId is absent while the worker is unassigned, and an unassigned worker receives no builds (ADR 0045). */
+        /** @description Enrollment never implies trust; see eligibility. poolId is absent while the worker is unassigned, and an unassigned worker receives no builds (ADR 0045). A worker receives builds only while it is connected and eligible. */
         Worker: {
             id: components["schemas"]["Id"];
             name: string;
@@ -5606,6 +5606,8 @@ export interface components {
             enrollmentState: "enrolled" | "expired" | "revoked";
             /** @enum {string} */
             operationalState: "active" | "cordoned" | "draining" | "quarantined";
+            /** @description The worker holds a live stream to a running controller now */
+            connected: boolean;
             /** @description Present once an administrator removed the worker (ADR 0045) */
             removal?: {
                 /** @enum {string} */
@@ -13343,6 +13345,7 @@ export interface operations {
                      *       "poolId": "01JAB3K0000000000000000011",
                      *       "enrollmentState": "enrolled",
                      *       "operationalState": "active",
+                     *       "connected": true,
                      *       "eligibility": {
                      *         "untrustedBuilds": false,
                      *         "reasons": [

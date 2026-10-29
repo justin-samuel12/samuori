@@ -139,13 +139,13 @@ region from metadata) have not run on EC2 yet.
    (`high-availability.md#join`). A token works once and expires within an hour; only after acceptance does the host
    receive the database DSN, cluster key, storage settings, the database CA and certificates over that pinned
    connection. Nothing is copied by hand.
-5. **Check:** three live controllers under Workers > Servers; every target healthy; health `ok` once the
+5. **Check:** three live controllers under Infrastructure > Servers; every target healthy; health `ok` once the
    stream has three replicas.
-6. **Workers:** under Workers > Servers, select **Add a worker** and run `sudo ./samuori-join worker <code>`
+6. **Workers:** under Infrastructure > Servers, select **Add a worker** and run `sudo ./samuori-join worker <code>`
    from the release folder on each worker instance. The code names every controller on 8444; the worker checks the
    pinned certificate before installing, then enrols unassigned (`high-availability.md#join-a-worker`,
    `pilot-guide.md` B.5). The two-step `--role worker --controller ...` install with `samuori-enroll-worker` still works.
-7. **Registries:** add ECR under Registries & Recipes > Registries ([ECR](#ecr)).
+7. **Registries:** add ECR under Build supply > Registries & destinations ([ECR](#ecr)).
 8. **Acceptance:** `pilot-guide.md#e-acceptance-checklist`.
 
 ## Network paths
@@ -297,7 +297,7 @@ inherit the settings. Preflight writes, reads and deletes a probe object on ever
 
 ## ECR
 
-Configured in the portal after installation, under Registries & Recipes > Registries: registry profiles per account and
+Configured in the portal after installation, under Build supply > Registries & destinations: registry profiles per account and
 region, the role to assume and the external ID. The three verification levels are separate. The adapter is tested
 against an emulator. The portal's connection test checks identity, account, region and permissions. A real push
 of a test image is the only end-to-end proof, and has not been run.
@@ -306,7 +306,7 @@ of a test image is the only end-to-end proof, and has not been run.
 
 1. Attach the IAM policy below to the controllers' instance profile (every controller, since any of them may
    publish).
-2. Under Registries & Recipes > Registries, **Add registry** with kind **Amazon ECR**, the account ID and the region. An
+2. Under Build supply > Registries & destinations, **Add registry** with kind **Amazon ECR**, the account ID and the region. An
    endpoint such as `123456789012.dkr.ecr.eu-west-1.amazonaws.com` added as kind OCI cannot use IAM roles; the
    dialog says so.
 3. **Add credentials** for that registry, purpose Push, AWS identity **This controller's IAM role (EC2 instance

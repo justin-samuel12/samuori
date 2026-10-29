@@ -44,7 +44,7 @@ The name comes from the same idea. "Sam" is from my name, Samuel, and *ori* (織
 ### For administrators
 
 <table>
-<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-administration-dark.png"><img src="docs/screenshots/admin-administration-light.png" alt="Administration overview" width="420"></picture><br><sub>Administration overview</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-workers-dark.png"><img src="docs/screenshots/admin-workers-light.png" alt="Worker pools and verified workers" width="420"></picture><br><sub>Worker pools and verified workers</sub></td></tr>
+<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-administration-dark.png"><img src="docs/screenshots/admin-administration-light.png" alt="Administration health" width="420"></picture><br><sub>Administration health</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-workers-dark.png"><img src="docs/screenshots/admin-workers-light.png" alt="Worker pools and verified workers" width="420"></picture><br><sub>Worker pools and verified workers</sub></td></tr>
 <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-registries-dark.png"><img src="docs/screenshots/admin-registries-light.png" alt="Registries, credentials and destinations" width="420"></picture><br><sub>Registries, credentials and destinations</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-users-dark.png"><img src="docs/screenshots/admin-users-light.png" alt="Users and their roles" width="420"></picture><br><sub>Users and their roles</sub></td></tr>
 </table>
 

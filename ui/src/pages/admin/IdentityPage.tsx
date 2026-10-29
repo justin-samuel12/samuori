@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextField } from "../../components/Field";
 import { Alert, Loading, PageHeader, Section } from "../../components/Feedback";
@@ -109,12 +110,15 @@ export function IdentityPage() {
     report(error, `${s.username} ${enabled ? "enabled" : "disabled"}.`);
   }
 
+  const [confirmDialog, ask] = useConfirm();
   async function revoke(s: ServiceIdentity, tokenId: string) {
     const { error } = await api.DELETE(
       "/service-identities/{identityId}/api-tokens/{tokenId}",
       { params: { path: { identityId: s.id, tokenId } } },
     );
+    if (error) return describeError(error);
     report(error, "Token revoked.");
+    return undefined;
   }
 
   if (!providers || !settings) return <Loading />;
@@ -122,7 +126,7 @@ export function IdentityPage() {
     <>
       <PageHeader
         help="identity"
-        title="Identity"
+        title="Identity & sign-in"
         description="Sign-in through OIDC or LDAP, group-to-role mappings, and service identities for automation."
       />
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
@@ -223,12 +227,12 @@ export function IdentityPage() {
                     Group mappings for {p.displayName}
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant={p.enabled ? "quiet-danger" : "quiet"}
                     onPress={() => void setEnabled(p, !p.enabled)}
                   >
                     {p.enabled ? "Disable" : "Enable"} {p.displayName}
                   </Button>
-                  <Button variant="quiet" onPress={() => setDeleting(p)}>
+                  <Button variant="quiet-danger" onPress={() => setDeleting(p)}>
                     Delete {p.displayName}
                   </Button>
                 </div>
@@ -276,8 +280,16 @@ export function IdentityPage() {
                         {t.name}, expires{" "}
                         {new Date(t.expiresAt).toLocaleDateString()}{" "}
                         <Button
-                          variant="quiet"
-                          onPress={() => void revoke(s, t.id)}
+                          variant="quiet-danger"
+                          onPress={() =>
+                            ask({
+                              title: `Revoke ${t.name} of ${s.username}?`,
+                              message:
+                                "Automation that uses this token is refused at once.",
+                              confirmLabel: "Revoke token",
+                              run: () => revoke(s, t.id),
+                            })
+                          }
                         >
                           Revoke {t.name}
                         </Button>
@@ -303,7 +315,7 @@ export function IdentityPage() {
                     Edit name of {s.username}
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant={s.disabled ? "quiet" : "quiet-danger"}
                     onPress={() => void setServiceEnabled(s, s.disabled)}
                   >
                     {s.disabled ? "Enable" : "Disable"} {s.username}
@@ -386,6 +398,7 @@ export function IdentityPage() {
           }}
         />
       )}
+      {confirmDialog}
     </>
   );
 }
@@ -741,10 +754,11 @@ function MappingDialog({
     await load();
   }
   async function remove(id: string) {
-    await api.DELETE(
+    const { error } = await api.DELETE(
       "/identity-providers/{providerId}/group-mappings/{mappingId}",
       { params: { path: { providerId: provider.id, mappingId: id } } },
     );
+    setError(error ? describeError(error) : undefined);
     await load();
   }
   return (
@@ -781,7 +795,10 @@ function MappingDialog({
               id: "remove",
               name: "Actions",
               render: (m) => (
-                <Button variant="quiet" onPress={() => void remove(m.id)}>
+                <Button
+                  variant="quiet-danger"
+                  onPress={() => void remove(m.id)}
+                >
                   Remove {m.group}
                 </Button>
               ),
@@ -1025,9 +1042,19 @@ function SessionSettings({
           isRequired
           description="30 to 600 seconds. The warning offers Stay signed in."
         />
-        <Button type="submit" isDisabled={busy}>
-          {busy ? "Saving…" : "Save session settings"}
-        </Button>
+        <div className="samuori-actions samuori-actions--start">
+          <Button
+            type="submit"
+            isDisabled={
+              busy ||
+              (idle === String(current.idleTimeoutMinutes) &&
+                max === String(current.maxSessionHours) &&
+                warning === String(current.warningSeconds))
+            }
+          >
+            {busy ? "Saving…" : "Save session settings"}
+          </Button>
+        </div>
       </Form>
     </section>
   );

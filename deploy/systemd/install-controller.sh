@@ -101,7 +101,7 @@ fi
 cat <<MSG
 
 Controller $host is running (https://$host:8443).
-- Sign in through the load balancer or this address and open Administration > Servers to see the cluster.
+- Sign in through the load balancer or this address and open Infrastructure > Servers to see the cluster.
 - To add a controller, select "Add a controller" there, run this from the release folder on the new host, then
   accept its join request there after comparing the verification code:
     sudo ./samuori-join controller <code>

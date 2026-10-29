@@ -76,7 +76,7 @@ enabled pool's isolation profile or trust domain keeps it approved by the editin
 approval decision and audited, and its workers need a new self-test for a new profile. `PUT
 /worker-pools/{id}/approval` disables or re-enables a pool. A pool that ever had workers cannot be deleted, so
 worker history is kept; `DELETE /worker-pools/{id}` then answers 409 with the number of workers, and the UI offers to
-disable the pool instead. Administrators add and delete locations under Nodes & workers → Locations
+disable the pool instead. Administrators add and delete locations under Infrastructure → Workers & pools → Locations
 (`POST /locations`, `DELETE /locations/{name}`). Deleting a location is refused (409) while a pool, a project's
 location restriction or a federation route uses it, and the refusal names each use; a route's location is deleted
 with the route (`docs/operators/federation.md`). Locations have no rename: add a new location and move pools and

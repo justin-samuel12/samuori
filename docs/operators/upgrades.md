@@ -22,7 +22,7 @@ The Upgrades & Diagnostics screen shows where every controller and worker stands
 
 1. Upgrade controllers one at a time. The first one migrates the schema (one at a time across the cluster) and writes
    the pre-upgrade backup; the others keep serving.
-2. Drain each worker (**Nodes & workers > Drain**), wait until it has no build, upgrade it and let it reconnect; it
+2. Drain each worker (**Infrastructure > Workers & pools > Drain**), wait until it has no build, upgrade it and let it reconnect; it
    re-runs its self-test if its configuration changed. Workers on the previous minor release keep working until then.
 3. Check the Upgrades & Diagnostics screen: every controller compatible, every worker accepted.
 

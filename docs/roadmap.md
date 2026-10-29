@@ -13,7 +13,7 @@ independently testable, not scope cuts. Update task status in the same PR that d
   previews by default (create, update, unchanged or skip per item, and what needs attention) and with `dryRun=false`
   and an `Idempotency-Key` applies it in dependency order through the existing service functions, never deleting
   and never creating users, role bindings, secrets or projects; credentials and secret-bearing channels are listed for
-  re-entry ([guide](operators/configuration-export.md)). Administration → Export & import in the portal (added to the
+  re-entry ([guide](operators/configuration-export.md)). Organization > Export & import in the portal (added to the
   screenshot tour, screenshot not yet captured) and `samuori config export|import [--apply]`. Runnable: API, CLI and
   UI; SEC-CFG-01 (`TestConfigurationExportImport`) passes on SQLite. Not yet run: PostgreSQL, a browser check of the
   page, an import between two separately installed servers.
@@ -28,6 +28,19 @@ independently testable, not scope cuts. Update task status in the same PR that d
   with one usable project opens its wizard; the upload page has a drop zone with the server's limits. Runnable: UI;
   `display.test.ts`, `nav.test.ts` and `exclude.test.ts` pass. Not yet checked in a browser; the acceptance specs
   were updated but not rerun.
+- **Administration sections and one worker status (2026-10-29, owner approval after a usability review, ADR 0070).**
+  Administration is four top-bar sections: Build supply, Infrastructure, Security and Organization; the former
+  Administration overview is **Health** at `/admin/health` (`/admin` redirects). Their pages wrap under the top bar
+  and fold into a menu at phone width. `Worker.connected` (a live stream to a running controller) lets every page
+  show the same figures: enrolled, in a pool, connected now and ready to build (connected and eligible). The
+  controllers table is only on Servers; Database and Upgrades summarise it in one line. Destructive row actions use
+  the danger style, and purging a cache, deleting a release, a notification rule, a role or a service token now
+  asks first, naming the item. Page editors save from a left-aligned **Save …** button that stays disabled until
+  something changed; long explanations fold behind **How this works**. The health indicator is shown, labelled, to
+  administrators and operators. Runnable: UI and API; `TestWorkerConnectedApartFromEligibility`,
+  `TestContractConsistency`, `nav.test.ts` (sections per role, redirects) and `workerFigures.test.ts` pass. Not yet
+  run: a browser check at 1280–1440 px and phone width, the acceptance specs with the renamed pages, and new
+  screenshots.
 - **Screenshots (2026-10-28, owner request).** `make screenshots` captures every scene in `ui/e2e/tour/scenes.ts`
   (sign-in, developer and administrator screens, light and dark, 1440×900) from a throwaway local server with
   example data; the README shows a selection from `docs/screenshots/` and the [wiki gallery](https://github.com/justin-samuel12/samuori/wiki/Screenshots) every screen;

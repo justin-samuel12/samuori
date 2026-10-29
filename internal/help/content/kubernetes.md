@@ -26,7 +26,7 @@ On a project page, or on an image, choose **Generate Kubernetes configuration**,
 6. **Storage.** Volumes become persistent volume claims or empty directories. Host paths are never offered.
 7. **Generate.** The conversion waits for a worker that has the approved provider version.
 
-An administrator must first approve the provider under **Workers > Build & conversion providers**; until then
+An administrator must first approve the provider under **Build supply > Build & conversion providers**; until then
 the wizard shows it as unavailable.
 
 ## Move2Kube

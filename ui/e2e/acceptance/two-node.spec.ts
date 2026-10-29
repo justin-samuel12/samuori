@@ -140,7 +140,7 @@ test("the remote worker joins with a single-use token and passes its self-test",
   test.setTimeout(30 * 60_000);
   const errors = watchConsole(page);
   await signIn(page, admin.username, admin.password);
-  await goTo(page, "Nodes & workers");
+  await goTo(page, "Workers & pools");
   await page.getByRole("button", { name: "New pool" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("textbox", { name: "Name" }).fill("builders");
@@ -198,7 +198,7 @@ test("the administrator adds the controller's registry as a destination", async 
 }) => {
   const errors = watchConsole(page);
   await signIn(page, admin.username, admin.password);
-  await goTo(page, "Registries");
+  await goTo(page, "Registries & destinations");
   await page.getByRole("button", { name: "Add registry" }).click();
   await page.getByLabel("Name", { exact: true }).fill("local");
   await page.getByLabel("Endpoint").fill("127.0.0.1:5001");

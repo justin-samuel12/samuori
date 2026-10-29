@@ -24,7 +24,7 @@ cluster (ADR 0045). It asks, in order, and checks each answer before the next qu
 The summary shows the plan and the resilience it reaches: for each part (controllers, workers, database, storage,
 entry point) what it survives and what to add for high availability (ADR 0046). The plan is written to
 `/etc/samuori/topology-plan.yml` and imported once when the server first starts; afterwards it is changed under
-Workers > Servers > Resilience.
+Infrastructure > Servers > Resilience.
 
 A failed check shows the error and asks again. Passwords are typed with echo off and never read from the command
 line; any password that would appear in a check error or the installer's output is masked. After a summary and a
@@ -105,16 +105,16 @@ Then, in the browser:
 
 1. Open the UI and complete setup with the code from `sudo samuori-setup-code` (not needed after `samuori-setup`, which
    creates the organization and administrator).
-2. **Workers → Nodes & workers**: the `local` worker appears within seconds. Choose **Enable pool** on
+2. **Infrastructure → Workers & pools**: the `local` worker appears within seconds. Choose **Enable pool** on
    the `local` pool. Enabling starts the worker's own self-test (about a minute); uploaded source builds once it passes.
    Workers are retested after configuration changes and every 20 hours.
-3. **Registries & Recipes → Registries**: add `127.0.0.1:5001` with **Plain HTTP** and **private network**,
+3. **Build supply → Registries & destinations**: add `127.0.0.1:5001` with **Plain HTTP** and **private network**,
    credentials of type None, and a destination for your projects.
 
 ### Add a remote worker
 
 A controller installed with `--worker-listen 0.0.0.0:8444 --worker-hostnames samuori.example.com` (add
-`--no-local-worker` for one that runs no builds itself) accepts remote build VMs. Under **Workers → Servers**,
+`--no-local-worker` for one that runs no builds itself) accepts remote build VMs. Under **Infrastructure → Servers**,
 select **Add a worker**, then on the build VM, from the release folder:
 
 ```
@@ -266,8 +266,8 @@ and their self-test has passed (`POST /api/v1/worker-pools/{poolId}/self-tests`,
 provider that can pass it in this release is `rootless-dedicated-vm`, on a Linux VM dedicated to the worker
 (`docs/architecture/build-execution.md`). `vm-per-job` needs a provider validated on a KVM host. Without a verified
 pool, every build of uploaded source is recorded as `blocked` with the reason. The same steps are available in the UI
-under Workers → Nodes & workers. Builds → Build queue, Workers → Build engines, and Administration →
-Artifact storage (with on-demand garbage collection) and Messaging show live state from the controller.
+under Infrastructure → Workers & pools. Infrastructure → Build queue, Build engines, Storage (with on-demand garbage
+collection) and Messaging show live state from the controller.
 
 ## Source uploads
 

@@ -6,7 +6,7 @@ workers. Specs and source files travel; build plans never do.
 
 ## Set up
 
-On each installation, under **Administration > Federation**:
+On each installation, under **Organization > Federation**:
 
 1. Note **This installation**: the organization ID and the CA pin. Exchange them with the other administrator out of
    band.

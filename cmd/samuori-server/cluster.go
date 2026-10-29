@@ -227,7 +227,7 @@ func clusterInit(args []string, stdout io.Writer) error {
 	if err := b.Install(l.layout(), bootstrap); err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "cluster initialized on %s; start nats and samuori-server, then add controllers under Administration > Servers\n", l.host)
+	fmt.Fprintf(stdout, "cluster initialized on %s; start nats and samuori-server, then add controllers under Infrastructure > Servers\n", l.host)
 	return nil
 }
 
@@ -293,7 +293,7 @@ func clusterJoinCommand(args []string, stdin io.Reader, stdout io.Writer) error 
 	if err := json.Unmarshal(raw, &pending); err != nil || pending.RequestID == "" {
 		return errors.New("the controller sent an unexpected answer to the join request")
 	}
-	fmt.Fprintf(stdout, "join request for %s sent\nverification code: %s\nWaiting for an administrator to accept it under Administration > Servers…\n", l.host, pending.VerificationCode)
+	fmt.Fprintf(stdout, "join request for %s sent\nverification code: %s\nWaiting for an administrator to accept it under Infrastructure > Servers…\n", l.host, pending.VerificationCode)
 
 	deadline := time.Now().Add(*wait)
 	pollURL := base + "/requests/" + pending.RequestID + "/poll"

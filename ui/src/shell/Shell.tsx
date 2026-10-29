@@ -18,6 +18,7 @@ import {
 import {
   Bell,
   Check,
+  ChevronDown,
   Info,
   LogOut,
   Menu as MenuIcon,
@@ -29,7 +30,7 @@ import {
 } from "lucide-react";
 import { api, onServerUpdated, type Schemas } from "../api/client";
 import { navigate, usePath } from "../router";
-import { useSession, type Me } from "../session/session";
+import { isOrgAdmin, useSession, type Me } from "../session/session";
 import { useHealth } from "./health";
 import { BrandMark } from "../components/BrandMark";
 import { Button } from "../components/Button";
@@ -39,6 +40,7 @@ import {
   isCurrent,
   items,
   landing,
+  isOperator,
   locate,
   visibleWorkspaces,
   type Workspace,
@@ -135,7 +137,7 @@ export function Shell({ me, title, children }: Props) {
             >
               <Search size={18} aria-hidden="true" />
             </AriaButton>
-            <HealthPill />
+            <HealthPill me={me} />
             <NotificationsLink current={isCurrent("/notifications", path)} />
             <AccountMenu me={me} />
           </div>
@@ -239,7 +241,10 @@ function ContextBar({
             {name}
           </Link>
         )}
-        {all.length > 1 && (
+        {all.length > 1 && workspace.admin && (
+          <AdminSectionNav workspace={workspace} path={path} />
+        )}
+        {all.length > 1 && !workspace.admin && (
           <nav
             aria-label="Section"
             ref={tabsRef}
@@ -283,6 +288,72 @@ function ContextBar({
         )}
       </div>
     </div>
+  );
+}
+
+/** An administration section's pages: they wrap rather than scroll, and fold into a menu at phone width. */
+function AdminSectionNav({
+  workspace,
+  path,
+}: {
+  workspace: Workspace;
+  path: string;
+}) {
+  const all = items(workspace);
+  const current = locate([workspace], path).item;
+  return (
+    <>
+      <nav aria-label="Section" className="hidden min-w-0 flex-1 sm:block">
+        <ul className="samuori-subnav">
+          {all.map((i) => (
+            <li key={i.href}>
+              <Link
+                href={i.href}
+                aria-current={current?.href === i.href ? "page" : undefined}
+                className={`samuori-subnav-link ${focusRing}`}
+              >
+                {i.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <MenuTrigger>
+        <AriaButton
+          aria-label={`${workspace.label} pages`}
+          className={`ml-auto inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-canvas px-3 text-sm font-medium text-fg sm:hidden ${focusRing}`}
+        >
+          <span className="max-w-[12rem] truncate">
+            {current?.label ?? "Pages"}
+          </span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </AriaButton>
+        <Popover
+          placement="bottom end"
+          offset={6}
+          className="samuori-popover samuori-menu-popover"
+        >
+          <Menu
+            className="samuori-menu"
+            aria-label={`${workspace.label} pages`}
+          >
+            {all.map((i) => (
+              <MenuItem
+                key={i.href}
+                id={i.href}
+                href={i.href}
+                className="samuori-menu-item"
+              >
+                <span className="flex-1">{i.label}</span>
+                {current?.href === i.href && (
+                  <Check size={15} aria-label="current page" />
+                )}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Popover>
+      </MenuTrigger>
+    </>
   );
 }
 
@@ -516,21 +587,35 @@ const healthLabel: Record<Schemas["Health"]["status"], string> = {
   unavailable: "Unavailable",
 };
 
-function HealthPill() {
+/** Controller health, for the people who can act on it; administrators open the Health page from it. */
+function HealthPill({ me }: { me: Me }) {
   const { data } = useHealth();
-  if (!data?.status) return null;
-  return (
-    <span
-      className="inline-flex h-9 items-center gap-2 rounded-lg px-2 text-xs font-medium text-muted sm:border sm:border-line sm:px-3 xl:max-2xl:border-0 xl:max-2xl:px-2"
-      title="Controller health: database, storage and messaging"
-    >
+  const admin = isOrgAdmin(me);
+  if (!data?.status || !(admin || isOperator(me))) return null;
+  const body = (
+    <>
       <span
         className={`size-2 flex-none rounded-full ${healthTone[data.status]}`}
         aria-hidden="true"
       />
-      <span className="max-sm:sr-only xl:max-2xl:sr-only">
-        {healthLabel[data.status]}
+      <span className="max-sm:sr-only">
+        Controller {healthLabel[data.status].toLowerCase()}
       </span>
+    </>
+  );
+  const className = `inline-flex h-9 items-center gap-2 rounded-lg px-2 text-xs font-medium whitespace-nowrap text-muted no-underline sm:border sm:border-line sm:px-3 ${focusRing}`;
+  const title = "Controller health: database, storage and messaging";
+  return admin ? (
+    <Link
+      href="/admin/health"
+      className={className}
+      aria-label={`${title}: ${healthLabel[data.status]}`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <span className={className} title={title}>
+      {body}
     </span>
   );
 }

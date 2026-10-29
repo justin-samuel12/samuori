@@ -3,7 +3,7 @@
 Status: **implemented** (ADR 0043). Exercised on 2026-10-22 against PostgreSQL 16.15 on one controller, and by the
 two-controller handover test (SEC-DB-03). Not yet exercised on RDS or across separate controller hosts.
 
-**Administration > Database** shows where Samuori keeps its records and whether each live controller can sign in.
+**Infrastructure > Database** shows where Samuori keeps its records and whether each live controller can sign in.
 **Test connection** signs in with a new connection from the controller that handles the request.
 
 ## Rotate the password

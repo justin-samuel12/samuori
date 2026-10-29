@@ -126,7 +126,7 @@ export function RegistriesPage() {
     <>
       <PageHeader
         help="registries"
-        title="Registries"
+        title="Registries & destinations"
         description="Where validated images are published. Credentials stay on the controller; builds never see them."
       />
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
@@ -181,7 +181,7 @@ export function RegistriesPage() {
                     View or edit
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     aria-label={`Delete ${r.name}`}
                     onPress={() => setRemovingRegistry(r)}
                   >
@@ -266,7 +266,7 @@ export function RegistriesPage() {
                     View or edit
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     aria-label={`Delete ${p.name}`}
                     onPress={() => setRemovingProfile(p)}
                   >
@@ -347,7 +347,7 @@ export function RegistriesPage() {
                     View or edit
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     aria-label={`Delete destination ${d.name}`}
                     onPress={() => setRemovingDestination(d)}
                   >
@@ -411,7 +411,7 @@ export function RegistriesPage() {
               render: (k) =>
                 k.state === "active" ? (
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     aria-label={`Retire ${k.name}`}
                     onPress={() => setRetiring(k)}
                   >
@@ -1398,7 +1398,7 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
                     Mirror configuration for {s.name}
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant={s.status === "active" ? "quiet-danger" : "quiet"}
                     onPress={() => void setState(s, s.status !== "active")}
                   >
                     {s.status === "active" ? "Disable" : "Enable"} {s.name}
@@ -1411,7 +1411,7 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
                     Edit
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     aria-label={`Delete ${s.name}`}
                     onPress={() => setRemoving(s)}
                   >

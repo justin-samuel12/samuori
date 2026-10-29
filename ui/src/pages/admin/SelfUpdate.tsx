@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FileTrigger } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select } from "../../components/Field";
 import { Alert, Badge } from "../../components/Feedback";
@@ -117,6 +118,7 @@ export function SelfUpdate({ current }: { current: string }) {
   const [notice, setNotice] = useState<string>();
   const [file, setFile] = useState<File>();
   const [busy, setBusy] = useState(false);
+  const [confirmDialog, ask] = useConfirm();
 
   const load = useCallback(async () => {
     try {
@@ -182,8 +184,8 @@ export function SelfUpdate({ current }: { current: string }) {
     const { error } = await api.DELETE("/system/releases/{version}", {
       params: { path: { version: r.version } },
     });
-    if (error) setError(describeError(error));
     void load();
+    return error ? describeError(error) : undefined;
   }
 
   async function purge() {
@@ -302,9 +304,17 @@ export function SelfUpdate({ current }: { current: string }) {
                   {r.bundled ? "Check and update" : "Not a bundle"}
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="quiet-danger"
                   isDisabled={running}
-                  onPress={() => void remove(r)}
+                  onPress={() =>
+                    ask({
+                      title: `Delete release ${r.version}?`,
+                      message:
+                        "Every architecture of the release is removed from this installation; upload it again to update to it.",
+                      confirmLabel: "Delete release",
+                      run: () => remove(r),
+                    })
+                  }
                   aria-label={`Delete release ${r.version}`}
                 >
                   Delete
@@ -416,6 +426,7 @@ export function SelfUpdate({ current }: { current: string }) {
           },
         ]}
       />
+      {confirmDialog}
     </>
   );
 }

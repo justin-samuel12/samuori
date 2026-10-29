@@ -1,7 +1,7 @@
 # Identity
 
 Status: **Implemented (WP27).** Product decision: D09. Threat rows: TM-08 (OIDC and LDAP sign-in manipulation),
-TM-04 (tokens). Screen: Administration → Identity.
+TM-04 (tokens). Screen: Organization → Identity & sign-in.
 
 Samuori signs people in with local passwords, OpenID Connect or LDAP/Active Directory. Groups from a provider map to
 Samuori roles. Automation uses service identities with expiring API tokens. No identity provider is required: an

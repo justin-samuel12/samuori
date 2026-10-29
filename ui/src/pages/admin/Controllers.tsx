@@ -154,7 +154,7 @@ export function ControllerList({
                       "Removing"
                     ) : (
                       <Button
-                        variant="quiet"
+                        variant="quiet-danger"
                         onPress={() => setRemoving(c.hostname)}
                         aria-label={`Remove ${c.hostname}`}
                       >
@@ -252,7 +252,7 @@ function DecideJoinDialog({
   const accept = decision === "accept";
   return (
     <Dialog
-      title={accept ? "Accept join request" : "Reject join request"}
+      title={`${accept ? "Accept" : "Reject"} join request from ${request?.host ?? ""}`}
       isOpen={!!request}
       onOpenChange={(o) => !o && onClose()}
     >
@@ -353,7 +353,7 @@ function JoinRequests() {
                     Accept
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     onPress={() =>
                       setDeciding({ request: r, decision: "reject" })
                     }
@@ -481,7 +481,7 @@ export function JoinControllers() {
               name: "Actions",
               render: (t) =>
                 tokenState(t) === "Unused" ? (
-                  <Button variant="quiet" onPress={() => void revoke(t)}>
+                  <Button variant="quiet-danger" onPress={() => void revoke(t)}>
                     Revoke
                   </Button>
                 ) : null,

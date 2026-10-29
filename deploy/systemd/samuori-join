@@ -32,7 +32,7 @@ set -- --release "$here"
 case $role in
 controller)
 	case $code in samuoric_*) ;; samuoriwj_*) fail "that is a worker join code; run: sudo ./samuori-join worker <code>" ;;
-	*) fail "that is not a controller join code (samuoric_...); create one under Administration > Servers > Add a controller" ;; esac
+	*) fail "that is not a controller join code (samuoric_...); create one under Infrastructure > Servers > Add a controller" ;; esac
 	[ "$confirm" = no ] || fail "--confirm-dedicated-vm is for workers"
 	if [ -z "$host" ]; then
 		# Same rule as samuori-setup: the hostname, qualified by the search domain when it resolves to this host.
@@ -46,7 +46,7 @@ controller)
 	;;
 worker)
 	case $code in samuoriwj_*) ;; samuoric_*) fail "that is a controller join code; run: sudo ./samuori-join controller <code>" ;;
-	*) fail "that is not a worker join code (samuoriwj_...); create one under Administration > Servers > Add a worker" ;; esac
+	*) fail "that is not a worker join code (samuoriwj_...); create one under Infrastructure > Servers > Add a worker" ;; esac
 	[ -z "$host" ] || fail "--host is for controllers; a worker is named after this host's name"
 	[ "$(id -u)" = 0 ] || fail "run as root: sudo ./samuori-join worker <code>"
 	[ -x "$here/samuori-worker" ] || fail "run this from the release folder: samuori-worker is missing next to it"
@@ -63,7 +63,7 @@ worker)
 	token=$(printf '%s\n' "$decoded" | sed -n 3p)
 	SAMUORI_JOINING=1 "$here/install.sh" "$@" --confirm-dedicated-vm --worker-only --controller "$controllers"
 	printf '%s\n' "$token" | /usr/local/sbin/samuori-enroll-worker "$pin"
-	echo "Next: under Administration > Servers, assign $(hostname -s) to a pool. Until then it gets no builds, secrets or self-test." >&2
+	echo "Next: under Infrastructure > Servers, assign $(hostname -s) to a pool. Until then it gets no builds, secrets or self-test." >&2
 	;;
 *) usage ;;
 esac

@@ -1,7 +1,7 @@
 # Build and conversion providers
 
 Optional open-source tools Samuori runs on workers, inside build isolation, never on a controller or during discovery
-(ADR 0047, ADR 0048). Workers > **Build & conversion providers**.
+(ADR 0047, ADR 0048). Build supply > **Build & conversion providers**.
 
 | Provider | Used for | Pinned artifacts |
 |---|---|---|

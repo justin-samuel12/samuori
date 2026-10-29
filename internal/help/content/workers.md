@@ -6,7 +6,17 @@ roles: [operator, administrator]
 order: 100
 ---
 Builds of uploaded source run only on **workers**: dedicated machines in **pools**. Open
-**Nodes & workers**.
+**Infrastructure > Workers & pools**.
+
+## Worker status
+
+Every administration page counts workers the same way:
+
+- **Enrolled:** the worker holds a current certificate and is not being removed.
+- **In a pool:** enrolled and assigned to a pool.
+- **Connected now:** enrolled and holding a live connection to a running controller.
+- **Ready to build:** connected and eligible for uploaded source (an enabled pool, a current self-test and strict
+  egress). A worker that is eligible but not connected is not ready.
 
 ## Pools and trust
 
@@ -18,7 +28,8 @@ Builds of uploaded source run only on **workers**: dedicated machines in **pools
 - A worker builds uploaded source only after it passes a **self-test** for its pool with its current configuration
   in the last 24 hours. Self-tests run when a worker is assigned to an enabled pool, when it connects, after its
   configuration changes, and every 20 hours.
-- The **Can build uploaded source** column says why a worker is not eligible, for example a stale self-test.
+- The **Ready to build** column says why a worker cannot build now, for example that it is not connected or its
+  self-test is stale.
 - **Delete** removes a pool that never had workers. A pool that had workers is kept with their history; disable it
   instead.
 

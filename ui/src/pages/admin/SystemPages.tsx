@@ -1,13 +1,21 @@
 import { CustomRecipes } from "./CustomRecipes";
 import { RecipeRuntimes } from "./RecipeRuntimes";
 import { EgressGrants } from "./EgressGrants";
+import { WorkerStatus } from "./WorkerStatus";
 import { useCallback, useState, type FormEvent } from "react";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextField } from "../../components/Field";
-import { Alert, Loading, PageHeader, Section } from "../../components/Feedback";
+import {
+  Alert,
+  Explain,
+  Loading,
+  PageHeader,
+  Section,
+} from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { bytes } from "../../format";
 import { useLoader } from "../../hooks";
@@ -28,10 +36,7 @@ export function EnginesPage() {
         title="Build engines"
         description="Engines are reported by connected workers; nothing is assumed to be installed."
       />
-      <p>
-        {st.workers.enrolled} worker(s) enrolled, {st.workers.connected}{" "}
-        connected, {st.workers.withIsolationProfile} with an isolation provider.
-      </p>
+      <WorkerStatus />
       <Table
         label="Build engines"
         rows={st.engines.map((e) => ({ ...e, id: e.name }))}
@@ -96,7 +101,7 @@ export function StoragePage() {
   return (
     <>
       <PageHeader
-        title="Artifact storage"
+        title="Storage"
         description="Source snapshots and build outputs, stored by content digest and verified on every read."
         actions={
           <Button
@@ -173,23 +178,27 @@ function BuildCaches() {
     else setError(describeError(error));
   }, []);
   useLoader(load);
+  const [confirmDialog, ask] = useConfirm();
   async function purge(c: Cache) {
     const { error } = await api.POST("/build-caches/{scope}/purge", {
       params: { path: { scope: c.scope } },
     });
-    if (error) setError(describeError(error));
-    else await load();
+    if (error) return describeError(error);
+    await load();
+    return undefined;
   }
   return (
     <section className="samuori-section" aria-labelledby="caches-h">
       <h2 id="caches-h">Shared build caches</h2>
-      <p className="samuori-muted">
-        A build without secrets imports the newest cache of its own scope
-        (project, trust domain, binding and policy versions) and exports a new
-        one. Secret-bearing and clean builds use none. Caches older than{" "}
-        {list ? `${list.ttlHours} hours` : "the limit"} or larger than{" "}
-        {list ? bytes(list.maxScopeBytes) : "the limit"} are removed.
-      </p>
+      <Explain summary="Builds without secrets reuse their own scope's cache; builds with secrets use none.">
+        <p>
+          A build without secrets imports the newest cache of its own scope
+          (project, trust domain, binding and policy versions) and exports a new
+          one. Secret-bearing and clean builds use none. Caches older than{" "}
+          {list ? `${list.ttlHours} hours` : "the limit"} or larger than{" "}
+          {list ? bytes(list.maxScopeBytes) : "the limit"} are removed.
+        </p>
+      </Explain>
       {error && <Alert>{error}</Alert>}
       {!list && !error && <Loading />}
       {list && (
@@ -228,7 +237,18 @@ function BuildCaches() {
               name: "Actions",
               render: (c) =>
                 admin ? (
-                  <Button variant="quiet" onPress={() => void purge(c)}>
+                  <Button
+                    variant="quiet-danger"
+                    onPress={() =>
+                      ask({
+                        title: `Purge the build cache of ${c.projectName ?? c.projectId}?`,
+                        message:
+                          "Its next build runs without a cache. The purge is recorded in the audit log.",
+                        confirmLabel: "Purge",
+                        run: () => purge(c),
+                      })
+                    }
+                  >
                     Purge
                   </Button>
                 ) : null,
@@ -236,6 +256,7 @@ function BuildCaches() {
           ]}
         />
       )}
+      {confirmDialog}
     </section>
   );
 }
@@ -314,7 +335,7 @@ export function RecipesPage() {
   return (
     <>
       <PageHeader
-        title="Recipes & base images"
+        title="Recipes & runtimes"
         description="Built-in recipes pin every base image by digest. Deprecated recipes warn; withdrawn recipes are refused."
       />
       <h2>Built-in recipes</h2>
@@ -513,15 +534,25 @@ function BaseImagePolicy() {
       >
         Pin tags to their current digest at admission
       </Checkbox>
-      <p className="samuori-muted">
-        With pinning, a Dockerfile can keep <code>FROM node:18-alpine</code>:
-        Samuori looks up the tag&apos;s digest on its public registry when the
-        build is admitted, builds exactly that image and records it on the
-        build. Samuori does not update base images. Tags from private image
-        sources must still be pinned by digest.
-      </p>
-      <div className="samuori-actions">
-        <Button onPress={() => void save()}>Save base-image policy</Button>
+      <Explain summary="Pinning resolves a public tag to its digest when a build is admitted.">
+        <p>
+          With pinning, a Dockerfile can keep <code>FROM node:18-alpine</code>:
+          Samuori looks up the tag&apos;s digest on its public registry when the
+          build is admitted, builds exactly that image and records it on the
+          build. Samuori does not update base images. Tags from private image
+          sources must still be pinned by digest.
+        </p>
+      </Explain>
+      <div className="samuori-actions samuori-actions--start">
+        <Button
+          isDisabled={
+            requireDigest === current.requireDigest &&
+            (requireDigest && pinTags) === !!current.pinTags
+          }
+          onPress={() => void save()}
+        >
+          Save base-image policy
+        </Button>
       </div>
       <ConfirmPolicy
         change={confirming}
@@ -821,6 +852,15 @@ export function EgressPage() {
     setEvery(toggle(every, id, r === "all"));
   };
 
+  const dirty =
+    JSON.stringify([allowed, dockerfile, every, destinations]) !==
+    JSON.stringify([
+      st.policy.allowedPresets,
+      st.policy.dockerfilePresets,
+      st.policy.everyBuildPresets ?? [],
+      st.policy.destinations,
+    ]);
+
   const egressDocument = () => ({
     allowedPresets: allowed,
     dockerfilePresets: dockerfile.filter((d) => allowed.includes(d)),
@@ -879,12 +919,13 @@ export function EgressPage() {
   return (
     <>
       <PageHeader
-        title="Network egress"
+        title="Egress"
         description="Builds reach the internet only through the egress proxy. Each preset and destination says which builds can reach it; everything else is refused."
       />
       <p>
-        {st.workers.strictEgress} of {st.workers.connected} connected worker(s)
-        enforce strict egress. Uploaded source builds only on workers that do.
+        {st.workers.strictEgress} of the {st.workers.connected} worker(s)
+        connected now enforce strict egress. Uploaded source builds only on
+        workers that do.
       </p>
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
       <Section
@@ -962,8 +1003,10 @@ export function EgressPage() {
           />
         )}
       </Section>
-      <div className="samuori-actions">
-        <Button onPress={() => void save()}>Save policy</Button>
+      <div className="samuori-actions samuori-actions--start">
+        <Button isDisabled={!dirty} onPress={() => void save()}>
+          Save egress policy
+        </Button>
       </div>
       <EgressGrants onPromoted={() => void load()} />
       <ConfirmPolicy

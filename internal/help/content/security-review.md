@@ -7,7 +7,7 @@ order: 120
 ---
 ## Audit log
 
-**Security & Secrets > Observability & Audit** shows Samuori's operational state and its audit log, read from Samuori's own
+**Security > Audit & observability** shows Samuori's operational state and its audit log, read from Samuori's own
 database: sign-ins, role changes, grants, publications, approvals and administrative changes. Filter by action, for example
 `publication.*`, and export events. Entries never contain secret values.
 
@@ -16,5 +16,5 @@ Retention is set in days: 0 keeps events forever; otherwise at least 30, and you
 ## Quarantined images
 
 Images built by a worker that was revoked as compromised are **quarantined**. They cannot be published until a
-security reviewer or administrator reviews and releases them under **Security & Secrets > Quarantined images**.
+security reviewer or administrator reviews and releases them under **Security > Quarantines**.
 

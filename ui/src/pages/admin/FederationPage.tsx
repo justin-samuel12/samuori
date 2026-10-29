@@ -4,7 +4,13 @@ import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { Select, TextField } from "../../components/Field";
-import { Alert, Loading, PageHeader, Section } from "../../components/Feedback";
+import {
+  Alert,
+  Explain,
+  Loading,
+  PageHeader,
+  Section,
+} from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 
@@ -67,8 +73,15 @@ export function FederationPage() {
     <>
       <PageHeader
         title="Federation"
-        description="Run builds at another Samuori installation, or for one, in locations both administrators agree on. The installation that requests a build owns it and validates the image itself; specs and source travel, build plans never do."
+        description="Run builds at another Samuori installation, or for one."
       />
+      <Explain summary="Both administrators agree on the locations; the requester owns the build.">
+        <p>
+          A build runs at a peer only in locations both administrators agreed
+          on. The installation that requests a build owns it and validates the
+          image itself; specs and source travel, build plans never do.
+        </p>
+      </Explain>
       <Section
         title="This installation"
         description="Give these to the administrator of a peer installation."
@@ -137,12 +150,13 @@ export function FederationPage() {
             },
           ]}
         />
-        <p className="samuori-muted">
-          A peer&apos;s endpoint and CA pin are the trust anchors for every call
-          to it, so they cannot be edited. To change them, disable the peer and
-          add it again under a new name with the new values, then grant and
-          route to the new peer.
-        </p>
+        <Explain summary="A peer's endpoint and CA pin cannot be edited.">
+          <p>
+            They are the trust anchors for every call to the peer. To change
+            them, disable the peer and add it again under a new name with the
+            new values, then grant and route to the new peer.
+          </p>
+        </Explain>
       </Section>
 
       <Section
@@ -243,7 +257,7 @@ export function FederationPage() {
               name: "Actions",
               render: (r) => (
                 <Button
-                  variant="quiet"
+                  variant="quiet-danger"
                   onPress={() => setDeletingRoute(r)}
                   aria-label={`Delete the peer location ${r.location}`}
                 >

@@ -9437,7 +9437,7 @@ type WizardDraftWrite struct {
 	Version int `json:"version"`
 }
 
-// Worker Enrollment never implies trust; see eligibility. poolId is absent while the worker is unassigned, and an unassigned worker receives no builds (ADR 0045).
+// Worker Enrollment never implies trust; see eligibility. poolId is absent while the worker is unassigned, and an unassigned worker receives no builds (ADR 0045). A worker receives builds only while it is connected and eligible.
 type Worker struct {
 	// BundleVersion Trust-bundle version the worker acknowledged
 	BundleVersion *int64 `json:"bundleVersion,omitempty"`
@@ -9455,7 +9455,10 @@ type Worker struct {
 	} `json:"capabilities,omitempty"`
 	CertificateExpiresAt *Timestamp `json:"certificateExpiresAt,omitempty"`
 	CompromisedSince     *Timestamp `json:"compromisedSince,omitempty"`
-	Eligibility          struct {
+
+	// Connected The worker holds a live stream to a running controller now
+	Connected   bool `json:"connected"`
+	Eligibility struct {
 		Reasons         []WorkerEligibilityReasons `json:"reasons"`
 		UntrustedBuilds bool                       `json:"untrustedBuilds"`
 	} `json:"eligibility"`

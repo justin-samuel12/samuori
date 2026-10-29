@@ -181,7 +181,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
                           Approve
                         </Button>
                         <Button
-                          variant="quiet"
+                          variant="quiet-danger"
                           aria-label={`Discard draft ${r.displayName} ${r.version}`}
                           onPress={() => setDiscarding(original)}
                         >
@@ -206,7 +206,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
                     )}
                     {r.status === "approved" && (
                       <Button
-                        variant="quiet"
+                        variant="quiet-danger"
                         onPress={() =>
                           setDeciding({ recipe: original, action: "deprecate" })
                         }
@@ -216,7 +216,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
                     )}
                     {(r.status === "approved" || r.status === "deprecated") && (
                       <Button
-                        variant="quiet"
+                        variant="quiet-danger"
                         onPress={() =>
                           setDeciding({ recipe: original, action: "withdraw" })
                         }

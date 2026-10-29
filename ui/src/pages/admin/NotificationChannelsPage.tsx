@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextField } from "../../components/Field";
 import { Alert, Loading, PageHeader } from "../../components/Feedback";
@@ -102,12 +103,14 @@ export function NotificationChannelsPage() {
     else setError(`${c.name}: ${data.detail ?? "the test failed"}`);
   }
 
+  const [confirmDialog, ask] = useConfirm();
   async function removeRule(id: string) {
     const { error } = await api.DELETE("/notification-rules/{ruleId}", {
       params: { path: { ruleId: id } },
     });
-    if (error) setError(describeError(error));
-    else await load();
+    if (error) return describeError(error);
+    await load();
+    return undefined;
   }
 
   async function retry(id: string) {
@@ -203,13 +206,13 @@ export function NotificationChannelsPage() {
                     Send test
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant={c.enabled ? "quiet-danger" : "quiet"}
                     onPress={() => void setEnabled(c, !c.enabled)}
                   >
                     {c.enabled ? "Disable" : "Enable"}
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     onPress={() => setDeletingChannel(c)}
                     aria-label={`Delete ${c.name}`}
                   >
@@ -265,7 +268,19 @@ export function NotificationChannelsPage() {
                   >
                     Edit
                   </Button>
-                  <Button variant="quiet" onPress={() => void removeRule(r.id)}>
+                  <Button
+                    variant="quiet-danger"
+                    onPress={() =>
+                      ask({
+                        title: `Delete the rule for ${channelName(r.channelId)}?`,
+                        message:
+                          "Its events are no longer sent to the channel. The channel itself stays.",
+                        confirmLabel: "Delete rule",
+                        run: () => removeRule(r.id),
+                      })
+                    }
+                    aria-label={`Delete rule for ${channelName(r.channelId)}`}
+                  >
                     Delete
                   </Button>
                 </div>
@@ -389,6 +404,7 @@ export function NotificationChannelsPage() {
           void load();
         }}
       />
+      {confirmDialog}
     </>
   );
 }
@@ -445,7 +461,7 @@ function DeleteChannelDialog({
             The channel and its delivery log are deleted; the deletion is
             audited.
             {channel.kind !== "email"
-              ? " Its stored secret then shows as no longer used under Security & Secrets, where you can delete it."
+              ? " Its stored secret then shows as no longer used on the Secrets page, where you can delete it."
               : ""}
           </p>
         )}

@@ -181,25 +181,25 @@ export const scenes: Scene[] = [
   }),
   admin({
     name: "administration",
-    caption: "Administration overview",
-    route: "/admin",
+    caption: "Health",
+    route: "/admin/health",
   }),
   admin({ name: "teams", caption: "Teams", route: "/admin/teams" }),
   admin({ name: "users", caption: "Users & roles", route: "/admin/users" }),
   admin({
     name: "identity",
-    caption: "Identity providers",
+    caption: "Identity & sign-in",
     route: "/admin/identity",
   }),
   admin({
     name: "workers",
-    caption: "Nodes & workers",
+    caption: "Workers & pools",
     route: "/admin/workers",
   }),
   admin({ name: "servers", caption: "Servers", route: "/admin/servers" }),
   admin({
     name: "capacity",
-    caption: "Capacity & activity",
+    caption: "Capacity",
     route: "/admin/capacity",
   }),
   admin({ name: "engines", caption: "Build engines", route: "/admin/engines" }),
@@ -211,12 +211,12 @@ export const scenes: Scene[] = [
   admin({ name: "queue", caption: "Build queue", route: "/admin/queue" }),
   admin({
     name: "registries",
-    caption: "Registries",
+    caption: "Registries & destinations",
     route: "/admin/registries",
   }),
   admin({
     name: "recipes",
-    caption: "Recipes & base images",
+    caption: "Recipes & runtimes",
     route: "/admin/recipes",
   }),
   admin({
@@ -230,20 +230,20 @@ export const scenes: Scene[] = [
     caption: "Certificates",
     route: "/admin/certificates",
   }),
-  admin({ name: "egress", caption: "Network egress", route: "/admin/egress" }),
+  admin({ name: "egress", caption: "Egress", route: "/admin/egress" }),
   admin({
     name: "quarantines",
-    caption: "Quarantined images",
+    caption: "Quarantines",
     route: "/admin/quarantines",
   }),
   admin({
     name: "observability",
-    caption: "Observability & Audit",
+    caption: "Audit & observability",
     route: "/admin/observability",
   }),
   admin({
     name: "storage",
-    caption: "Artifact storage",
+    caption: "Storage",
     route: "/admin/storage",
   }),
   admin({ name: "messaging", caption: "Messaging", route: "/admin/messaging" }),
@@ -260,7 +260,7 @@ export const scenes: Scene[] = [
   admin({ name: "database", caption: "Database", route: "/admin/database" }),
   admin({
     name: "backups",
-    caption: "Backup & Restore",
+    caption: "Backups",
     route: "/admin/backups",
   }),
   admin({
@@ -270,7 +270,7 @@ export const scenes: Scene[] = [
   }),
   admin({
     name: "upgrades",
-    caption: "Upgrades & Diagnostics",
+    caption: "Upgrades & diagnostics",
     route: "/admin/upgrades",
   }),
   admin({

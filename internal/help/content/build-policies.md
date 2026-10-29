@@ -5,7 +5,7 @@ summary: Approve Dockerfile frontends, refuse risky build arguments, choose requ
 roles: [administrator]
 order: 227
 ---
-**Registries & Recipes > Build policies** holds four organization-wide policies. Base images are set under
+**Build supply > Build policies** holds four organization-wide policies. Base images are set under
 **Recipes & base images**, network access under **Network egress** and image downloads under **Registries**.
 
 | Policy | What it decides |

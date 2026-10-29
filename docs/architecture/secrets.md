@@ -223,7 +223,7 @@ maintainers decide which key each spec secret ID uses.
   Project access gives a binding a new version, for example after its value changed in an external store.
 - Administrators can still bind directly (`POST /projects/{id}/secret-bindings`); developers cannot. "Ask for
   binding" remains for keys nobody granted yet.
-- In the portal: Security & Secrets > Secrets has the tabs Stored secrets, External stores and Project access. Each stored secret has a **New version** action: it stores the next version under the same name and type; grants on "latest" use it from the next build, pinned grants keep their version. **Delete** destroys every version of a stored secret and is audited (`secret.delete`). It is refused, with each use listed, while a project has an active grant or binding of it, or while Samuori uses it for its own credentials; see [Deleting secrets](#deleting-secrets).
+- In the portal: Security > Secrets has the tabs Stored secrets, External stores and Project access. Each stored secret has a **New version** action: it stores the next version under the same name and type; grants on "latest" use it from the next build, pinned grants keep their version. **Delete** destroys every version of a stored secret and is audited (`secret.delete`). It is refused, with each use listed, while a project has an active grant or binding of it, or while Samuori uses it for its own credentials; see [Deleting secrets](#deleting-secrets).
 
 ## Deleting secrets
 

@@ -5,6 +5,13 @@ Status: Accepted (2026-10-19). Versions verified against upstream on 2026-10-19 
 ## Context
 Reproducible builds need pinned toolchains, and the project must avoid unnecessary tooling.
 
+Go is the owner's choice for the control plane, worker and CLI, set in the founding requirements (2026-10-18). It
+suits the product: BuildKit, the OCI image and registry libraries and NATS are Go libraries Samuori calls directly or
+embeds, and the scanning and signing tools it runs (syft, grype, cosign) come from the same ecosystem; each role ships
+as one static binary, which keeps the all-in-one install and VM guests small and cross-compiles for amd64 and arm64;
+worker streams, leases and the outbox are concurrent by nature; and the race detector catches the bugs that work
+invites. The cost is a second toolchain for the React UI.
+
 ## Decision
 | Tool | Pin | Mechanism |
 |---|---|---|

@@ -251,7 +251,7 @@ export function RecipeRuntimes({
                       )}
                       {r.status !== "withdrawn" && (
                         <Button
-                          variant="quiet"
+                          variant="quiet-danger"
                           aria-label={`Withdraw runtime ${r.label}`}
                           onPress={() =>
                             setDeciding({ runtime: r, action: "withdraw" })

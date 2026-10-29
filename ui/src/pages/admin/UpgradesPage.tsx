@@ -5,10 +5,16 @@ import { Alert, Loading, PageHeader } from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { isOrgAdmin, useMe } from "../../session/session";
-import { ControllerList } from "./Controllers";
 import { SelfUpdate } from "./SelfUpdate";
 
 type Status = Schemas["UpgradeStatus"];
+
+function controllerSummary(status: Status): string {
+  const live = status.controllers.filter((c) => c.live);
+  const releases = [...new Set(live.map((c) => c.version))].sort();
+  const outside = live.filter((c) => !c.compatible).length;
+  return `${live.length} of ${status.controllers.length} controller${status.controllers.length === 1 ? "" : "s"} running${releases.length ? `, release ${releases.join(", ")}` : ""}${outside ? `; ${outside} outside the upgrade window` : ""}.`;
+}
 
 export function UpgradesPage() {
   const me = useMe();
@@ -42,7 +48,7 @@ export function UpgradesPage() {
       <>
         <PageHeader
           help="upgrades"
-          title="Upgrades & Diagnostics"
+          title="Upgrades & diagnostics"
           description="The release of each controller, the database schema and the versions workers run, checked against the supported version matrix."
         />
         <Alert>
@@ -61,7 +67,7 @@ export function UpgradesPage() {
     <>
       <PageHeader
         help="upgrades"
-        title="Upgrades & Diagnostics"
+        title="Upgrades & diagnostics"
         description="The release of each controller, the database schema and the versions workers run, checked against the supported version matrix."
       />
       <dl className="samuori-details">
@@ -91,16 +97,17 @@ export function UpgradesPage() {
         </Alert>
       )}
       <h2>Controllers</h2>
-      <ControllerList status={status} admin={false} onChanged={load} />
-      {admin && (
-        <p>
-          Add, accept and remove controllers and workers under{" "}
-          <Link href="/admin/servers" className="samuori-link">
-            Servers
-          </Link>
-          .
-        </p>
-      )}
+      <p>
+        {controllerSummary(status)}
+        {admin && (
+          <>
+            {" "}
+            <Link href="/admin/servers" className="samuori-link">
+              Controllers under Servers
+            </Link>
+          </>
+        )}
+      </p>
       <h2>Workers</h2>
       <Table
         label="Worker releases"

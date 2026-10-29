@@ -31,7 +31,7 @@ Roles do not include each other: an administrator is not automatically a develop
 The Samuori server checks every action: the role must allow it, and the role's scope must cover that project or team.
 Hiding a page is never what protects it, and these guides are filtered the same way.
 
-Roles come from an administrator, under Administration > Users, or from your groups in the company directory
+Roles come from an administrator, under Organization > Users, or from your groups in the company directory
 (LDAP, Active Directory or OIDC), refreshed each time you sign in.
 
 ## Your account

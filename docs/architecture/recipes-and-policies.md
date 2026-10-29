@@ -75,7 +75,7 @@ shipped runtime with those images. Each added runtime has one run image for all 
    `node:26` are refused.
 3. Make sure the repository is allowed by the `base-images` policy (`docker.io/library/node` is by default). A new
    repository needs a policy change or a base-image request first.
-4. Open **Registries & Recipes > Recipes & base images**, choose **Runtimes** on Node.js application 1.0.0, then **Add
+4. Open **Build supply > Recipes & runtimes**, choose **Runtimes** on Node.js application 1.0.0, then **Add
    runtime**: label `26`, the build image, and the run image (empty uses the build image). Save the draft.
 5. **Approve** it with a reason. Developers can now choose Node.js 26 in New image, or set
    `versionConstraint: "26"`.
@@ -132,12 +132,12 @@ block, it also returns a `confirmation` token. The token is valid for 15 minutes
 current version and that exact document. `PUT /policies/{id}` recomputes the impact itself. If anything would be
 newly blocked, it applies the change only with `X-Samuori-Confirm: <token>` and a `reason` of at least 10 characters,
 which is kept in the `policy.update` audit record; otherwise it answers `428 confirmation_required` with the impact.
-A change that blocks nothing needs neither. The Security & Secrets > Network egress page shows the impact and asks
+A change that blocks nothing needs neither. The Security > Egress page shows the impact and asks
 for the reason before applying such a change, as do the other policy editors.
 
 **Where each kind is edited.** `base-images` under Recipes & base images, `egress` under Network egress,
 `publication` under Registries > Image downloads, and `frontends`, `build-args`, `validation` and
-`sensitive-content` under Registries & Recipes > **Build policies** (`/admin/policies`, administrators). Each editor
+`sensitive-content` under Build supply > **Build policies** (`/admin/policies`, administrators). Each editor
 adds, edits and removes list entries locally (frontends, build-argument rules, ignored vulnerabilities, extra
 sensitive-content path rules), checks the obvious mistakes in the browser (digest form, rule IDs, relative paths),
 and saves the whole document through the dry run and `PUT` above; the server validates every document again. The
@@ -154,7 +154,7 @@ lists the pins. A tag that cannot be resolved blocks the build with the registry
 `scratch` and `ARG`-based images are never pinned; images in named contexts, a `FROM` that a named context or stage
 of the same name would replace, and tags from private upstreams with approved image sources are refused with a
 reason to pin by digest. With `pinTags` off, a tag is refused and the reason says an administrator can turn pinning
-on. Registries & Recipes > Recipes & base images has the switch ("Pin tags to their current digest at admission"); saving
+on. Build supply > Recipes & runtimes has the switch ("Pin tags to their current digest at admission"); saving
 uses the same dry run and confirmation as other policies, and the impact preview treats pinnable tags as allowed
 without querying registries. Samuori records the digest; it never updates base images.
 

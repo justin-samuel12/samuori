@@ -26,7 +26,7 @@ export function ObservabilityPage() {
     <>
       <PageHeader
         help="security-review"
-        title="Observability & Audit"
+        title="Audit & observability"
         description="Operational state and the audit log, read from Samuori's own database. No external monitoring system is needed."
       />
       {diagnostics && <DiagnosticsSection />}
@@ -106,7 +106,7 @@ function DiagnosticsSection() {
         </dd>
         <dt>Workers</dt>
         <dd>
-          {counts(d.workers.byEnrollment)}; {d.workers.connected} connected,{" "}
+          {counts(d.workers.byEnrollment)}; {d.workers.connected} connected now,{" "}
           {d.workers.stale} without a recent heartbeat
         </dd>
         <dt>Outbox</dt>
@@ -151,7 +151,7 @@ function DiagnosticsSection() {
             id: "workers",
             name: "Workers",
             render: (p) =>
-              `${p.enrolled} enrolled, ${p.connected} connected${p.stale ? `, ${p.stale} stale` : ""}`,
+              `${p.enrolled} enrolled, ${p.connected} connected now${p.stale ? `, ${p.stale} stale` : ""}`,
           },
         ]}
       />
@@ -402,7 +402,18 @@ function RetentionSection({ canEdit }: { canEdit: boolean }) {
             Purge only events that have been exported
           </Checkbox>
           {message && <Alert tone={message.tone}>{message.text}</Alert>}
-          <Button type="submit">Save policy</Button>
+          <div className="samuori-actions samuori-actions--start">
+            <Button
+              type="submit"
+              isDisabled={
+                (Number(days) || 0) === policy.retentionDays &&
+                exportEnabled === policy.exportEnabled &&
+                requireExport === policy.requireExport
+              }
+            >
+              Save audit policy
+            </Button>
+          </div>
         </Form>
       )}
     </section>

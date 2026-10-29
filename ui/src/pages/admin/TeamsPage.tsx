@@ -53,7 +53,7 @@ export function TeamsPage() {
                     Rename
                   </Button>
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     onPress={() => setDeleting(t)}
                     aria-label={`Delete ${t.name}`}
                   >

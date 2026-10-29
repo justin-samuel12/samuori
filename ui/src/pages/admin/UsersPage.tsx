@@ -3,6 +3,7 @@ import { useLoader } from "../../hooks";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Select, TextField } from "../../components/Field";
 import { Alert, Loading, PageHeader } from "../../components/Feedback";
@@ -35,12 +36,14 @@ export function UsersPage() {
   }, []);
   useLoader(load);
 
+  const [confirmDialog, ask] = useConfirm();
   async function revoke(bindingId: string) {
     const { error } = await api.POST("/role-bindings/{bindingId}/revoke", {
       params: { path: { bindingId } },
     });
-    setError(error ? describeError(error) : undefined);
+    if (error) return describeError(error);
     await load();
+    return undefined;
   }
 
   return (
@@ -101,8 +104,17 @@ export function UsersPage() {
                           </Button>
                         )}
                         <Button
-                          variant="quiet"
-                          onPress={() => void revoke(r.id)}
+                          variant="quiet-danger"
+                          onPress={() =>
+                            ask({
+                              title: `Remove the ${roleLabel(r.role)} role from ${u.username}?`,
+                              message: r.source
+                                ? "It ends at once, and their directory group grants it again at their next sign-in."
+                                : "They lose what the role allows at once.",
+                              confirmLabel: "Remove role",
+                              run: () => revoke(r.id),
+                            })
+                          }
                           aria-label={`Remove ${roleLabel(r.role)} role from ${u.username}`}
                         >
                           Remove
@@ -144,7 +156,7 @@ export function UsersPage() {
                   )}
                   {!u.source && u.kind !== "service" && u.id !== self && (
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       onPress={() => setResetting(u)}
                       aria-label={`Reset password of ${u.username}`}
                     >
@@ -153,7 +165,7 @@ export function UsersPage() {
                   )}
                   {u.kind !== "service" && u.id !== self && (
                     <Button
-                      variant="quiet"
+                      variant={u.disabled ? "quiet" : "quiet-danger"}
                       onPress={() => setToggling(u)}
                       aria-label={`${u.disabled ? "Enable" : "Disable"} ${u.username}`}
                     >
@@ -231,6 +243,7 @@ export function UsersPage() {
           void load();
         }}
       />
+      {confirmDialog}
     </>
   );
 }

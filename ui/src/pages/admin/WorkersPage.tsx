@@ -1,16 +1,11 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Form } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextField } from "../../components/Field";
-import { Alert, Loading, PageHeader } from "../../components/Feedback";
+import { Alert, Explain, Loading, PageHeader } from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { useCan } from "../../session/session";
@@ -20,6 +15,8 @@ import {
   WorkerJoinNotice,
   type WorkerToken,
 } from "./WorkerJoin";
+import { WorkerStatus } from "./WorkerStatus";
+import { readinessText } from "./workerFigures";
 
 type Pool = Schemas["WorkerPool"];
 type Worker = Schemas["Worker"];
@@ -117,7 +114,7 @@ export function WorkersPage() {
     <>
       <PageHeader
         help="workers"
-        title="Nodes & workers"
+        title="Workers & pools"
         description="Worker pools, their isolation profiles and enrolled workers. Enrollment never makes a worker trusted."
         actions={
           <>
@@ -189,7 +186,7 @@ export function WorkersPage() {
                     Edit
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant={p.profileApproved ? "quiet-danger" : "secondary"}
                     onPress={() => setApproving(p)}
                     aria-label={`${p.profileApproved ? "Disable" : "Enable"} ${p.name}`}
                   >
@@ -204,7 +201,7 @@ export function WorkersPage() {
                   </Button>
                   {can("deleteWorkerPool") && (
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       onPress={() => setDeletingPool(p)}
                       aria-label={`Delete ${p.name}`}
                     >
@@ -216,18 +213,20 @@ export function WorkersPage() {
             },
           ]}
         />
-        <p className="samuori-muted">
-          Creating a pool approves its isolation profile; changing the profile
-          or trust domain keeps it approved by you. A worker builds uploaded
-          source only when its pool is enabled and the worker itself passed a
-          self-test for that pool in the last 24 hours with its current
-          configuration. Self-tests run the isolation, network and
-          resource-limit checks in the worker&apos;s own build environments;
-          they start when a worker is assigned to an enabled pool, when it
-          connects, after its configuration changes and every 20 hours. Only the
-          rootless-dedicated-vm provider can run them in this release;
-          vm-per-job needs a provider validated on a KVM host.
-        </p>
+        <Explain summary="A worker builds uploaded source only in an enabled pool, after its own recent self-test.">
+          <p>
+            Creating a pool approves its isolation profile; changing the profile
+            or trust domain keeps it approved by you. A worker builds uploaded
+            source only when its pool is enabled and the worker itself passed a
+            self-test for that pool in the last 24 hours with its current
+            configuration. Self-tests run the isolation, network and
+            resource-limit checks in the worker&apos;s own build environments;
+            they start when a worker is assigned to an enabled pool, when it
+            connects, after its configuration changes and every 20 hours. Only
+            the rootless-dedicated-vm provider can run them in this release;
+            vm-per-job needs a provider validated on a KVM host.
+          </p>
+        </Explain>
       </section>
       <section className="samuori-section" aria-labelledby="locations-h">
         <div className="samuori-section-head">
@@ -275,7 +274,7 @@ export function WorkersPage() {
               render: (l) =>
                 can("deleteLocation") && (
                   <Button
-                    variant="quiet"
+                    variant="quiet-danger"
                     onPress={() => setDeletingLocation(l)}
                     aria-label={`Delete location ${l.name}`}
                   >
@@ -294,6 +293,7 @@ export function WorkersPage() {
       </section>
       <section className="samuori-section" aria-labelledby="workers-h">
         <h2 id="workers-h">Workers</h2>
+        <WorkerStatus workers={workers} link={false} />
         {unassigned.length > 0 && (
           <Alert tone="info">
             {unassigned.length === 1
@@ -341,11 +341,8 @@ export function WorkersPage() {
             },
             {
               id: "eligible",
-              name: "Can build uploaded source",
-              render: (w) =>
-                w.eligibility.untrustedBuilds
-                  ? "Yes"
-                  : `No: ${w.eligibility.reasons.map((r) => reasonText[r] ?? r).join("; ")}`,
+              name: "Ready to build",
+              render: (w) => readinessText(w, reasonText),
             },
             {
               id: "selftest",
@@ -449,7 +446,7 @@ export function WorkersPage() {
           }}
         />
       )}
-      <ConfirmDelete
+      <ConfirmDialog
         title={deletingPool ? `Delete pool ${deletingPool.name}` : ""}
         isOpen={!!deletingPool}
         onClose={() => setDeletingPool(undefined)}
@@ -480,8 +477,8 @@ export function WorkersPage() {
       >
         Only a pool that never had workers can be deleted. A pool that had
         workers is kept with their history; disable it instead.
-      </ConfirmDelete>
-      <ConfirmDelete
+      </ConfirmDialog>
+      <ConfirmDialog
         title={
           deletingLocation ? `Delete location ${deletingLocation.name}` : ""
         }
@@ -501,7 +498,7 @@ export function WorkersPage() {
       >
         The location is removed. It is refused while a pool, a project&apos;s
         location restriction or a federation route uses it.
-      </ConfirmDelete>
+      </ConfirmDialog>
       <ApprovalDialog
         pool={approving}
         onClose={() => setApproving(undefined)}
@@ -630,55 +627,6 @@ function PoolDialog({
   );
 }
 
-// ConfirmDelete asks before deleting; when the server refuses, it shows the reason and refusedHint.
-function ConfirmDelete({
-  title,
-  isOpen,
-  onClose,
-  onConfirm,
-  refusedHint,
-  children,
-}: {
-  title: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => Promise<string | undefined>;
-  refusedHint?: ReactNode;
-  children: ReactNode;
-}) {
-  const [error, setError] = useState<string>();
-  const close = () => {
-    setError(undefined);
-    onClose();
-  };
-  return (
-    <Dialog
-      title={title}
-      size="confirm"
-      isOpen={isOpen}
-      onOpenChange={(o) => !o && close()}
-    >
-      <div className="samuori-form">
-        {error && <Alert>{error}</Alert>}
-        <p>{children}</p>
-        <div className="samuori-actions">
-          {error && refusedHint}
-          <Button variant="secondary" onPress={close}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onPress={() => void onConfirm().then(setError)}
-            isDisabled={!!error}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    </Dialog>
-  );
-}
-
 function LocationDialog({
   onClose,
   onDone,
@@ -750,7 +698,7 @@ function ApprovalDialog({
   }
   return (
     <Dialog
-      title={pool?.profileApproved ? "Disable pool" : "Enable pool"}
+      title={`${pool?.profileApproved ? "Disable" : "Enable"} pool ${pool?.name ?? ""}`}
       isOpen={!!pool}
       onOpenChange={(o) => !o && onClose()}
     >

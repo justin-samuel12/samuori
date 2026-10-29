@@ -418,7 +418,7 @@ func (c *Checker) evaluate(ctx context.Context, orgID, projectID string, raw jso
 				dec.Reason += ". A project developer can request an unlisted repository on the project page; an organization administrator approves it."
 			}
 			if unpinned {
-				dec.Reason += ". An organization administrator can let Samuori pin tags to their current digest at admission in the base-images policy (Administration > Recipes & base images)."
+				dec.Reason += ". An organization administrator can let Samuori pin tags to their current digest at admission in the base-images policy (Build supply > Recipes & runtimes)."
 			}
 			r.BaseImagePins = nil
 		} else if len(r.BaseImagePins) > 0 {
@@ -462,7 +462,7 @@ func (c *Checker) evaluate(ctx context.Context, orgID, projectID string, raw jso
 		case !s.IsRequired():
 			sr.Status, sr.Reason = "unbound", "Optional and not bound for this project, so it will not be mounted."
 		default:
-			sr.Status, sr.Reason = "missing", fmt.Sprintf("No secret is bound to %q for this project. Ask an administrator to bind one under Administration → Secrets.", s.ID)
+			sr.Status, sr.Reason = "missing", fmt.Sprintf("No secret is bound to %q for this project. Ask an administrator to bind one under Security → Secrets.", s.ID)
 		}
 		r.Secrets = append(r.Secrets, sr)
 	}

@@ -155,7 +155,7 @@ export function EnrollmentTokens() {
             render: (t) =>
               usable(t) ? (
                 <Button
-                  variant="quiet"
+                  variant="quiet-danger"
                   onPress={() => void revoke(t)}
                   aria-label={`Revoke the join code created ${new Date(t.createdAt).toLocaleString()}`}
                 >

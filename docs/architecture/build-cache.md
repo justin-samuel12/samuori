@@ -73,7 +73,7 @@ controller refuses them both cache imports and cache upload grants.
 | Use | BuildKit imports it into the fresh daemon (`cache-from type=local`) and exports this build's cache (`cache-to type=local,mode=max`). Buildah builds use no shared cache |
 | Export | The provider packs the exported layout deterministically, and the worker uploads it through a grant bound to the plan's scope (SEC-CCH-04, SEC-CCH-06) |
 | Retention | Garbage collection keeps only each scope's newest importable cache and drops caches older than `buildCache.ttl` (default 168 h) or larger than `buildCache.maxScopeBytes` (default 10 GiB) |
-| Administration | **Artifact storage → Shared build caches** (`GET /build-caches`, administrators and operators) shows each scope's project, size, newest cache and last use. **Purge** (`POST /build-caches/{scope}/purge`, administrators) removes a scope's caches and is audited; the next build runs without cache |
+| Administration | **Infrastructure → Storage → Shared build caches** (`GET /build-caches`, administrators and operators) shows each scope's project, size, newest cache and last use. **Purge** (`POST /build-caches/{scope}/purge`, administrators) removes a scope's caches and is audited; the next build runs without cache |
 
 Railpack builds (ADR 0047) also pass the project's scope ID as the frontend's `cache-key`, which prefixes every
 Railpack cache mount; mounts live in the fresh daemon and are not exported, so they never cross builds today.

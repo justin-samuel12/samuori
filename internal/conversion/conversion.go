@@ -111,7 +111,7 @@ func SoleController(ctx context.Context, d *db.DB, self string) error {
 	}
 	switch {
 	case len(others) > 0 && len(hosts) > 1:
-		return fmt.Errorf("%d controllers are registered; remove %s under Administration > Servers first, so only this one (%s) remains", len(hosts), strings.Join(others, ", "), self)
+		return fmt.Errorf("%d controllers are registered; remove %s under Infrastructure > Servers first, so only this one (%s) remains", len(hosts), strings.Join(others, ", "), self)
 	case len(others) > 0:
 		return fmt.Errorf("the only registered controller is %s, not this host (%s); run the conversion there", others[0], self)
 	case len(hosts) == 0:

@@ -2,8 +2,8 @@
 
 Status: **Implemented (WP28)** for the in-app inbox, signed webhooks, Slack, Teams and email. Slack and Teams delivery
 has been tested only against local receivers; delivery to real workspaces is an outstanding validation
-(`docs/roadmap.md`). Product decision: D21. Screens: **Notifications** (every user) and Administration →
-**Notifications**.
+(`docs/roadmap.md`). Product decision: D21. Screens: **Notifications** (every user) and Organization →
+**Notification channels**.
 
 ## Events
 
@@ -62,7 +62,7 @@ disabled channel receives nothing. **Send test** sends a sample message and audi
 **Edit** (`PUT /notification-channels/{id}`, `PUT /notification-rules/{id}`) applies the checks of creation. A
 channel's kind is fixed; a webhook keeps its signing key; a Slack or Teams channel keeps its stored URL unless a new
 one is given, which becomes a new controller-only secret (the old one is then listed as no longer used under
-Security & Secrets → Secrets) and is never returned. Edits are audited without secrets.
+Security → Secrets) and is never returned. Edits are audited without secrets.
 
 ### Deleting a channel
 
@@ -70,7 +70,7 @@ Security & Secrets → Secrets) and is never returned. Edits are audited without
 audited as `notification-channel.delete` with the number of deliveries removed. It is refused with 409
 `channel_in_use` while any rule routes events to the channel; the refusal lists those rules, and the UI offers to
 disable the channel instead. Pending deliveries of the channel are dropped. A webhook signing key or Slack or Teams
-URL the channel held stays as a controller-only secret that nothing uses, listed under Security & Secrets → Secrets
+URL the channel held stays as a controller-only secret that nothing uses, listed under Security → Secrets
 where an administrator may delete it.
 
 ### Webhook signatures

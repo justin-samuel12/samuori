@@ -389,7 +389,7 @@ func convertToCluster(ctx context.Context, f convertFlags, stdin io.Reader, out 
 	}
 	fmt.Fprintf(out, "\nConverted: %s is the first controller of a cluster (%s). Its local worker stays enrolled and updates with it.\n"+
 		"The old configuration is kept in %s; the SQLite database and local blobs in %s are no longer used and can be\n"+
-		"removed once the cluster is backed up. Add controllers under Administration > Servers.\n", f.host, summary, backup, cfg.DataDir)
+		"removed once the cluster is backed up. Add controllers under Infrastructure > Servers.\n", f.host, summary, backup, cfg.DataDir)
 	return nil
 }
 

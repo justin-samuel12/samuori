@@ -158,7 +158,7 @@ export function SecretsPage() {
                       New version
                     </Button>
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       aria-label={`Delete ${s.name}`}
                       onPress={() => setDeleting(s)}
                     >
@@ -249,7 +249,7 @@ export function SecretsPage() {
                       View or edit
                     </Button>
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       aria-label={`Delete ${p.name}`}
                       onPress={() => setRemoving(p)}
                     >
@@ -330,7 +330,7 @@ export function SecretsPage() {
                       Edit
                     </Button>
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       aria-label={`Remove ${a.label} from the allowed secrets`}
                       onPress={() => setUnallowing(a)}
                     >
@@ -676,7 +676,7 @@ function ProjectAccess({
                       Edit
                     </Button>
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       aria-label={`Revoke ${g.name}`}
                       onPress={() => setRevoking(g)}
                     >

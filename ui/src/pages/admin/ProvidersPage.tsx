@@ -177,8 +177,17 @@ function PolicyForm({
           onChange={setDef}
           description="Existing BuildSpecs keep their method. Admission refuses a method that is not allowed."
         />
-        <div className="samuori-actions">
-          <Button type="submit">Save build methods</Button>
+        <div className="samuori-actions samuori-actions--start">
+          <Button
+            type="submit"
+            isDisabled={
+              [...allowed].sort().join() ===
+                [...policy.allowed].sort().join() &&
+              def === (policy.default || "automatic")
+            }
+          >
+            Save build methods
+          </Button>
         </div>
       </Form>
     </section>

@@ -13,12 +13,13 @@ import {
   type WorkerToken,
 } from "./WorkerJoin";
 import { AssignDialog, removalText, WorkerActionDialog } from "./WorkersPage";
+import { WorkerStatus } from "./WorkerStatus";
 
 type Pool = Schemas["WorkerPool"];
 type Worker = Schemas["Worker"];
 
 // ServersPage is the one place to add, accept and remove controllers and workers (ADR 0045). Pools, self-tests and
-// the other worker actions stay under Nodes & workers.
+// the other worker actions stay under Workers & pools.
 export function ServersPage() {
   const [status, setStatus] = useState<Schemas["UpgradeStatus"]>();
   const [pools, setPools] = useState<Pool[]>([]);
@@ -73,6 +74,7 @@ export function ServersPage() {
       <JoinControllers />
       <section className="samuori-section" aria-labelledby="servers-workers-h">
         <h2 id="servers-workers-h">Workers</h2>
+        <WorkerStatus workers={workers} link={false} />
         {error && <Alert>{error}</Alert>}
         {token ? (
           <WorkerJoinNotice
@@ -141,7 +143,7 @@ export function ServersPage() {
                       </Button>
                     )}
                     <Button
-                      variant="quiet"
+                      variant="quiet-danger"
                       onPress={() => setRemoving(w)}
                       aria-label={`Remove ${w.name}`}
                     >
@@ -155,7 +157,7 @@ export function ServersPage() {
         <p className="samuori-muted">
           Pools, moving workers, self-tests, cordon, drain and revoke are under{" "}
           <Link href="/admin/workers" className="samuori-link">
-            Nodes &amp; workers
+            Workers &amp; pools
           </Link>
           .
         </p>

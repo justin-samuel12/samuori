@@ -12,6 +12,8 @@ import {
 } from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useHealth } from "../../shell/health";
+import { useWorkerFigures } from "./WorkerStatus";
+import { figureMeaning } from "./workerFigures";
 
 const statusText: Record<string, string> = {
   ok: "Healthy",
@@ -41,20 +43,14 @@ export function OverviewPage() {
         : null;
     },
   });
-  const workers = useQuery({
-    queryKey: ["admin", "workers"],
-    queryFn: async () =>
-      (await api.GET("/workers", { params: { query: { limit: 200 } } })).data
-        ?.items ?? null,
-  });
-  const ready = workers.data?.filter((w) => w.eligibility.untrustedBuilds);
+  const workers = useWorkerFigures().data;
   const h = health.data;
 
   return (
     <>
       <PageHeader
-        title="Administration"
-        description="Organization health, people and build capacity."
+        title="Health"
+        description="Controller checks, people and build capacity."
       />
       <section aria-label="Summary" className="samuori-stat-grid">
         <StatCard
@@ -72,16 +68,20 @@ export function OverviewPage() {
           linkLabel="Manage teams"
         />
         <StatCard
-          label="Workers ready"
-          value={ready ? `${ready.length} / ${workers.data?.length ?? 0}` : "—"}
+          label="Workers ready to build"
+          value={workers ? `${workers.ready} / ${workers.enrolled}` : "—"}
           icon={Server}
-          accent={ready && ready.length > 0 ? "green" : "amber"}
-          hint="Eligible to build uploaded source"
+          accent={workers && workers.ready > 0 ? "green" : "amber"}
+          hint={
+            workers
+              ? `${workers.connected} of ${workers.enrolled} enrolled connected now`
+              : figureMeaning.ready
+          }
           href="/admin/workers"
-          linkLabel="Nodes & workers"
+          linkLabel="Workers & pools"
         />
         <StatCard
-          label="System"
+          label="Controller"
           value={h ? statusText[h.status] : "—"}
           icon={HeartPulse}
           accent={
@@ -134,10 +134,14 @@ export function OverviewPage() {
               ]}
             />
             <p className="samuori-muted mt-3 text-sm">
-              Only components with real connectivity checks are listed. Cluster
-              details are under{" "}
+              Only components with real connectivity checks are listed.
+              Controllers are under{" "}
+              <Link href="/admin/servers" className="samuori-link">
+                Servers
+              </Link>
+              , releases under{" "}
               <Link href="/admin/upgrades" className="samuori-link">
-                Upgrades & Diagnostics
+                Upgrades & diagnostics
               </Link>
               .
             </p>

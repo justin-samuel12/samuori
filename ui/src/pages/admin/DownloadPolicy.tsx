@@ -63,7 +63,7 @@ export function DownloadPolicy() {
         image can be run or pushed anywhere; every download is audited, and
         restricted or quarantined images are never downloadable.
       </p>
-      <div className="samuori-actions">
+      <div className="samuori-actions samuori-actions--start">
         <Button isDisabled={allowed === saved} onPress={() => void save()}>
           Save download setting
         </Button>

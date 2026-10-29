@@ -172,19 +172,7 @@ function PolicySection({
   }
 
   return (
-    <Section
-      title={title}
-      description={description}
-      actions={
-        <Button
-          isDisabled={!dirty || busy}
-          onPress={() => void save()}
-          aria-label={`Save ${title.toLowerCase()}`}
-        >
-          Save
-        </Button>
-      }
-    >
+    <Section title={title} description={description}>
       <p className="samuori-muted text-xs">
         Version {policy.version}
         {policy.updatedAt &&
@@ -192,8 +180,13 @@ function PolicySection({
         {policy.updatedBy && ` by ${policy.updatedBy}`}.
         {dirty && " Unsaved changes."}
       </p>
-      {error && <Alert>{error}</Alert>}
       {children}
+      {error && <Alert>{error}</Alert>}
+      <div className="samuori-actions samuori-actions--start">
+        <Button isDisabled={!dirty || busy} onPress={() => void save()}>
+          Save {title.toLowerCase()}
+        </Button>
+      </div>
       <ConfirmPolicy
         change={confirming}
         onClose={() => setConfirming(undefined)}
@@ -256,7 +249,7 @@ function FrontendsEditor({
                   Edit
                 </Button>
                 <Button
-                  variant="quiet"
+                  variant="quiet-danger"
                   aria-label={`Remove ${r.ref}`}
                   onPress={() => setApproved(without(approved, r.i))}
                 >
@@ -357,7 +350,7 @@ function BuildArgsEditor({
                   Edit
                 </Button>
                 <Button
-                  variant="quiet"
+                  variant="quiet-danger"
                   aria-label={`Remove rule ${r.id}`}
                   onPress={() => setRules(without(rules, r.i))}
                 >
@@ -612,7 +605,7 @@ function SensitiveEditor({
                   Edit
                 </Button>
                 <Button
-                  variant="quiet"
+                  variant="quiet-danger"
                   aria-label={`Remove rule ${r.ruleId}`}
                   onPress={() => setRules(without(rules, r.i))}
                 >

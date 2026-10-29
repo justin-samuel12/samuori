@@ -253,7 +253,7 @@ recording.
 
 The `rootless-host` and `rootless-dedicated-vm` provider runs one of two engines, chosen per worker with
 `--engine` (`buildkit` by default, or `buildah`). The engine is part of the worker's configuration digest, so
-changing it invalidates the self-test. Workers advertise their engine, and the Nodes & workers page shows it.
+changing it invalidates the self-test. Workers advertise their engine, and the Workers & pools page shows it.
 Both engines implement `engine.Runner` (`internal/engine`), so the same provider code, egress rules, limits, canary,
 runtime test and self-test apply.
 

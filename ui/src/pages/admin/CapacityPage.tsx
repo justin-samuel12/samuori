@@ -187,7 +187,7 @@ export function CapacityPage() {
   });
   const header = (
     <PageHeader
-      title="Capacity & activity"
+      title="Capacity"
       description="Disk, memory and CPUs every controller and worker last reported, with builds still running and uploads not yet finished. Refreshes every 15 seconds."
     />
   );
@@ -259,7 +259,7 @@ export function CapacityPage() {
       </section>
 
       <Section
-        title="Controllers"
+        title="Controller capacity"
         description="Controller data holds the database when it is SQLite, logs and, with local storage, uploads and images."
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -282,7 +282,7 @@ export function CapacityPage() {
       </Section>
 
       <Section
-        title="Workers"
+        title="Worker capacity"
         description="Builds and worker state holds each build's workspace while it runs; it is removed when the attempt ends."
       >
         {o.workers.length === 0 ? (

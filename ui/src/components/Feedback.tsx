@@ -4,6 +4,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  CircleHelp,
   Inbox,
   Info,
   TriangleAlert,
@@ -269,5 +270,27 @@ export function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+/** A one-line summary whose longer explanation opens on request. */
+export function Explain({
+  summary,
+  children,
+}: {
+  summary: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <details className="samuori-explain">
+      <summary>
+        <span className="samuori-muted">{summary}</span>{" "}
+        <span className="samuori-explain-toggle">
+          <CircleHelp size={14} aria-hidden="true" />
+          How this works
+        </span>
+      </summary>
+      <div className="samuori-explain-body">{children}</div>
+    </details>
   );
 }

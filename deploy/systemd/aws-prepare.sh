@@ -126,7 +126,7 @@ echo
 echo "Prepared. Install Samuori from this directory with:"
 if [ $role = controller ]; then
 	echo "  first controller: sudo ./samuori-setup   (answer cluster; or --answers answers.yml)"
-	echo "  later ones:       sudo ./samuori-join controller <code from Administration > Servers > Add a controller>"
+	echo "  later ones:       sudo ./samuori-join controller <code from Infrastructure > Servers > Add a controller>"
 else
-	echo "  sudo ./samuori-join worker <code from Administration > Servers > Add a worker>"
+	echo "  sudo ./samuori-join worker <code from Infrastructure > Servers > Add a worker>"
 fi

@@ -23,7 +23,7 @@ export function QuarantinesPage() {
     <>
       <PageHeader
         help="security-review"
-        title="Quarantined images"
+        title="Quarantines"
         description="Images built by a worker that was revoked as compromised. They cannot be published until a security reviewer or administrator releases them after review."
       />
       <Table

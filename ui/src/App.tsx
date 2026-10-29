@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, RouterProvider } from "react-aria-components";
 import { Button } from "./components/Button";
@@ -55,9 +55,9 @@ import { FederationPage } from "./pages/admin/FederationPage";
 import { OverviewPage } from "./pages/admin/OverviewPage";
 import { TeamsPage } from "./pages/admin/TeamsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
-import { match, navigate, usePath } from "./router";
+import { match, navigate, redirect, usePath } from "./router";
 import { Shell } from "./shell/Shell";
-import { isOperator, isReviewer } from "./shell/nav";
+import { isOperator, isReviewer, redirectFor } from "./shell/nav";
 import {
   isOrgAdmin,
   SessionProvider,
@@ -143,8 +143,8 @@ const routes: Route[] = [
     render: () => <NotificationsPage />,
   },
   {
-    path: "/admin",
-    title: "Administration",
+    path: "/admin/health",
+    title: "Health",
     render: () => <OverviewPage />,
     admin: true,
   },
@@ -162,7 +162,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/identity",
-    title: "Identity",
+    title: "Identity & sign-in",
     render: () => <IdentityPage />,
     admin: true,
   },
@@ -183,7 +183,7 @@ const routes: Route[] = [
   { path: "/pipelines", title: "Pipelines", render: () => <PipelinesPage /> },
   {
     path: "/admin/registries",
-    title: "Registries",
+    title: "Registries & destinations",
     render: () => <RegistriesPage />,
     admin: true,
   },
@@ -195,7 +195,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/quarantines",
-    title: "Quarantined images",
+    title: "Quarantines",
     render: () => <QuarantinesPage />,
     admin: true,
   },
@@ -213,13 +213,13 @@ const routes: Route[] = [
   },
   {
     path: "/admin/workers",
-    title: "Nodes & workers",
+    title: "Workers & pools",
     render: () => <WorkersPage />,
     admin: true,
   },
   {
     path: "/admin/capacity",
-    title: "Capacity & activity",
+    title: "Capacity",
     render: () => <CapacityPage />,
     operator: true,
   },
@@ -237,7 +237,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/egress",
-    title: "Network egress",
+    title: "Egress",
     render: () => <EgressPage />,
     admin: true,
   },
@@ -249,7 +249,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/recipes",
-    title: "Recipes & base images",
+    title: "Recipes & runtimes",
     render: () => <RecipesPage />,
     admin: true,
   },
@@ -261,7 +261,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/storage",
-    title: "Artifact storage",
+    title: "Storage",
     render: () => <StoragePage />,
     operator: true,
   },
@@ -285,7 +285,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/upgrades",
-    title: "Upgrades & Diagnostics",
+    title: "Upgrades & diagnostics",
     render: () => <UpgradesPage />,
     operator: true,
   },
@@ -297,7 +297,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/backups",
-    title: "Backup & Restore",
+    title: "Backups",
     render: () => <BackupsPage />,
     admin: true,
   },
@@ -309,7 +309,7 @@ const routes: Route[] = [
   },
   {
     path: "/admin/observability",
-    title: "Observability & Audit",
+    title: "Audit & observability",
     render: () => <ObservabilityPage />,
     operator: true,
     reviewer: true,
@@ -379,7 +379,11 @@ function resolve(
 
 function SignedIn({ me }: { me: Me }) {
   const path = usePath();
-  const { route, params } = resolve(path, me);
+  const moved = redirectFor(path);
+  useEffect(() => {
+    if (moved) redirect(moved);
+  }, [moved]);
+  const { route, params } = resolve(moved ?? path, me);
   return (
     <Shell me={me} title={route?.title ?? "Not found"}>
       <AuthenticatedRoute>

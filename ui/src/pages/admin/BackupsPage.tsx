@@ -60,7 +60,7 @@ export function BackupsPage() {
     <>
       <PageHeader
         help="backups"
-        title="Backup & Restore"
+        title="Backups"
         description="Encrypted backups of the database, the controller's keys and CA, and blobs kept on this controller. Restoring needs the age identity, which Samuori never stores."
       />
       {!list.enabled ? (

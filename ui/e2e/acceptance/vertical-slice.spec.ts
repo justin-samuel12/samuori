@@ -175,7 +175,7 @@ test("the local worker enrolls by itself; the administrator enables its pool and
   test.setTimeout(30 * 60_000);
   const errors = watchConsole(page);
   await signIn(page, admin.username, admin.password);
-  await goTo(page, "Nodes & workers");
+  await goTo(page, "Workers & pools");
   await until(
     page,
     async () =>
@@ -223,7 +223,7 @@ test("the administrator adds the local registry as a destination", async ({
 }) => {
   const errors = watchConsole(page);
   await signIn(page, admin.username, admin.password);
-  await goTo(page, "Registries");
+  await goTo(page, "Registries & destinations");
   await page.getByRole("button", { name: "Add registry" }).click();
   await page.getByLabel("Name", { exact: true }).fill("local");
   await page.getByLabel("Endpoint").fill(registryEndpoint);

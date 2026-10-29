@@ -29,7 +29,7 @@ cluster. The manual steps below are for other layouts.
 
 Joining a controller takes two steps (ADR 0045):
 
-1. An administrator selects **Create a join code** under Workers > Servers > Add a controller. The portal
+1. An administrator selects **Create a join code** under Infrastructure > Servers > Add a controller. The portal
    shows one join code (`samuoric_...`, holding the issuing controller's address, its certificate pin and the token) and
    the command to run from the release folder on the new host:
    `sudo ./samuori-join controller <code>`. It takes the host's own name (its hostname, lowercased, with the DNS search domain added when that resolves to this host; otherwise the cloud instance's private DNS name) (`--host NAME` overrides) and the
@@ -52,7 +52,7 @@ which an administrator rejects when the host or verification code is unexpected.
 
 ### Join a worker
 
-**Add a worker** on the Servers page (or **Enroll a worker** under Nodes & workers) shows one worker join code
+**Add a worker** on the Servers page (or **Enroll a worker** under Workers & pools) shows one worker join code
 (`samuoriwj_...`): this controller's worker endpoints (its non-loopback certificate names and the other live
 controllers, on port 8444), the CA pin and a single-use enrollment token valid for an hour. On the worker VM, from the
 release folder:
@@ -79,7 +79,7 @@ are shown either way, for `sudo samuori-enroll-worker <CA pin>` on a host alread
 
 ## Resilience
 
-Workers > Servers > **Resilience** shows the tier measured now and the plan (ADR 0046). Each part reports the
+Infrastructure > Servers > **Resilience** shows the tier measured now and the plan (ADR 0046). Each part reports the
 failures it survives and what to add:
 
 | Part | Survives | For high availability |
@@ -98,7 +98,7 @@ the join and removal flows.
 
 ## Remove a controller
 
-An administrator removes a controller host under Workers > Servers > Controllers > **Remove**,
+An administrator removes a controller host under Infrastructure > Servers > Controllers > **Remove**,
 with a reason and the host name typed to confirm (ADR 0045). The request is refused, with the reason shown, when it
 would remove the last controller, while another controller is not running, when the NATS members left would not be a
 majority (with a member on each controller: removing one of two is refused; add a controller first), when the
@@ -239,12 +239,12 @@ target database filled: drop and recreate it before trying again.
    is requested and revokes it before the controller's rows go; the wipe deletes both (OD-28). Images in the old
    local registry (`127.0.0.1:5001`) stay on disk but are no longer served; publish to a registry every controller
    reaches.
-5. Add controllers under **Workers > Servers** ([Join](#join)). The SQLite file and local blobs are no longer
+5. Add controllers under **Infrastructure > Servers** ([Join](#join)). The SQLite file and local blobs are no longer
    used; remove them once the cluster is backed up.
 
 ### Cluster to single server
 
-1. Remove every other controller under **Workers > Servers** ([Remove a controller](#remove-a-controller)).
+1. Remove every other controller under **Infrastructure > Servers** ([Remove a controller](#remove-a-controller)).
    The conversion refuses while any other controller is registered and names them.
 2. On the remaining controller:
 

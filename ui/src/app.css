@@ -243,6 +243,82 @@
     background: var(--samuori-accent);
   }
 
+  .samuori-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--samuori-space-1);
+    margin: 0;
+    padding: var(--samuori-space-2) 0;
+    list-style: none;
+  }
+
+  .samuori-subnav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: var(--samuori-radius);
+    color: var(--samuori-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 550;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .samuori-subnav-link:hover {
+    color: var(--samuori-text);
+    background: var(--samuori-raised);
+  }
+
+  .samuori-subnav-link[aria-current="page"] {
+    color: var(--samuori-info);
+    background: var(--samuori-info-bg);
+    box-shadow: inset 0 -2px 0 var(--samuori-accent);
+  }
+
+  .samuori-explain {
+    max-width: var(--samuori-measure);
+    margin-top: var(--samuori-space-3);
+    font-size: 0.875rem;
+  }
+
+  .samuori-explain > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .samuori-explain > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .samuori-explain > summary:focus-visible {
+    outline: 2px solid var(--samuori-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .samuori-explain-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--samuori-space-1);
+    color: var(--samuori-info);
+    font-weight: 550;
+    white-space: nowrap;
+  }
+
+  .samuori-explain[open] .samuori-explain-toggle {
+    color: var(--samuori-text);
+  }
+
+  .samuori-explain-body {
+    margin-top: var(--samuori-space-2);
+    color: var(--samuori-text-muted);
+  }
+
+  .samuori-explain-body > * + * {
+    margin-top: var(--samuori-space-2);
+  }
+
   .samuori-workspace {
     flex: 1;
     width: 100%;
@@ -1048,6 +1124,17 @@
     background: var(--samuori-raised);
   }
 
+  .samuori-button--quiet-danger {
+    background: transparent;
+    color: var(--samuori-danger);
+    min-height: 0;
+    padding: var(--samuori-space-1) var(--samuori-space-2);
+  }
+
+  .samuori-button--quiet-danger[data-hovered] {
+    background: var(--samuori-danger-bg);
+  }
+
   .samuori-button[data-pressed] {
     filter: brightness(0.92);
   }
@@ -1264,7 +1351,8 @@
     justify-content: flex-start;
   }
 
-  .samuori-table .samuori-button:not(.samuori-button--quiet) {
+  .samuori-table
+    .samuori-button:not(.samuori-button--quiet, .samuori-button--quiet-danger) {
     min-height: 32px;
     padding: var(--samuori-space-1) var(--samuori-space-3);
   }

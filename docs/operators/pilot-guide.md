@@ -32,7 +32,7 @@ blobs, DNS names for the controllers, and the release directory on each host. Co
    It creates the cluster key, the cluster CA and its NATS member, and checks the database. Until a second controller
    joins it reports `degraded` ("waiting for a second controller to join"): the portal works, builds wait for a NATS
    majority.
-2. **Join code:** sign in, open Workers > Servers > Add a controller, and select **Create a join code**.
+2. **Join code:** sign in, open Infrastructure > Servers > Add a controller, and select **Create a join code**.
    Copy the command it shows.
 3. **Second and third controllers**, from the release folder:
    ```
@@ -46,10 +46,10 @@ blobs, DNS names for the controllers, and the release directory on each host. Co
    `ctrl3`.
    To use an existing NATS cluster instead of a member on each controller, add `--nats-url`, `--nats-ca-file` and
    its credentials at init (`aws.md#external-nats`); joining controllers inherit them.
-4. **Check:** Workers > Servers lists three live controllers, and `GET /api/v1/system/health` on each says
+4. **Check:** Infrastructure > Servers lists three live controllers, and `GET /api/v1/system/health` on each says
    `ok` once the stream has three replicas.
-5. **Workers**, on separate dedicated VMs. In Workers > Nodes & workers, create a `rootless-dedicated-vm`
-   pool (creating it approves it). Under Workers > Servers, select **Add a worker** and run the command it
+5. **Workers**, on separate dedicated VMs. In Infrastructure > Workers & pools, create a `rootless-dedicated-vm`
+   pool (creating it approves it). Under Infrastructure > Servers, select **Add a worker** and run the command it
    shows from the release folder on the worker VM:
    ```
    sudo ./samuori-join worker samuoriwj_...
@@ -61,7 +61,7 @@ blobs, DNS names for the controllers, and the release directory on each host. Co
    ctrl1.example:8444,ctrl2.example:8444,ctrl3.example:8444`, then `sudo samuori-enroll-worker <CA pin>` with the token
    pasted.
 
-To remove a controller or a worker, select **Remove** for it under Workers > Servers: it hands over
+To remove a controller or a worker, select **Remove** for it under Infrastructure > Servers: it hands over
 leadership, wipes Samuori from its host and is revoked (`high-availability.md#remove-a-controller`). Keep at least three
 NATS members for a tolerant majority.
 
@@ -85,12 +85,12 @@ to record.
 
 **Browser interface**
 - [ ] The UI loads over HTTPS at the external URL with no certificate warning; sign in as the administrator.
-- [ ] Workers > Servers lists every controller as live; health is `ok` on each.
+- [ ] Infrastructure > Servers lists every controller as live; health is `ok` on each.
 - [ ] Under Teams and Users, create a team and a developer with the developer role. Sign in as the developer:
   administration pages are refused, not merely hidden.
 
 **Worker enrollment**
-- [ ] Under Nodes & workers, create a `rootless-dedicated-vm` pool; it shows as enabled, approved by you.
+- [ ] Under Infrastructure > Workers & pools, create a `rootless-dedicated-vm` pool; it shows as enabled, approved by you.
 - [ ] Join a worker with `samuori-join worker` (B.5). It appears online and unassigned; assign it to the pool, then its
       self-test passes.
 - [ ] Reusing the same enrollment token on another host is refused.

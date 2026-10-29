@@ -28,7 +28,7 @@ connections, DNS, worker-host services, host loopback and cloud metadata.
 Admission adds an `egress` policy decision. A recipe that needs a preset the policy does not allow is blocked with
 a plain explanation, and the policy dry run lists the specs a change would newly block. Destination hosts are
 lower-case DNS names or IP addresses; loopback, link-local (including metadata), multicast and unspecified addresses
-are refused. Administrators edit the policy on **Security & Secrets → Network egress** or through `PUT /policies/{id}`. Public and
+are refused. Administrators edit the policy on **Security → Egress** or through `PUT /policies/{id}`. Public and
 internal destinations are added separately, each with an optional reason, and stored with a `network`: `public` names must pass the same public-host check as project requests and
 resolve only to public addresses at the proxy; `internal` (the default, and what earlier policies hold) may resolve to
 private addresses. Like presets, each destination can be switched off (`disabled`) or kept from Dockerfile builds
@@ -80,7 +80,7 @@ was requested as internal, an internal one (ADR 0052 amendment).
 
 ### Promoting project allowances
 
-**Security & Secrets → Network egress → Granted to projects** (`GET /egress-allowances/by-destination`) groups the
+**Security → Egress → Granted to projects** (`GET /egress-allowances/by-destination`) groups the
 organization's active destination allowances by destination and network, most projects first. **Add to organization
 policy** (`POST /egress-allowances/promotion`, organization administrators, reason of 10 to 1024 characters) adds the
 destination to the egress policy for every build method, optionally not Dockerfile builds, and revokes the allowances

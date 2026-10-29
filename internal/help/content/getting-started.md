@@ -12,8 +12,11 @@ builds, checks and publishes the image.
 ## Finding your way
 
 - The **top bar** groups pages into workspaces: **Overview**, **Projects**, **Builds** (build runs, images, pipelines
-  and approvals), **Kubernetes**, **Registries & Recipes**, **Workers**, **Security & Secrets** and
-  **Administration**. Each workspace has tabs for its pages. You only see pages your roles can use.
+  and approvals) and **Kubernetes**. Administrators and operators also see **Build supply** (registries, recipes,
+  policies and providers), **Infrastructure** (workers, servers, capacity, storage, database and messaging),
+  **Security** (secrets, certificates, egress, quarantines and audit) and **Organization** (health, people, sign-in,
+  notification channels, federation, backups and upgrades). Each workspace lists its pages under the top bar; on a
+  phone they fold into a menu. You only see pages your roles can use.
 - **Search** (Ctrl+K, or ⌘K on a Mac) finds any page or guide by name.
 - The **account menu** at the top right holds Account, Notifications, Help, the theme and Sign out; the bell opens
   Notifications. The guides you see depend on your roles; open [Roles and access](help:roles) to see what each

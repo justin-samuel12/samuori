@@ -46,7 +46,7 @@ export function Resilience({ admin }: { admin: boolean }) {
             · Plan: {plan.controllers} controller
             {plan.controllers === 1 ? "" : "s"} ({status.liveControllers}{" "}
             running), {plan.workers} worker{plan.workers === 1 ? "" : "s"} (
-            {status.liveWorkers} ready) ·{" "}
+            {status.liveWorkers} connected and self-tested) ·{" "}
             <Badge tone={tierTone[planned.tier]}>
               {tierText[planned.tier]} when complete
             </Badge>

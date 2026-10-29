@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { landing, locate, visibleWorkspaces } from "./nav.ts";
+import { landing, locate, redirectFor, visibleWorkspaces } from "./nav.ts";
 import type { Me } from "../session/session";
 
 const as = (role: string, scopeType = "organization"): Me =>
@@ -55,11 +55,13 @@ test("paths map to their workspace and section", () => {
     return `${workspace?.id} ${item?.href}`;
   };
   assert.equal(at("/"), "overview /");
-  assert.equal(at("/admin"), "admin /admin");
-  assert.equal(at("/admin/teams"), "admin /admin/teams");
-  assert.equal(at("/admin/registries"), "registries /admin/registries");
+  assert.equal(at("/admin/health"), "organization /admin/health");
+  assert.equal(at("/admin/teams"), "organization /admin/teams");
+  assert.equal(at("/admin/registries"), "supply /admin/registries");
   assert.equal(at("/images/I1"), "builds /images");
-  assert.equal(at("/admin/providers"), "workers /admin/providers");
+  assert.equal(at("/admin/providers"), "supply /admin/providers");
+  assert.equal(at("/admin/queue"), "infrastructure /admin/queue");
+  assert.equal(at("/admin/observability"), "security /admin/observability");
   assert.equal(at("/projects/P1"), "projects /projects");
   assert.equal(at("/projects/P1/upload"), "projects /projects");
   assert.equal(at("/projects/P1/kubernetes/new"), "kubernetes /kubernetes");
@@ -68,7 +70,79 @@ test("paths map to their workspace and section", () => {
   assert.equal(at("/nowhere"), "undefined undefined");
   const dev = visibleWorkspaces(as("developer", "team"));
   assert.equal(locate(dev, "/projects/P1/new-image").item?.href, "/new-image");
-  const admin = list.find((w) => w.id === "admin");
-  assert.ok(admin);
-  assert.equal(landing(admin), "/admin");
+  const org = list.find((w) => w.id === "organization");
+  assert.ok(org);
+  assert.equal(landing(org), "/admin/health");
+});
+
+const sections = (me: Me) =>
+  Object.fromEntries(
+    visibleWorkspaces(me)
+      .filter((w) => w.admin)
+      .map((w) => [
+        w.label,
+        w.groups.flatMap((g) => g.items.map((i) => i.label)),
+      ]),
+  );
+
+test("each role sees the administration sections it can use", () => {
+  assert.deepEqual(sections(as("administrator")), {
+    "Build supply": [
+      "Registries & destinations",
+      "Recipes & runtimes",
+      "Build policies",
+      "Build & conversion providers",
+    ],
+    Infrastructure: [
+      "Workers & pools",
+      "Servers",
+      "Capacity",
+      "Build engines",
+      "Build queue",
+      "Storage",
+      "Database",
+      "Messaging",
+    ],
+    Security: [
+      "Secrets",
+      "Certificates",
+      "Egress",
+      "Quarantines",
+      "Audit & observability",
+    ],
+    Organization: [
+      "Health",
+      "Users",
+      "Teams",
+      "Identity & sign-in",
+      "Notification channels",
+      "Federation",
+      "Backups",
+      "Export & import",
+      "Upgrades & diagnostics",
+    ],
+  });
+  assert.deepEqual(sections(as("operator")), {
+    Infrastructure: [
+      "Capacity",
+      "Build engines",
+      "Build queue",
+      "Storage",
+      "Messaging",
+    ],
+    Security: ["Audit & observability"],
+    Organization: ["Upgrades & diagnostics"],
+  });
+  assert.deepEqual(sections(as("security-reviewer")), {
+    Security: ["Audit & observability"],
+  });
+  assert.deepEqual(sections(as("maintainer", "team")), {});
+});
+
+test("moved administration addresses redirect to their new page", () => {
+  assert.equal(redirectFor("/admin"), "/admin/health");
+  assert.equal(redirectFor("/admin/"), "/admin/health");
+  assert.equal(redirectFor("/admin/health"), undefined);
+  assert.equal(redirectFor("/admin/workers"), undefined);
+  assert.equal(redirectFor("/"), undefined);
 });

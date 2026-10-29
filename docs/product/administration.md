@@ -36,6 +36,10 @@ policies that govern them live under Security → Policies.
 
 Mapping from the two superseded section lists is recorded in ADR 0007.
 
+In the portal these sections are reached through four top-bar sections (ADR 0070): **Build supply**, **Infrastructure**,
+**Security** and **Organization**, with **Health** (`/admin/health`) as the administration overview. `/admin`
+redirects to Health.
+
 ## Rules for every connection / setting
 
 - Editable profile, **Test** action using real connectivity, error details, health status, permissions, audit trail.

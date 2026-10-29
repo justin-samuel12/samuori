@@ -505,7 +505,7 @@ if [ "$server" = none ]; then
 	cat <<EOF
 
 The worker is installed and will connect to $controller once enrolled. In the controller's UI, under
-Administration > Servers, select "Add a worker", then run here:
+Infrastructure > Servers, select "Add a worker", then run here:
   sudo samuori-enroll-worker <CA pin>     (paste the token when asked)
 Next time, sudo ./samuori-join worker <code> installs and enrolls in one step.
 EOF
@@ -521,16 +521,16 @@ Samuori is running on http://$listen.
 $(if [ -n "$admin" ]; then echo "1. Sign in as $admin."; else echo "1. Open it and complete setup with the one-time code from: sudo samuori-setup-code"; fi)
 $(if [ "$local_worker" = yes ]; then cat <<MSG
    The local worker then enrolls by itself in the pool "local".
-2. Under Administration > Nodes & workers, select "Enable pool" for the "local" pool. The worker then runs its
+2. Under Infrastructure > Workers & pools, select "Enable pool" for the "local" pool. The worker then runs its
    self-test; uploaded source builds once it passes.
 MSG
 else cat <<MSG
    This host runs no builds (--no-local-worker).
-2. Under Administration > Servers, select "Add a worker" and run sudo ./samuori-join worker <code> from the release
+2. Under Infrastructure > Servers, select "Add a worker" and run sudo ./samuori-join worker <code> from the release
    folder on each worker host, then assign it to a pool. Uploaded source builds once a worker passes its
    self-test for its pool.
 MSG
 fi)
-3. Under Administration > Registries, add the local registry 127.0.0.1:5001 (plain HTTP, private network).
+3. Under Build supply > Registries & destinations, add the local registry 127.0.0.1:5001 (plain HTTP, private network).
 EOF
 exit 0

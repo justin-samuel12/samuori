@@ -29,7 +29,7 @@ federation material, and audit records.
 
 ## Export
 
-Portal: **Administration → Export & import → Download configuration**. CLI: `samuori config export -o
+Portal: **Organization > Export & import > Download configuration**. CLI: `samuori config export -o
 configuration.yml` (with `--json` for JSON). API: `GET /api/v1/configuration/export`. Each export is audited as
 `configuration.export`.
 

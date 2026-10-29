@@ -192,6 +192,7 @@ type workerView struct {
 	PoolID           string       `json:"poolId,omitempty"`
 	EnrollmentState  string       `json:"enrollmentState"`
 	OperationalState string       `json:"operationalState"`
+	Connected        bool         `json:"connected"`
 	Eligibility      eligibility  `json:"eligibility"`
 	Capabilities     capabilities `json:"capabilities"`
 	SelfTest         selfTestView `json:"selfTest"`
@@ -246,6 +247,7 @@ func (a *API) toWorker(r *http.Request, wk workers.Worker, pools map[string]work
 			IsolationProfiles: nonNil(wk.Capabilities.IsolationProfiles), DaemonSlots: wk.Capabilities.DaemonSlots, ConfigDigest: wk.Capabilities.ConfigDigest},
 		SelfTest: selfTestView{Status: wk.SelfTest.Status, Running: wk.SelfTestRunning, Current: workers.CurrentSelfTest(wk, pools[wk.PoolID]), FinishedAt: wk.SelfTest.FinishedAt,
 			Profile: wk.SelfTest.Profile, ConfigDigest: wk.SelfTest.ConfigDigest, FailedChecks: nonNil(wk.SelfTest.FailedChecks)}}
+	v.Connected = a.channel != nil && a.channel.Connected(wk.ID)
 	now := time.Now()
 	if v.EnrollmentState == workers.Enrolled && !now.Before(wk.CertExpiresAt) {
 		v.EnrollmentState = workers.Expired

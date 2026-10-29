@@ -16,6 +16,7 @@ import {
   Globe,
   Hammer,
   HardDrive,
+  HeartPulse,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -64,6 +65,8 @@ export interface Workspace {
   id: string;
   label: string;
   icon: LucideIcon;
+  /** An administration section: its pages wrap into a sub-navigation instead of a scrolling tab strip. */
+  admin?: boolean;
   groups: NavGroup[];
 }
 
@@ -128,13 +131,6 @@ export const workspaces: Workspace[] = [
             icon: ShieldCheck,
             ops: ["listApprovals"],
           },
-          {
-            href: "/admin/queue",
-            label: "Build queue",
-            icon: ListOrdered,
-            admin: true,
-            operator: true,
-          },
         ],
       },
     ],
@@ -157,21 +153,22 @@ export const workspaces: Workspace[] = [
     ],
   },
   {
-    id: "registries",
-    label: "Registries & Recipes",
+    id: "supply",
+    label: "Build supply",
     icon: Send,
+    admin: true,
     groups: [
       {
         items: [
           {
             href: "/admin/registries",
-            label: "Registries",
+            label: "Registries & destinations",
             icon: Send,
             admin: true,
           },
           {
             href: "/admin/recipes",
-            label: "Recipes & base images",
+            label: "Recipes & runtimes",
             icon: ChefHat,
             admin: true,
           },
@@ -180,43 +177,6 @@ export const workspaces: Workspace[] = [
             label: "Build policies",
             icon: Scale,
             admin: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "workers",
-    label: "Workers",
-    icon: Server,
-    groups: [
-      {
-        items: [
-          {
-            href: "/admin/workers",
-            label: "Nodes & workers",
-            icon: Server,
-            admin: true,
-          },
-          {
-            href: "/admin/servers",
-            label: "Servers",
-            icon: Network,
-            admin: true,
-          },
-          {
-            href: "/admin/capacity",
-            label: "Capacity & activity",
-            icon: Gauge,
-            admin: true,
-            operator: true,
-          },
-          {
-            href: "/admin/engines",
-            label: "Build engines",
-            icon: Cpu,
-            admin: true,
-            operator: true,
           },
           {
             href: "/admin/providers",
@@ -229,9 +189,75 @@ export const workspaces: Workspace[] = [
     ],
   },
   {
+    id: "infrastructure",
+    label: "Infrastructure",
+    icon: Server,
+    admin: true,
+    groups: [
+      {
+        items: [
+          {
+            href: "/admin/workers",
+            label: "Workers & pools",
+            icon: Server,
+            admin: true,
+          },
+          {
+            href: "/admin/servers",
+            label: "Servers",
+            icon: Network,
+            admin: true,
+          },
+          {
+            href: "/admin/capacity",
+            label: "Capacity",
+            icon: Gauge,
+            admin: true,
+            operator: true,
+          },
+          {
+            href: "/admin/engines",
+            label: "Build engines",
+            icon: Cpu,
+            admin: true,
+            operator: true,
+          },
+          {
+            href: "/admin/queue",
+            label: "Build queue",
+            icon: ListOrdered,
+            admin: true,
+            operator: true,
+          },
+          {
+            href: "/admin/storage",
+            label: "Storage",
+            icon: HardDrive,
+            admin: true,
+            operator: true,
+          },
+          {
+            href: "/admin/database",
+            label: "Database",
+            icon: Database,
+            admin: true,
+          },
+          {
+            href: "/admin/messaging",
+            label: "Messaging",
+            icon: Radio,
+            admin: true,
+            operator: true,
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: "security",
-    label: "Security & Secrets",
+    label: "Security",
     icon: KeyRound,
+    admin: true,
     groups: [
       {
         items: [
@@ -249,19 +275,19 @@ export const workspaces: Workspace[] = [
           },
           {
             href: "/admin/egress",
-            label: "Network egress",
+            label: "Egress",
             icon: Globe,
             admin: true,
           },
           {
             href: "/admin/quarantines",
-            label: "Quarantined images",
+            label: "Quarantines",
             icon: ShieldAlert,
             admin: true,
           },
           {
             href: "/admin/observability",
-            label: "Observability & Audit",
+            label: "Audit & observability",
             icon: Activity,
             admin: true,
             operator: true,
@@ -272,22 +298,17 @@ export const workspaces: Workspace[] = [
     ],
   },
   {
-    id: "admin",
-    label: "Administration",
+    id: "organization",
+    label: "Organization",
     icon: Settings2,
+    admin: true,
     groups: [
       {
         items: [
-          { href: "/admin", label: "Overview", icon: Gauge, admin: true },
-        ],
-      },
-      {
-        label: "People",
-        items: [
           {
-            href: "/admin/teams",
-            label: "Teams",
-            icon: UsersRound,
+            href: "/admin/health",
+            label: "Health",
+            icon: HeartPulse,
             admin: true,
           },
           {
@@ -297,29 +318,16 @@ export const workspaces: Workspace[] = [
             admin: true,
           },
           {
+            href: "/admin/teams",
+            label: "Teams",
+            icon: UsersRound,
+            admin: true,
+          },
+          {
             href: "/admin/identity",
-            label: "Identity",
+            label: "Identity & sign-in",
             icon: Fingerprint,
             admin: true,
-          },
-        ],
-      },
-      {
-        label: "Platform",
-        items: [
-          {
-            href: "/admin/storage",
-            label: "Artifact storage",
-            icon: HardDrive,
-            admin: true,
-            operator: true,
-          },
-          {
-            href: "/admin/messaging",
-            label: "Messaging",
-            icon: Radio,
-            admin: true,
-            operator: true,
           },
           {
             href: "/admin/notifications",
@@ -333,20 +341,9 @@ export const workspaces: Workspace[] = [
             icon: Share2,
             admin: true,
           },
-        ],
-      },
-      {
-        label: "Operations",
-        items: [
-          {
-            href: "/admin/database",
-            label: "Database",
-            icon: Database,
-            admin: true,
-          },
           {
             href: "/admin/backups",
-            label: "Backup & Restore",
+            label: "Backups",
             icon: DatabaseBackup,
             admin: true,
           },
@@ -358,7 +355,7 @@ export const workspaces: Workspace[] = [
           },
           {
             href: "/admin/upgrades",
-            label: "Upgrades & Diagnostics",
+            label: "Upgrades & diagnostics",
             icon: Stethoscope,
             admin: true,
             operator: true,
@@ -368,6 +365,16 @@ export const workspaces: Workspace[] = [
     ],
   },
 ];
+
+/** Old addresses of moved pages, so bookmarks and links in guides keep working. */
+export const redirects: Record<string, string> = {
+  "/admin": "/admin/health",
+};
+
+export function redirectFor(path: string): string | undefined {
+  const to = redirects[path.replace(/\/+$/, "") || "/"];
+  return to !== path ? to : undefined;
+}
 
 export const accountNav: NavItem[] = [
   { href: "/account", label: "Account", icon: UserRound },
@@ -430,7 +437,7 @@ export function landing(w: Workspace): string {
 }
 
 export function isCurrent(href: string, path: string): boolean {
-  return href === "/" || href === "/admin"
+  return href === "/"
     ? path === href
     : path === href || path.startsWith(href + "/");
 }

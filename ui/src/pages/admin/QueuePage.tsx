@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
+import { Link } from "react-aria-components";
 import { api, type Schemas } from "../../api/client";
 import { Alert, Loading, PageHeader } from "../../components/Feedback";
 import { useLoader } from "../../hooks";
 import { RunsTable } from "../BuildsPage";
+import { WorkerStatus } from "./WorkerStatus";
 
 const active = [
   "queued",
@@ -42,12 +44,21 @@ export function QueuePage() {
         description="Builds waiting for a worker or running now, oldest first. Teams take turns."
       />
       <p>
-        {waiting} waiting, {runs.length - waiting} running.
+        {waiting} waiting, {runs.length - waiting} running. Finished builds are
+        under{" "}
+        <Link href="/builds" className="samuori-link">
+          Build runs
+        </Link>
+        .
       </p>
+      <WorkerStatus />
       {waiting > 0 && runs.length === waiting && (
         <Alert tone="warning">
-          Builds are waiting but none is running. Check Nodes & Workers for
-          eligible workers.
+          Builds are waiting but none is running. Check{" "}
+          <Link href="/admin/workers" className="samuori-link">
+            Workers &amp; pools
+          </Link>{" "}
+          for workers ready to build.
         </Alert>
       )}
       <RunsTable

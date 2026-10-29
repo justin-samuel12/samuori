@@ -1,16 +1,13 @@
 import { useCallback, useState } from "react";
+import { Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { TextField } from "../../components/Field";
 import { Alert, Badge, Loading, PageHeader } from "../../components/Feedback";
-import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 
 type Status = Schemas["DatabaseStatus"];
-type ControllerCheck = Status["controllers"][number];
-
-const tone = { verified: "ok", failed: "bad", pending: "warn" } as const;
 
 export function DatabasePage() {
   const [status, setStatus] = useState<Status>();
@@ -103,36 +100,7 @@ export function DatabasePage() {
               : "SQLite has no password"}
         </dd>
       </dl>
-      <h2>Controllers</h2>
-      <Table<ControllerCheck>
-        label="Controllers"
-        rows={status.controllers}
-        empty="No live controller."
-        columns={[
-          {
-            id: "host",
-            name: "Controller",
-            isRowHeader: true,
-            render: (c) => c.hostname,
-          },
-          {
-            id: "status",
-            name: status.revision ? "Newest password" : "Connection",
-            render: (c) => (
-              <Badge tone={tone[c.status]}>
-                {status.revision ? c.status : "connected"}
-              </Badge>
-            ),
-          },
-          {
-            id: "detail",
-            name: "Detail",
-            render: (c) =>
-              c.detail ||
-              (c.checkedAt ? new Date(c.checkedAt).toLocaleString() : ""),
-          },
-        ]}
-      />
+      <ControllerSummary status={status} />
       {updating && (
         <UpdateDialog
           onClose={() => setUpdating(false)}
@@ -145,6 +113,40 @@ export function DatabasePage() {
           }}
         />
       )}
+    </>
+  );
+}
+
+/** Each controller's check of the newest password in one line; the controllers themselves are listed under Servers. */
+function ControllerSummary({ status }: { status: Status }) {
+  const all = status.controllers;
+  const failed = all.filter((c) => c.status === "failed");
+  const pending = all.filter((c) => c.status === "pending");
+  return (
+    <>
+      <p>
+        {status.revision ? (
+          <>
+            Newest password:{" "}
+            <Badge
+              tone={failed.length ? "bad" : pending.length ? "warn" : "ok"}
+            >
+              {all.length - failed.length - pending.length} of {all.length}{" "}
+              controllers verified
+            </Badge>
+          </>
+        ) : (
+          `${all.length} live controller${all.length === 1 ? "" : "s"} connected.`
+        )}{" "}
+        <Link href="/admin/servers" className="samuori-link">
+          Controllers under Servers
+        </Link>
+      </p>
+      {failed.map((c) => (
+        <Alert key={c.hostname}>
+          {c.hostname}: {c.detail || "the newest password did not work"}
+        </Alert>
+      ))}
     </>
   );
 }

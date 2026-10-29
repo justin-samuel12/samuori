@@ -229,7 +229,7 @@ profiles whose secrets are controller-only local secrets.
 ## UI
 
 - Developers see destination and source names and whether they may use them. They never see credentials.
-- Administrators manage profiles, approved sources, mirrors and destinations under **Registries & Recipes > Registries**,
+- Administrators manage profiles, approved sources, mirrors and destinations under **Build supply > Registries & destinations**,
   with Test, View or edit, Delete and audit history. Rotate and Disable are not built; rotate by storing a new
   version of the secret.
 - The ECR identity choices are named for what they use: **This controller's IAM role (EC2 instance profile or the
