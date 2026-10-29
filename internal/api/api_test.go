@@ -184,6 +184,10 @@ func TestEveryOperationIsRouted(t *testing.T) {
 		if c.op.Extensions["x-samuori-signed"] == true && code == http.StatusUnauthorized {
 			continue
 		}
+		// The test principal is not a browser session, which session renewal refuses by design (ADR 0068).
+		if code == http.StatusForbidden && strings.Contains(string(body), "browser_session_required") {
+			continue
+		}
 		switch code {
 		case http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError, http.StatusMethodNotAllowed:
 			t.Errorf("%s %s = %d: %s", c.method, c.path, code, body)
