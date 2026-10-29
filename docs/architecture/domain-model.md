@@ -40,7 +40,8 @@ column — ADR 0003. `validation_runs`/`check_results` are added by ADR 0003.)
 - Explicit revision numbers and optimistic concurrency (`ETag` / `If-Match`) for spec and policy edits.
 - Audit is append-only at the application layer. A SQL row is **not** tamper-proof; where stronger guarantees are
   needed, ship tamper-evident copies externally. Never claim otherwise.
-- Tenant-aware model: every row is scoped to an organization even though one organization is supported first (D30).
+- Single organization per installation (ADR 0071): one customer per install. Every row is still scoped to an
+  organization, which stays as an isolation primitive, but no way to create or switch organizations is exposed (D30).
 - Migrations are portable across SQLite and PostgreSQL (separate directories, same logical schema) — ADR 0017.
 
 ## Core contracts
