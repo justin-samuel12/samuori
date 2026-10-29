@@ -97,7 +97,7 @@ func Run(ctx context.Context, args []string, getenv func(string) string, stdin i
 		"build": e.build, "builds": e.builds, "status": e.status, "logs": e.logs, "cancel": e.cancel,
 		"images": e.images, "download": e.download, "deploy-files": e.deployFiles, "publish": e.publish,
 		"promote": e.promote, "requests": e.requests, "request": e.request, "withdraw": e.withdraw,
-		"pipeline": e.pipeline, "pipelines": e.pipelines, "api": e.apiCall, "ci": e.ci,
+		"pipeline": e.pipeline, "pipelines": e.pipelines, "api": e.apiCall, "ci": e.ci, "config": e.config,
 	}
 	cmd, ok := offline[rest[0]]
 	if !ok {

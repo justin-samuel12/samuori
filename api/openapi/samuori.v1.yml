@@ -26,6 +26,7 @@ tags:
   - name: registries
   - name: policies
   - name: audit
+  - name: configuration
   - name: notifications
   - name: pipelines
   - name: kubernetes
@@ -6134,6 +6135,68 @@ paths:
         "422": { $ref: "#/components/responses/Problem" }
         "429": { $ref: "#/components/responses/RateLimited" }
 
+  /configuration/export:
+    get:
+      tags: [configuration]
+      operationId: exportConfiguration
+      description: >-
+        The organization's configuration as one document (kind Configuration, schema
+        api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom
+        recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity
+        and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their
+        builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069.
+      x-samuori-roles: [administrator]
+      responses:
+        "200":
+          description: The configuration document, deterministically ordered
+          content:
+            application/yaml:
+              schema: { type: object, additionalProperties: true }
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /configuration/import:
+    post:
+      tags: [configuration]
+      operationId: importConfiguration
+      description: >-
+        Compares a Configuration document with this organization and answers the plan: per item create, update,
+        unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again,
+        references that could not be resolved, changes to make by hand). dryRun defaults to true and changes
+        nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same
+        checks as the individual operations, each item audited by its own event plus one configuration.import;
+        nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+      x-samuori-roles: [administrator]
+      x-samuori-max-body-bytes: 4194304
+      parameters:
+        - { $ref: "#/components/parameters/CsrfToken" }
+        - { $ref: "#/components/parameters/IdempotencyKeyOptional" }
+        - { name: dryRun, in: query, required: false, schema: { type: boolean, default: true }, description: "false applies the plan; it then needs an Idempotency-Key" }
+      requestBody:
+        required: true
+        content:
+          application/yaml:
+            schema: { type: object, additionalProperties: true }
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: The plan, and with dryRun=false what was applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConfigurationImport" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
   /operations/{operationId}:
     parameters: [{ name: operationId, in: path, required: true, schema: { $ref: "#/components/schemas/Id" } }]
     get:
@@ -9958,6 +10021,47 @@ components:
         retentionDays: { type: integer, minimum: 0, maximum: 36500, description: "0 keeps events forever; otherwise at least 30" }
         exportEnabled: { type: boolean, description: Write new events to JSON Lines files in the controller's audit export directory }
         requireExport: { type: boolean, description: Purge only events that scheduled export has already written }
+    ConfigurationImport:
+      type: object
+      required: [dryRun, complete, items, needsAttention, summary]
+      properties:
+        dryRun: { type: boolean }
+        complete: { type: boolean, description: "false when an applied item failed; the items after it were still tried" }
+        sourceOrganization: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ConfigurationImportItem" }
+        needsAttention:
+          type: array
+          items: { $ref: "#/components/schemas/ConfigurationAttention" }
+        summary:
+          type: object
+          required: [create, update, unchanged, skip, failed]
+          properties:
+            create: { type: integer }
+            update: { type: integer }
+            unchanged: { type: integer }
+            skip: { type: integer }
+            failed: { type: integer }
+    ConfigurationImportItem:
+      type: object
+      required: [section, name, action, reason]
+      properties:
+        section: { type: string }
+        name: { type: string }
+        action: { type: string, enum: [create, update, unchanged, skip] }
+        reason: { type: string }
+        outcome: { type: string, enum: [applied, failed], description: "Set when the plan was applied and the item was created, updated or failed" }
+        error: { type: string }
+    ConfigurationAttention:
+      type: object
+      required: [section, name, kind, message]
+      properties:
+        section: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [credential, secret, reference, review] }
+        message: { type: string }
+        link: { type: string, description: The portal page where it is done }
     AuditPolicy:
       type: object
       required: [retentionDays, exportEnabled, requireExport, lastPurgeCount]

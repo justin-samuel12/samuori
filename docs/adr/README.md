@@ -73,3 +73,4 @@ owner approval.
 | [0065](0065-disabling-users-and-resetting-passwords.md) | Disabling users and resetting passwords | Accepted (provisional) |
 | [0066](0066-api-stability-and-deprecation.md) | API stability and deprecation | Accepted (provisional) |
 | [0068](0068-renewing-a-session-by-re-authenticating.md) | Renewing a session by re-authenticating | Accepted (provisional) |
+| [0069](0069-exporting-and-importing-configuration.md) | Exporting and importing configuration | Accepted (provisional) |

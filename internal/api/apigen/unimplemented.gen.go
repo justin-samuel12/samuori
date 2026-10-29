@@ -187,6 +187,14 @@ func (Unimplemented) PollClusterJoin(w http.ResponseWriter, r *http.Request, _ I
 	NotImplemented(w, r, "PollClusterJoin")
 }
 
+func (Unimplemented) ExportConfiguration(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "ExportConfiguration")
+}
+
+func (Unimplemented) ImportConfiguration(w http.ResponseWriter, r *http.Request, _ ImportConfigurationParams) {
+	NotImplemented(w, r, "ImportConfiguration")
+}
+
 func (Unimplemented) ListCustomRecipes(w http.ResponseWriter, r *http.Request, _ ListCustomRecipesParams) {
 	NotImplemented(w, r, "ListCustomRecipes")
 }

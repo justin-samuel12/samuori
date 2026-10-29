@@ -239,6 +239,15 @@ func (s *Store) LoadPrincipal(ctx context.Context, userID string) (authz.Princip
 	return p, display, rows.Err()
 }
 
+func (s *Store) OrganizationName(ctx context.Context, orgID string) (string, error) {
+	var name string
+	err := s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT name FROM organizations WHERE id = ?`), orgID).Scan(&name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return name, err
+}
+
 func (s *Store) ListTeams(ctx context.Context, p authz.Principal) ([]Team, error) {
 	where, args := s.visibility(p, nil, "id", "")
 	rows, err := s.db.SQL.QueryContext(ctx, s.db.Rebind(`SELECT id, org_id, name, created_at FROM teams WHERE org_id = ? AND (`+where+`) ORDER BY name`), append([]any{p.OrgID}, args...)...)

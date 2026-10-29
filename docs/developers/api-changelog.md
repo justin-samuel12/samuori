@@ -4,6 +4,13 @@ Changes to `/api/v1` that callers need to know about, newest first: deprecations
 plus notable additions. Rules: [ADR 0066](../adr/0066-api-stability-and-deprecation.md). The API is `v1alpha1`;
 nothing is stable yet.
 
+## 2026-10-29
+
+- Added `GET /configuration/export` and `POST /configuration/import` (`exportConfiguration`, `importConfiguration`,
+  administrators, additive): the organization's configuration as a `kind: Configuration` document without secrets,
+  and a preview-first import that applies it through the existing checks (ADR 0069). The import takes `dryRun`
+  (default true) and, to apply, an `Idempotency-Key`.
+
 ## 2026-10-28
 
 - Added `POST /auth/session/renewal` (`renewSession`, additive): re-authenticates the user of a browser session and

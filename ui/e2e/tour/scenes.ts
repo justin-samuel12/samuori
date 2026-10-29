@@ -264,6 +264,11 @@ export const scenes: Scene[] = [
     route: "/admin/backups",
   }),
   admin({
+    name: "configuration",
+    caption: "Export & import configuration",
+    route: "/admin/configuration",
+  }),
+  admin({
     name: "upgrades",
     caption: "Upgrades & Diagnostics",
     route: "/admin/upgrades",

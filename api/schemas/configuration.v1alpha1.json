@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samuori.invalid/schemas/configuration/v1alpha1.json",
+  "title": "Samuori Configuration v1alpha1",
+  "description": "An organization's exported configuration, without secrets. Design: docs/adr/0069-exporting-and-importing-configuration.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "samuori.invalid/v1alpha1" },
+    "kind": { "const": "Configuration" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exportedAt": { "type": "string", "maxLength": 64 },
+        "samuoriVersion": { "type": "string", "maxLength": 128 },
+        "organization": { "type": "string", "maxLength": 256 }
+      }
+    },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" },
+    "dnsName": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$" },
+    "projectRef": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?/[^/]{1,128}$" },
+    "short": { "type": "string", "maxLength": 512 },
+    "strings": { "type": "array", "maxItems": 500, "items": { "type": "string", "minLength": 1, "maxLength": 512 } },
+    "image": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "teams": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/dnsName" } },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["localSignIn", "session"],
+          "properties": {
+            "localSignIn": { "enum": ["all", "administrators"] },
+            "session": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["idleTimeoutMinutes", "maxSessionHours", "warningSeconds"],
+              "properties": {
+                "idleTimeoutMinutes": { "type": "integer", "minimum": 15, "maximum": 120 },
+                "maxSessionHours": { "type": "integer", "minimum": 1, "maximum": 24 },
+                "warningSeconds": { "type": "integer", "minimum": 30, "maximum": 600 }
+              }
+            }
+          }
+        },
+        "auditRetention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["retentionDays", "exportEnabled", "requireExport"],
+          "properties": {
+            "retentionDays": { "type": "integer", "minimum": 0, "maximum": 36500 },
+            "exportEnabled": { "type": "boolean" },
+            "requireExport": { "type": "boolean" }
+          }
+        },
+        "policies": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base-images": { "type": "object" },
+            "build-args": { "type": "object" },
+            "egress": { "type": "object" },
+            "frontends": { "type": "object" },
+            "publication": { "type": "object" },
+            "sensitive-content": { "type": "object" },
+            "validation": { "type": "object" }
+          }
+        },
+        "buildMethods": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowed"],
+          "properties": {
+            "allowed": { "type": "array", "minItems": 1, "items": { "enum": ["recipe", "dockerfile", "railpack", "buildpacks"] } },
+            "default": { "enum": ["", "recipe", "dockerfile", "railpack", "buildpacks"] },
+            "providers": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "enabled"],
+                "properties": {
+                  "name": { "$ref": "#/$defs/name" },
+                  "enabled": { "type": "boolean" },
+                  "version": { "$ref": "#/$defs/short" },
+                  "artifacts": { "type": "object", "maxProperties": 20, "additionalProperties": { "$ref": "#/$defs/image" } },
+                  "pools": { "$ref": "#/$defs/strings" },
+                  "projects": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/projectRef" } },
+                  "egressPresets": { "$ref": "#/$defs/strings" },
+                  "timeoutSeconds": { "type": "integer", "minimum": 0, "maximum": 7200 },
+                  "runAsRoot": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "recipes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "statuses": {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["recipe", "version", "status", "reason"],
+                "properties": {
+                  "recipe": { "$ref": "#/$defs/name" },
+                  "version": { "$ref": "#/$defs/short" },
+                  "status": { "enum": ["approved", "deprecated", "withdrawn"] },
+                  "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+                }
+              }
+            },
+            "shippedRuntimes": {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["recipe", "version", "label", "status", "reason"],
+                "properties": {
+                  "recipe": { "$ref": "#/$defs/name" },
+                  "version": { "$ref": "#/$defs/short" },
+                  "label": { "type": "string", "maxLength": 16 },
+                  "status": { "enum": ["approved", "deprecated", "withdrawn"] },
+                  "reason": { "type": "string", "minLength": 3, "maxLength": 1024 }
+                }
+              }
+            },
+            "organizationRuntimes": {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["recipe", "version", "label", "buildImage", "runImage", "status"],
+                "properties": {
+                  "recipe": { "$ref": "#/$defs/name" },
+                  "version": { "$ref": "#/$defs/short" },
+                  "label": { "type": "string", "maxLength": 16 },
+                  "buildImage": { "$ref": "#/$defs/image" },
+                  "runImage": { "$ref": "#/$defs/image" },
+                  "note": { "type": "string", "maxLength": 512 },
+                  "status": { "enum": ["draft", "approved"] }
+                }
+              }
+            },
+            "custom": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["status", "definition"],
+                "properties": {
+                  "status": { "enum": ["draft", "approved", "deprecated"] },
+                  "reason": { "type": "string", "maxLength": 1024 },
+                  "definition": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "workerPools": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "isolationProfile", "trustDomain"],
+            "properties": {
+              "name": { "$ref": "#/$defs/dnsName" },
+              "location": { "$ref": "#/$defs/dnsName" },
+              "isolationProfile": { "enum": ["vm-per-job", "rootless-dedicated-vm", "rootless-host"] },
+              "trustDomain": { "type": "string", "maxLength": 253 },
+              "trustedWorkloadsOnly": { "type": "boolean" }
+            }
+          }
+        },
+        "registries": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "kind"],
+            "properties": {
+              "name": { "$ref": "#/$defs/name" },
+              "kind": { "enum": ["oci", "ecr"] },
+              "endpoint": { "type": "string", "maxLength": 512 },
+              "accountId": { "type": "string", "pattern": "^[0-9]{12}$" },
+              "region": { "type": "string", "maxLength": 64 },
+              "plainHttp": { "type": "boolean" },
+              "allowPrivateNetwork": { "type": "boolean" }
+            }
+          }
+        },
+        "credentialProfiles": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "registry", "type", "purpose"],
+            "properties": {
+              "name": { "$ref": "#/$defs/name" },
+              "registry": { "$ref": "#/$defs/name" },
+              "type": { "enum": ["anonymous", "ecr", "oci-basic", "oci-token"] },
+              "purpose": { "enum": ["pull", "push"] },
+              "repositoryScopes": { "$ref": "#/$defs/strings" }
+            }
+          }
+        },
+        "destinations": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "registry", "repository", "pushProfile"],
+            "properties": {
+              "name": { "$ref": "#/$defs/name" },
+              "registry": { "$ref": "#/$defs/name" },
+              "repository": { "type": "string", "minLength": 1, "maxLength": 255 },
+              "pushProfile": { "$ref": "#/$defs/name" },
+              "allowedProjects": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/projectRef" } },
+              "protectedTags": { "type": "array", "maxItems": 100, "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
+              "immutableTags": { "type": "boolean" },
+              "requiresApproval": { "type": "boolean" },
+              "acceptsRestricted": { "type": "boolean" },
+              "signImages": { "type": "boolean" },
+              "attachProvenance": { "type": "boolean" },
+              "promotionOnly": { "type": "boolean" }
+            }
+          }
+        },
+        "notificationChannels": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "kind"],
+            "properties": {
+              "name": { "$ref": "#/$defs/name" },
+              "kind": { "enum": ["webhook", "slack", "teams", "email"] },
+              "url": { "type": "string", "maxLength": 2048 },
+              "recipients": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 3, "maxLength": 320 } },
+              "allowPrivateNetwork": { "type": "boolean" },
+              "enabled": { "type": "boolean" }
+            }
+          }
+        },
+        "notificationRules": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["channel", "events"],
+            "properties": {
+              "channel": { "$ref": "#/$defs/name" },
+              "events": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "string", "maxLength": 64 } },
+              "team": { "$ref": "#/$defs/dnsName" },
+              "project": { "$ref": "#/$defs/projectRef" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

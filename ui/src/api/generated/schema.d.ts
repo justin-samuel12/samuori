@@ -4099,6 +4099,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configuration/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The organization's configuration as one document (kind Configuration, schema api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069. */
+        get: operations["exportConfiguration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configuration/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069. */
+        post: operations["importConfiguration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/operations/{operationId}": {
         parameters: {
             query?: never;
@@ -7487,6 +7521,43 @@ export interface components {
             exportEnabled: boolean;
             /** @description Purge only events that scheduled export has already written */
             requireExport: boolean;
+        };
+        ConfigurationImport: {
+            dryRun: boolean;
+            /** @description false when an applied item failed; the items after it were still tried */
+            complete: boolean;
+            sourceOrganization?: string;
+            items: components["schemas"]["ConfigurationImportItem"][];
+            needsAttention: components["schemas"]["ConfigurationAttention"][];
+            summary: {
+                create: number;
+                update: number;
+                unchanged: number;
+                skip: number;
+                failed: number;
+            };
+        };
+        ConfigurationImportItem: {
+            section: string;
+            name: string;
+            /** @enum {string} */
+            action: "create" | "update" | "unchanged" | "skip";
+            reason: string;
+            /**
+             * @description Set when the plan was applied and the item was created, updated or failed
+             * @enum {string}
+             */
+            outcome?: "applied" | "failed";
+            error?: string;
+        };
+        ConfigurationAttention: {
+            section: string;
+            name: string;
+            /** @enum {string} */
+            kind: "credential" | "secret" | "reference" | "review";
+            message: string;
+            /** @description The portal page where it is done */
+            link?: string;
         };
         AuditPolicy: {
             retentionDays: number;
@@ -17029,6 +17100,79 @@ export interface operations {
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    exportConfiguration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The configuration document, deterministically ordered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": {
+                        [key: string]: unknown;
+                    };
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    importConfiguration: {
+        parameters: {
+            query?: {
+                /** @description false applies the plan; it then needs an Idempotency-Key */
+                dryRun?: boolean;
+            };
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+                /** @description Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/yaml": {
+                    [key: string]: unknown;
+                };
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description The plan, and with dryRun=false what was applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigurationImport"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            413: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
             429: components["responses"]["RateLimited"];
         };

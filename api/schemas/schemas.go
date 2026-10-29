@@ -7,3 +7,8 @@ import _ "embed"
 var BuildSpecV1Alpha1 []byte
 
 const BuildSpecV1Alpha1ID = "https://samuori.invalid/schemas/buildspec/v1alpha1.json"
+
+//go:embed configuration.v1alpha1.json
+var ConfigurationV1Alpha1 []byte
+
+const ConfigurationV1Alpha1ID = "https://samuori.invalid/schemas/configuration/v1alpha1.json"

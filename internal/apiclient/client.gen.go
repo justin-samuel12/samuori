@@ -656,6 +656,72 @@ func (e ClusterJoinPollResultState) Valid() bool {
 	}
 }
 
+// Defines values for ConfigurationAttentionKind.
+const (
+	ConfigurationAttentionKindCredential ConfigurationAttentionKind = "credential"
+	ConfigurationAttentionKindReference  ConfigurationAttentionKind = "reference"
+	ConfigurationAttentionKindReview     ConfigurationAttentionKind = "review"
+	ConfigurationAttentionKindSecret     ConfigurationAttentionKind = "secret"
+)
+
+// Valid indicates whether the value is a known member of the ConfigurationAttentionKind enum.
+func (e ConfigurationAttentionKind) Valid() bool {
+	switch e {
+	case ConfigurationAttentionKindCredential:
+		return true
+	case ConfigurationAttentionKindReference:
+		return true
+	case ConfigurationAttentionKindReview:
+		return true
+	case ConfigurationAttentionKindSecret:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConfigurationImportItemAction.
+const (
+	Create    ConfigurationImportItemAction = "create"
+	Skip      ConfigurationImportItemAction = "skip"
+	Unchanged ConfigurationImportItemAction = "unchanged"
+	Update    ConfigurationImportItemAction = "update"
+)
+
+// Valid indicates whether the value is a known member of the ConfigurationImportItemAction enum.
+func (e ConfigurationImportItemAction) Valid() bool {
+	switch e {
+	case Create:
+		return true
+	case Skip:
+		return true
+	case Unchanged:
+		return true
+	case Update:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConfigurationImportItemOutcome.
+const (
+	ConfigurationImportItemOutcomeApplied ConfigurationImportItemOutcome = "applied"
+	ConfigurationImportItemOutcomeFailed  ConfigurationImportItemOutcome = "failed"
+)
+
+// Valid indicates whether the value is a known member of the ConfigurationImportItemOutcome enum.
+func (e ConfigurationImportItemOutcome) Valid() bool {
+	switch e {
+	case ConfigurationImportItemOutcomeApplied:
+		return true
+	case ConfigurationImportItemOutcomeFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConnectionTestStatus.
 const (
 	ConnectionTestStatusFailed    ConnectionTestStatus = "failed"
@@ -5159,6 +5225,55 @@ type ClusterJoinRequest struct {
 	SecretHash string  `json:"secretHash"`
 	Token      *string `json:"token,omitempty"`
 }
+
+// ConfigurationAttention defines model for ConfigurationAttention.
+type ConfigurationAttention struct {
+	Kind ConfigurationAttentionKind `json:"kind"`
+
+	// Link The portal page where it is done
+	Link    *string `json:"link,omitempty"`
+	Message string  `json:"message"`
+	Name    string  `json:"name"`
+	Section string  `json:"section"`
+}
+
+// ConfigurationAttentionKind defines model for ConfigurationAttention.Kind.
+type ConfigurationAttentionKind string
+
+// ConfigurationImport defines model for ConfigurationImport.
+type ConfigurationImport struct {
+	// Complete false when an applied item failed; the items after it were still tried
+	Complete           bool                      `json:"complete"`
+	DryRun             bool                      `json:"dryRun"`
+	Items              []ConfigurationImportItem `json:"items"`
+	NeedsAttention     []ConfigurationAttention  `json:"needsAttention"`
+	SourceOrganization *string                   `json:"sourceOrganization,omitempty"`
+	Summary            struct {
+		Create    int `json:"create"`
+		Failed    int `json:"failed"`
+		Skip      int `json:"skip"`
+		Unchanged int `json:"unchanged"`
+		Update    int `json:"update"`
+	} `json:"summary"`
+}
+
+// ConfigurationImportItem defines model for ConfigurationImportItem.
+type ConfigurationImportItem struct {
+	Action ConfigurationImportItemAction `json:"action"`
+	Error  *string                       `json:"error,omitempty"`
+	Name   string                        `json:"name"`
+
+	// Outcome Set when the plan was applied and the item was created, updated or failed
+	Outcome *ConfigurationImportItemOutcome `json:"outcome,omitempty"`
+	Reason  string                          `json:"reason"`
+	Section string                          `json:"section"`
+}
+
+// ConfigurationImportItemAction defines model for ConfigurationImportItem.Action.
+type ConfigurationImportItemAction string
+
+// ConfigurationImportItemOutcome Set when the plan was applied and the item was created, updated or failed
+type ConfigurationImportItemOutcome string
 
 // ConnectionTest defines model for ConnectionTest.
 type ConnectionTest struct {
@@ -9814,6 +9929,21 @@ type StreamBuildEventsParams struct {
 	LastEventID *string `json:"Last-Event-ID,omitempty"`
 }
 
+// ImportConfigurationJSONBody defines parameters for ImportConfiguration.
+type ImportConfigurationJSONBody map[string]interface{}
+
+// ImportConfigurationParams defines parameters for ImportConfiguration.
+type ImportConfigurationParams struct {
+	// DryRun false applies the plan; it then needs an Idempotency-Key
+	DryRun *bool `form:"dryRun,omitempty" json:"dryRun,omitempty"`
+
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+
+	// IdempotencyKey Optional. A repeat with the same key does not create again; it answers 409 idempotent_replay naming the resource the first request created.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
 // ListCustomRecipesParams defines parameters for ListCustomRecipes.
 type ListCustomRecipesParams struct {
 	// Limit Page size. Without limit or cursor this list returns every item, as it did before it was paginated.
@@ -11390,6 +11520,9 @@ type JoinClusterJSONRequestBody = ClusterJoinRequest
 // PollClusterJoinJSONRequestBody defines body for PollClusterJoin for application/json ContentType.
 type PollClusterJoinJSONRequestBody = ClusterJoinPoll
 
+// ImportConfigurationJSONRequestBody defines body for ImportConfiguration for application/json ContentType.
+type ImportConfigurationJSONRequestBody ImportConfigurationJSONBody
+
 // CreateCustomRecipeJSONRequestBody defines body for CreateCustomRecipe for application/json ContentType.
 type CreateCustomRecipeJSONRequestBody = CustomRecipeWrite
 
@@ -12172,6 +12305,23 @@ type ClientInterface interface {
 	//
 	// The joining host checks its request with the secret whose hash it sent. Once accepted, the response holds the join bundle, sent once. A wrong secret is refused like an unknown request.
 	PollClusterJoin(ctx context.Context, requestId Id, body PollClusterJoinJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExportConfiguration performs a GET /configuration/export (the `ExportConfiguration` operationId) request.
+	//
+	// The organization's configuration as one document (kind Configuration, schema api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069.
+	ExportConfiguration(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportConfigurationWithBody performs a POST /configuration/import (the `ImportConfiguration` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+	ImportConfigurationWithBody(ctx context.Context, params *ImportConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportConfiguration performs a POST /configuration/import (the `ImportConfiguration` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+	ImportConfiguration(ctx context.Context, params *ImportConfigurationParams, body ImportConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCustomRecipes performs a GET /custom-recipes (the `ListCustomRecipes` operationId) request.
 	//
@@ -14806,6 +14956,53 @@ func (c *Client) PollClusterJoinWithBody(ctx context.Context, requestId Id, cont
 // The joining host checks its request with the secret whose hash it sent. Once accepted, the response holds the join bundle, sent once. A wrong secret is refused like an unknown request.
 func (c *Client) PollClusterJoin(ctx context.Context, requestId Id, body PollClusterJoinJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPollClusterJoinRequest(c.Server, requestId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportConfiguration performs a GET /configuration/export (the `ExportConfiguration` operationId) request.
+//
+// The organization's configuration as one document (kind Configuration, schema api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069.
+func (c *Client) ExportConfiguration(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportConfigurationRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportConfigurationWithBody performs a POST /configuration/import (the `ImportConfiguration` operationId) request,
+// with any type of body and a specified content type.
+//
+// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+func (c *Client) ImportConfigurationWithBody(ctx context.Context, params *ImportConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportConfigurationRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportConfiguration performs a POST /configuration/import (the `ImportConfiguration` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+func (c *Client) ImportConfiguration(ctx context.Context, params *ImportConfigurationParams, body ImportConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportConfigurationRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22944,6 +23141,126 @@ func NewPollClusterJoinRequestWithBody(server string, requestId Id, contentType 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExportConfigurationRequest constructs an http.Request for the ExportConfiguration method
+func NewExportConfigurationRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/configuration/export")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewImportConfigurationRequest calls the generic ImportConfiguration builder with application/json body
+func NewImportConfigurationRequest(server string, params *ImportConfigurationParams, body ImportConfigurationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportConfigurationRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewImportConfigurationRequestWithBody constructs an http.Request for the ImportConfiguration method, with any body, and a specified content type
+func NewImportConfigurationRequestWithBody(server string, params *ImportConfigurationParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/configuration/import")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.DryRun != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dryRun", *params.DryRun, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+		if params.IdempotencyKey != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam1)
+		}
+
+	}
 
 	return req, nil
 }
@@ -38544,6 +38861,27 @@ type ClientWithResponsesInterface interface {
 	// The joining host checks its request with the secret whose hash it sent. Once accepted, the response holds the join bundle, sent once. A wrong secret is refused like an unknown request.
 	PollClusterJoinWithResponse(ctx context.Context, requestId Id, body PollClusterJoinJSONRequestBody, reqEditors ...RequestEditorFn) (*PollClusterJoinResponse, error)
 
+	// ExportConfigurationWithResponse performs a GET /configuration/export (the `ExportConfiguration` operationId) request.
+	//
+	// The organization's configuration as one document (kind Configuration, schema api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ExportConfigurationWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ExportConfigurationResponse, error)
+
+	// ImportConfigurationWithBodyWithResponse performs a POST /configuration/import (the `ImportConfiguration` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ImportConfigurationWithBodyWithResponse(ctx context.Context, params *ImportConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportConfigurationResponse, error)
+
+	// ImportConfigurationWithResponse performs a POST /configuration/import (the `ImportConfiguration` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+	ImportConfigurationWithResponse(ctx context.Context, params *ImportConfigurationParams, body ImportConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportConfigurationResponse, error)
+
 	// ListCustomRecipesWithResponse performs a GET /custom-recipes (the `ListCustomRecipes` operationId) request.
 	//
 	// Every version of the organization's custom recipes, drafts included (ADR 0041).
@@ -44387,6 +44725,186 @@ func (r PollClusterJoinResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PollClusterJoinResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ExportConfigurationResponse429Headers the declared response headers of an HTTP 429 response for ExportConfiguration
+type ExportConfigurationResponse429Headers struct {
+	RetryAfter *int
+}
+
+type ExportConfigurationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *map[string]interface{}
+	// YAML200 the response for an HTTP 200 `application/yaml` response
+	YAML200 *map[string]interface{}
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ExportConfigurationResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ExportConfigurationResponse) GetJSON200() *map[string]interface{} {
+	return r.JSON200
+}
+
+// GetYAML200 returns the response for an HTTP 200 `application/yaml` response
+func (r ExportConfigurationResponse) GetYAML200() *map[string]interface{} {
+	return r.YAML200
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ExportConfigurationResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ExportConfigurationResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ExportConfigurationResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ExportConfigurationResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r ExportConfigurationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExportConfigurationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExportConfigurationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExportConfigurationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ImportConfigurationResponse429Headers the declared response headers of an HTTP 429 response for ImportConfiguration
+type ImportConfigurationResponse429Headers struct {
+	RetryAfter *int
+}
+
+type ImportConfigurationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ConfigurationImport
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Problem
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ImportConfigurationResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ImportConfigurationResponse) GetJSON200() *ConfigurationImport {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ImportConfigurationResponse) GetJSON400() *Problem {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ImportConfigurationResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ImportConfigurationResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ImportConfigurationResponse) GetJSON409() *Problem {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ImportConfigurationResponse) GetJSON413() *Problem {
+	return r.JSON413
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r ImportConfigurationResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ImportConfigurationResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r ImportConfigurationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportConfigurationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportConfigurationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportConfigurationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -67076,6 +67594,45 @@ func (c *ClientWithResponses) PollClusterJoinWithResponse(ctx context.Context, r
 	return ParsePollClusterJoinResponse(rsp)
 }
 
+// ExportConfigurationWithResponse performs a GET /configuration/export (the `ExportConfiguration` operationId) request.
+//
+// The organization's configuration as one document (kind Configuration, schema api/schemas/configuration.v1alpha1.json): policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, credential names, destinations, notification channels and rules, identity and audit retention settings. Never secret values, credentials, keys, users, role bindings, projects or their builds. YAML by default; JSON with Accept application/json. Audited (configuration.export). ADR 0069.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ExportConfigurationWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ExportConfigurationResponse, error) {
+	rsp, err := c.ExportConfiguration(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportConfigurationResponse(rsp)
+}
+
+// ImportConfigurationWithBodyWithResponse performs a POST /configuration/import (the `ImportConfiguration` operationId) request,
+// with any type of body and a specified content type.
+//
+// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ImportConfigurationWithBodyWithResponse(ctx context.Context, params *ImportConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportConfigurationResponse, error) {
+	rsp, err := c.ImportConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportConfigurationResponse(rsp)
+}
+
+// ImportConfigurationWithResponse performs a POST /configuration/import (the `ImportConfiguration` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Compares a Configuration document with this organization and answers the plan: per item create, update, unchanged or skip with a reason, and what needs attention (credentials and secrets to enter again, references that could not be resolved, changes to make by hand). dryRun defaults to true and changes nothing. With dryRun=false and an Idempotency-Key the plan is applied in a fixed order through the same checks as the individual operations, each item audited by its own event plus one configuration.import; nothing missing from the file is deleted, and no user, role binding or secret is ever created. ADR 0069.
+func (c *ClientWithResponses) ImportConfigurationWithResponse(ctx context.Context, params *ImportConfigurationParams, body ImportConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportConfigurationResponse, error) {
+	rsp, err := c.ImportConfiguration(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportConfigurationResponse(rsp)
+}
+
 // ListCustomRecipesWithResponse performs a GET /custom-recipes (the `ListCustomRecipes` operationId) request.
 //
 // Every version of the organization's custom recipes, drafts included (ADR 0041).
@@ -74750,6 +75307,168 @@ func ParsePollClusterJoinResponse(rsp *http.Response) (*PollClusterJoinResponse,
 	switch {
 	case rsp.StatusCode == 429:
 		var headers PollClusterJoinResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseExportConfigurationResponse parses an HTTP response from a ExportConfigurationWithResponse call
+func ParseExportConfigurationResponse(rsp *http.Response) (*ExportConfigurationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExportConfigurationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.YAML200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ExportConfigurationResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseImportConfigurationResponse parses an HTTP response from a ImportConfigurationWithResponse call
+func ParseImportConfigurationResponse(rsp *http.Response) (*ImportConfigurationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportConfigurationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConfigurationImport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ImportConfigurationResponse429Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {

@@ -64,6 +64,10 @@ var commandGroups = []struct {
 		{"pipelines [list] [--project PROJECT]", "list pipelines"},
 		{"api OPERATION_ID [--path K=V]... [--query K=V]... [--header K=V]... [--body FILE|-]", "call any API operation by its operationId and print the JSON answer; api --list lists them"},
 	}},
+	{"Administration", []commandHelp{
+		{"config export [-o FILE]", "save the organization's configuration as YAML (JSON with --json), without secrets; administrators only"},
+		{"config import FILE [--apply]", "preview what importing a configuration file would create, update or skip; --apply makes the changes"},
+	}},
 	{"Other", []commandHelp{
 		{"completion bash|zsh|fish", "print a shell completion script"},
 		{"version", "print the client version"},

@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowLeftRight,
   Bell,
   Blocks,
   Boxes,
@@ -347,6 +348,12 @@ export const workspaces: Workspace[] = [
             href: "/admin/backups",
             label: "Backup & Restore",
             icon: DatabaseBackup,
+            admin: true,
+          },
+          {
+            href: "/admin/configuration",
+            label: "Export & import",
+            icon: ArrowLeftRight,
             admin: true,
           },
           {

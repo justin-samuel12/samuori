@@ -104,6 +104,7 @@ server applies the same rules again.
 | Images and publication | `images [list]`, `download`, `deploy-files compose\|helm`, `publish`, `promote` |
 | Requests | `requests [list]`, `request repository\|base-image\|egress`, `withdraw` |
 | Automation | `ci`, `pipeline run`, `pipelines [list]`, `api` |
+| Administration | `config export [-o FILE]`, `config import FILE [--apply]` |
 | Other | `completion`, `version`, `help` |
 
 `samuori help` gives each command's usage. Notes:
@@ -116,6 +117,11 @@ server applies the same rules again.
 - `promote --publication ID --destination ID` requests a publication of kind `promote` from a published image.
 - `withdraw` takes the approval ID that `requests` shows first.
 - `status` prints JSON, as it always has.
+- `config export` and `config import` need an organization administrator's token
+  ([configuration export](configuration-export.md)). `config export` writes YAML (JSON with `--json`) to standard
+  output or `-o FILE` (mode 0600). `config import FILE` previews and changes nothing; it prints each item's change and
+  reason, then what needs attention. `--apply` applies the plan with a fresh idempotency key and exits 1 if any item
+  failed. An invalid file exits 3 and lists each problem by path.
 
 ## Output and scripting
 

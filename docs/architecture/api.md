@@ -287,6 +287,8 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | audit | GET | `/audit-events/export` | `exportAuditEvents` | administrator, security-reviewer |
 | audit | GET | `/audit-policy` | `getAuditPolicy` | administrator, security-reviewer |
 | audit | PUT | `/audit-policy` | `setAuditPolicy` | administrator |
+| configuration | GET | `/configuration/export` | `exportConfiguration` | administrator; YAML or JSON, no secrets, audited (ADR 0069) |
+| configuration | POST | `/configuration/import` | `importConfiguration` | administrator; `dryRun` (default true) answers the plan, `dryRun=false` with `Idempotency-Key` applies it (ADR 0069) |
 | notifications | GET | `/notifications` | `listNotifications` | any (own inbox) |
 | notifications | POST | `/notifications/read` | `markNotificationsRead` | any (own inbox) |
 | notifications | GET | `/notification-channels` | `listNotificationChannels` | administrator |

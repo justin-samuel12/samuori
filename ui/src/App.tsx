@@ -47,6 +47,7 @@ import { KubeWorkspacePage } from "./kube/KubeWorkspacePage";
 import { IdentityPage } from "./pages/admin/IdentityPage";
 import { ObservabilityPage } from "./pages/admin/ObservabilityPage";
 import { BackupsPage } from "./pages/admin/BackupsPage";
+import { ConfigurationPage } from "./pages/admin/ConfigurationPage";
 import { UpgradesPage } from "./pages/admin/UpgradesPage";
 import { CapacityPage } from "./pages/admin/CapacityPage";
 import { DatabasePage } from "./pages/admin/DatabasePage";
@@ -298,6 +299,12 @@ const routes: Route[] = [
     path: "/admin/backups",
     title: "Backup & Restore",
     render: () => <BackupsPage />,
+    admin: true,
+  },
+  {
+    path: "/admin/configuration",
+    title: "Export & import",
+    render: () => <ConfigurationPage />,
     admin: true,
   },
   {

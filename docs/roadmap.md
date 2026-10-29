@@ -5,6 +5,18 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Configuration export and import (2026-10-29, owner request, ADR 0069).** `GET /configuration/export` gives an
+  organization administrator the configuration as one `kind: Configuration` YAML (or JSON) file without secrets:
+  policies, build methods and providers, recipe decisions and custom recipes, worker pools, registries, credential
+  names, destinations, notification channels and rules, sign-in and audit settings, and the teams rules refer to;
+  schema `api/schemas/configuration.v1alpha1.json`, deterministic order, audited. `POST /configuration/import`
+  previews by default (create, update, unchanged or skip per item, and what needs attention) and with `dryRun=false`
+  and an `Idempotency-Key` applies it in dependency order through the existing service functions, never deleting
+  and never creating users, role bindings, secrets or projects; credentials and secret-bearing channels are listed for
+  re-entry ([guide](operators/configuration-export.md)). Administration → Export & import in the portal (added to the
+  screenshot tour, screenshot not yet captured) and `samuori config export|import [--apply]`. Runnable: API, CLI and
+  UI; SEC-CFG-01 (`TestConfigurationExportImport`) passes on SQLite. Not yet run: PostgreSQL, a browser check of the
+  page, an import between two separately installed servers.
 - **Screenshots (2026-10-28, owner request).** `make screenshots` captures every scene in `ui/e2e/tour/scenes.ts`
   (sign-in, developer and administrator screens, light and dark, 1440×900) from a throwaway local server with
   example data; the README shows a selection from `docs/screenshots/` and the [wiki gallery](https://github.com/justin-samuel12/samuori/wiki/Screenshots) every screen;
