@@ -48,8 +48,8 @@ The name comes from the same idea. "Sam" is from my name, Samuel, and *ori* (織
 <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-registries-dark.png"><img src="docs/screenshots/admin-registries-light.png" alt="Registries, credentials and destinations" width="420"></picture><br><sub>Registries, credentials and destinations</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-users-dark.png"><img src="docs/screenshots/admin-users-light.png" alt="Users and their roles" width="420"></picture><br><sub>Users and their roles</sub></td></tr>
 </table>
 
-Every screen, in light and dark, is in the [screenshot gallery](docs/screenshots/README.md). The screens show example
-data on a local install.
+Every screen, in light and dark, is in the [screenshot gallery](https://github.com/justin-samuel12/samuori/wiki/Screenshots) on the wiki. The screens show example data on
+a local install.
 
 ## What it does
 

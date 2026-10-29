@@ -86,8 +86,9 @@ or overheat the machine:
 - After an action, the person lands somewhere sensible with a short confirmation; they never have to reload or
   navigate back to see the result.
 - Colours come from the semantic tokens and logos from `docs/brand/`, unchanged.
-- A change that adds or changes a screen updates its scene in `ui/e2e/tour/scenes.ts` and runs `make screenshots`;
-  `make screenshots-check` (in `make ci`) fails on a route without a scene.
+- A change that adds or changes a screen updates its scene in `ui/e2e/tour/scenes.ts`, runs `make screenshots` (the
+  README's images) and `make screenshots-wiki` (the full gallery); `make screenshots-check` (in `make ci`) fails on a
+  route without a scene.
 
 ## Code and comments
 

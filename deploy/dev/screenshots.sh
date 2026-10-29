@@ -1,6 +1,7 @@
 #!/bin/sh
 # Starts a throwaway samuori-server with its own fresh data directory, seeds example data, captures the screenshot
-# tour into docs/screenshots and removes everything again (docs/screenshots/README.md).
+# tour into dist/screenshots, copies the images the README shows into docs/screenshots and removes everything again
+# (docs/developers/local-dev.md#screenshots).
 # Usage: screenshots.sh <samuori-server> <ui-dist>
 set -eu
 server=$1 ui=$2
@@ -31,6 +32,17 @@ until curl -fsS "http://127.0.0.1:$port/api/v1/system/health" >/dev/null 2>&1; d
 	if [ "$i" -gt 60 ] || ! kill -0 "$pid" 2>/dev/null; then cat "$dir/server.log"; exit 1; fi
 	sleep 1
 done
-mkdir -p "$root/docs/screenshots"
+out="$root/dist/screenshots"
+mkdir -p "$out" "$root/docs/screenshots"
 cd "$root/ui"
-SAMUORI_TOUR_URL="http://127.0.0.1:$port" SAMUORI_TOUR_DATA="$dir/data" npx playwright test -c playwright.tour.config.ts
+SAMUORI_TOUR_URL="http://127.0.0.1:$port" SAMUORI_TOUR_DATA="$dir/data" SAMUORI_TOUR_OUT="$out" \
+	npx playwright test -c playwright.tour.config.ts
+wanted=$(grep -o 'docs/screenshots/[a-z0-9-]*\.png' "$root/README.md" | sort -u)
+for f in "$root"/docs/screenshots/*.png; do
+	[ -e "$f" ] || continue
+	echo "$wanted" | grep -qx "docs/screenshots/$(basename "$f")" || rm "$f"
+done
+for w in $wanted; do
+	cmp -s "$out/$(basename "$w")" "$root/$w" || cp "$out/$(basename "$w")" "$root/$w"
+done
+echo "README images are in docs/screenshots; the full gallery is in $out (make screenshots-wiki)"

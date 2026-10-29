@@ -15,8 +15,14 @@ the policy to the server, so the same short passwords work in Setup and Users.
 
 `make screenshots` builds the UI and `samuori-server`, starts a throwaway server on `127.0.0.1:18090` (override with
 `SAMUORI_TOUR_PORT`) with its own data directory under `/tmp`, seeds example data, captures every scene in
-`ui/e2e/tour/scenes.ts` in light and dark into `docs/screenshots/`, and deletes the server and its data. It never
-touches `~/.cache/samuori/dev`. A file is rewritten only when its pixels changed.
+`ui/e2e/tour/scenes.ts` in light and dark into `dist/screenshots/` with a gallery page, copies the images the README
+shows into `docs/screenshots/`, and deletes the server and its data. It never touches `~/.cache/samuori/dev`. A file
+is rewritten only when it changed.
+
+The full gallery lives on the GitHub wiki, so the repository holds only the README's images. `make screenshots-wiki`
+clones the wiki into `dist/wiki` (once its first page exists), replaces the gallery, and commits it with this
+repository's own Git identity; review it, then publish with `git -C dist/wiki push`. Set `WIKI_URL` (for example in
+`local.mk`) when you reach GitHub through a different SSH host name.
 
 Teams, users, projects, uploads, specs, builds, the registry, the pool, secrets and the request go through the public
 API. A local server has no worker, so `ui/e2e/tour/seed.ts` writes what only a worker produces (finished, running

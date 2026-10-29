@@ -7,7 +7,7 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 - **Screenshots (2026-10-28, owner request).** `make screenshots` captures every scene in `ui/e2e/tour/scenes.ts`
   (sign-in, developer and administrator screens, light and dark, 1440×900) from a throwaway local server with
-  example data into `docs/screenshots/`, shown in the README and the [gallery](screenshots/README.md);
+  example data; the README shows a selection from `docs/screenshots/` and the [wiki gallery](https://github.com/justin-samuel12/samuori/wiki/Screenshots) every screen;
   `make screenshots-check` in `make ci` fails on a route without a scene ([local-dev](developers/local-dev.md#screenshots)).
   States only a worker produces are written into the throwaway database by the tour's seed. Runnable on macOS and
   Linux with the UI's Playwright Chromium; not run in GitHub CI.

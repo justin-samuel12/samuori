@@ -1,4 +1,5 @@
-// Captures every scene in light and dark (make screenshots; docs/screenshots/README.md).
+// Captures every scene in light and dark into dist/screenshots with a gallery page for the wiki
+// (make screenshots; docs/developers/local-dev.md#screenshots).
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -6,7 +7,9 @@ import { watchConsole } from "../helpers";
 import { scenes, type Audience, type Scene } from "./scenes.ts";
 import { seed, signInCookies, type Seeded, type User } from "./seed.ts";
 
-const out = join(import.meta.dirname, "..", "..", "..", "docs", "screenshots");
+const out =
+  process.env.SAMUORI_TOUR_OUT ??
+  join(import.meta.dirname, "..", "..", "..", "dist", "screenshots");
 const base = process.env.SAMUORI_TOUR_URL ?? "";
 const schemes = ["light", "dark"] as const;
 const file = (s: Scene, scheme: string) =>
@@ -49,7 +52,7 @@ function gallery(): string {
     "# Screenshots",
     "",
     "Every screen of the web UI, with example data on a local install. `make screenshots` regenerates the images",
-    "and this page from `ui/e2e/tour/scenes.ts` ([local-dev.md](../developers/local-dev.md#screenshots)).",
+    "and this page from `ui/e2e/tour/scenes.ts`, and `make screenshots-wiki` prepares them for this wiki.",
     "Each image links to its dark version.",
   ];
   for (const audience of Object.keys(headings) as Audience[]) {
@@ -59,7 +62,7 @@ function gallery(): string {
         "",
         `### ${s.caption}`,
         "",
-        `[<img src="${file(s, "light")}" alt="${s.caption}" width="720">](${file(s, "dark")})`,
+        `[<img src="images/${file(s, "light")}" alt="${s.caption}" width="720">](images/${file(s, "dark")})`,
       );
   }
   return parts.join("\n") + "\n";
@@ -115,5 +118,5 @@ test.afterAll(() => {
   const wanted = new Set(scenes.flatMap((s) => schemes.map((c) => file(s, c))));
   for (const f of readdirSync(out))
     if (f.endsWith(".png") && !wanted.has(f)) rmSync(join(out, f));
-  writeIfChanged(join(out, "README.md"), Buffer.from(gallery()));
+  writeIfChanged(join(out, "Screenshots.md"), Buffer.from(gallery()));
 });

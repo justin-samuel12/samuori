@@ -48,7 +48,8 @@ chart with `values.yml`, and a remote worker VM. `restore.yml` rehearses a resto
 |---|---|
 | `make dev` | Builds the UI and `samuori-server`, then runs it on `127.0.0.1:8080` with state in `~/.cache/samuori/dev` ([local-dev.md](local-dev.md)) |
 | `make dev-reset` | Deletes the `make dev` data directory |
-| `make screenshots` | Captures the screenshot tour into `docs/screenshots/` on a throwaway server ([screenshots](../screenshots/README.md)) |
+| `make screenshots` | Captures the screenshot tour on a throwaway server into `dist/screenshots/`, and refreshes the README's images in `docs/screenshots/` ([local-dev](local-dev.md#screenshots)) |
+| `make screenshots-wiki` | Commits the full gallery from `dist/screenshots/` into a local clone of the wiki (`dist/wiki`); pushing is manual |
 | `make aio-clean` | Builds a release and installs it as an all-in-one in the `samuori-clean` Lima VM |
 | `make aio-compose`, `aio-debian`, `aio-amd64` | The same install via Compose, on Debian, or on amd64 under emulation |
 | `make test-acceptance`, `test-acceptance-two-node` | Browser acceptance journeys against the `samuori-clean` install (and `samuori-remote` for two nodes) |

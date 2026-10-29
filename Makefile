@@ -6,7 +6,7 @@ export GOTOOLCHAIN := auto
 PKGS = $$($(GO) list ./... | grep -v /node_modules/)
 GO_FILES = $$(git ls-files -co --exclude-standard '*.go' | grep -v /node_modules/)
 
-.PHONY: dev dev-reset screenshots screenshots-check test test-vm test-acceptance test-acceptance-two-node release-key release-artifacts update release-verify license-check sbom vuln vuln-ui release aio-clean aio-compose aio-debian aio-amd64 build generate check-generated fmt fmt-check vet api-check yml-check ui-install ui-check ci
+.PHONY: dev dev-reset screenshots screenshots-wiki screenshots-check test test-vm test-acceptance test-acceptance-two-node release-key release-artifacts update release-verify license-check sbom vuln vuln-ui release aio-clean aio-compose aio-debian aio-amd64 build generate check-generated fmt fmt-check vet api-check yml-check ui-install ui-check ci
 
 # Every build is a development build of the version in VERSION until a release is published.
 VERSION ?= $(shell cat VERSION)-dev+$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -176,6 +176,12 @@ screenshots:
 	cd ui && $(NPM) run -s build
 	CGO_ENABLED=0 $(GO) build -ldflags "-X samuori.invalid/samuori/internal/version.Version=$(shell cat VERSION)-dev" -o $(TOUR_DIR)/samuori-server ./cmd/samuori-server
 	$(if $(NODE_BIN),PATH="$(NODE_BIN):$$PATH") deploy/dev/screenshots.sh $(TOUR_DIR)/samuori-server $(CURDIR)/ui/dist
+
+# The full gallery goes to the GitHub wiki, keeping the repository to the README's images.
+WIKI_URL ?= git@github.com:justin-samuel12/samuori.wiki.git
+
+screenshots-wiki:
+	deploy/dev/screenshots-wiki.sh $(WIKI_URL)
 
 screenshots-check:
 	cd ui && $(if $(NODE_BIN),PATH="$(NODE_BIN):$$PATH") node e2e/tour/coverage.ts
