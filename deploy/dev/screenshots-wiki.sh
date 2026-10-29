@@ -24,6 +24,19 @@ mkdir -p "$wiki/images"
 rm -f "$wiki"/images/*.png
 cp "$src"/*.png "$wiki/images/"
 cp "$src/Screenshots.md" "$wiki/Screenshots.md"
+cat >"$wiki/Home.md" <<'EOF'
+# Samuori
+
+A self-hosted container image factory that brings established open-source build, scan and signing tools together
+behind one guided, governed workflow.
+
+- [Screenshots](Screenshots): every screen in light and dark, for developers and administrators, with example data.
+- [Documentation](https://github.com/justin-samuel12/samuori/tree/main/docs): the authoritative docs live in the
+  repository, next to the code they describe.
+- [README](https://github.com/justin-samuel12/samuori#readme): what Samuori is, why it exists and how to start.
+
+This wiki holds only the screenshot gallery; `make screenshots-wiki` keeps it and this page up to date.
+EOF
 git -C "$wiki" add -A
 if git -C "$wiki" diff --cached --quiet; then
 	echo "the wiki gallery is already up to date"

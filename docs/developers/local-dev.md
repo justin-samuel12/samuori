@@ -20,7 +20,8 @@ shows into `docs/screenshots/`, and deletes the server and its data. It never to
 is rewritten only when it changed.
 
 The full gallery lives on the GitHub wiki, so the repository holds only the README's images. `make screenshots-wiki`
-clones the wiki into `dist/wiki` (once its first page exists), replaces the gallery, and commits it with this
+clones the wiki into `dist/wiki` (once its first page exists), replaces the gallery and the short Home page, and
+commits them with this
 repository's own Git identity; review it, then publish with `git -C dist/wiki push`. Set `WIKI_URL` (for example in
 `local.mk`) when you reach GitHub through a different SSH host name.
 
