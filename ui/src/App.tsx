@@ -16,6 +16,7 @@ import { NewImagePage } from "./pages/NewImagePage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { PipelinesPage } from "./pages/PipelinesPage";
 import { NotificationChannelsPage } from "./pages/admin/NotificationChannelsPage";
+import { BrandingPage } from "./pages/admin/BrandingPage";
 import { SetupPage } from "./pages/SetupPage";
 import { QueuePage } from "./pages/admin/QueuePage";
 import { BuildPoliciesPage } from "./pages/admin/BuildPolicies";
@@ -281,6 +282,12 @@ const routes: Route[] = [
     path: "/admin/federation",
     title: "Federation",
     render: () => <FederationPage />,
+    admin: true,
+  },
+  {
+    path: "/admin/branding",
+    title: "Branding",
+    render: () => <BrandingPage />,
     admin: true,
   },
   {

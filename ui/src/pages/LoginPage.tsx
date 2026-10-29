@@ -6,6 +6,7 @@ import { TextField } from "../components/Field";
 import { Alert, Loading } from "../components/Feedback";
 import { ScanSearch, Send, ShieldCheck } from "lucide-react";
 import { BrandMark } from "../components/BrandMark";
+import { LoginLogo } from "../components/OperatorLogo";
 import { Spinner } from "../components/Spinner";
 import { useLoader } from "../hooks";
 import { broadcast, rememberReturn } from "../session/broadcast";
@@ -158,10 +159,15 @@ export function LoginPage({ notice }: { notice?: string }) {
       <div className="samuori-auth-split">
         <section className="samuori-auth-brand" aria-label="About Samuori">
           <div className="samuori-auth-brand-head">
-            <BrandMark
-              kind="stacked"
-              finish="3d"
+            <LoginLogo
               className="samuori-auth-brand-logo w-[280px]"
+              fallback={
+                <BrandMark
+                  kind="stacked"
+                  finish="3d"
+                  className="samuori-auth-brand-logo w-[280px]"
+                />
+              }
             />
             <p className="samuori-motto">Woven into one</p>
           </div>
@@ -187,7 +193,12 @@ export function LoginPage({ notice }: { notice?: string }) {
         </section>
         <div className="samuori-auth-card">
           <div className="samuori-auth-card-brand">
-            <BrandMark kind="stacked" finish="3d" className="w-[240px]" />
+            <LoginLogo
+              className="w-[240px]"
+              fallback={
+                <BrandMark kind="stacked" finish="3d" className="w-[240px]" />
+              }
+            />
             <p className="samuori-motto">Woven into one</p>
           </div>
           <h1>Sign in</h1>

@@ -227,6 +227,24 @@ func (e BaseImageRequestState) Valid() bool {
 	}
 }
 
+// Defines values for BrandingLogoContentType.
+const (
+	Imagepng    BrandingLogoContentType = "image/png"
+	ImagesvgXml BrandingLogoContentType = "image/svg+xml"
+)
+
+// Valid indicates whether the value is a known member of the BrandingLogoContentType enum.
+func (e BrandingLogoContentType) Valid() bool {
+	switch e {
+	case Imagepng:
+		return true
+	case ImagesvgXml:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BuildAttemptCleanupOutcome.
 const (
 	BuildAttemptCleanupOutcomeDestroyed         BuildAttemptCleanupOutcome = "destroyed"
@@ -4454,6 +4472,24 @@ func (e ListApprovalsParamsState) Valid() bool {
 	}
 }
 
+// Defines values for UploadBrandingLogoParamsVariant.
+const (
+	Dark    UploadBrandingLogoParamsVariant = "dark"
+	Primary UploadBrandingLogoParamsVariant = "primary"
+)
+
+// Valid indicates whether the value is a known member of the UploadBrandingLogoParamsVariant enum.
+func (e UploadBrandingLogoParamsVariant) Valid() bool {
+	switch e {
+	case Dark:
+		return true
+	case Primary:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListNotificationDeliveriesParamsState.
 const (
 	ListNotificationDeliveriesParamsStateDead      ListNotificationDeliveriesParamsState = "dead"
@@ -4842,6 +4878,32 @@ type BootstrapRequest struct {
 	Password *string `json:"password,omitempty"`
 	Token    *string `json:"token,omitempty"`
 	Username string  `json:"username"`
+}
+
+// BrandingLogo defines model for BrandingLogo.
+type BrandingLogo struct {
+	// AspectRatio width / height, 0 when unknown
+	AspectRatio float32                 `json:"aspectRatio"`
+	ContentType BrandingLogoContentType `json:"contentType"`
+	Height      float32                 `json:"height"`
+
+	// Url Same-origin path to fetch the image bytes, with a cache-busting token
+	Url string `json:"url"`
+
+	// Width Intrinsic width in pixels (0 when unknown for an SVG without a size)
+	Width float32 `json:"width"`
+}
+
+// BrandingLogoContentType defines model for BrandingLogo.ContentType.
+type BrandingLogoContentType string
+
+// BrandingStatus defines model for BrandingStatus.
+type BrandingStatus struct {
+	// CustomLogo A primary operator logo is set; the UI shows it in place of the Samuori mark
+	CustomLogo bool          `json:"customLogo"`
+	Logo       *BrandingLogo `json:"logo,omitempty"`
+	LogoDark   *BrandingLogo `json:"logoDark,omitempty"`
+	UpdatedAt  *time.Time    `json:"updatedAt,omitempty"`
 }
 
 // BuildAttempt defines model for BuildAttempt.
@@ -9870,6 +9932,30 @@ type RenewSessionParams struct {
 	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
 }
 
+// ClearBrandingParams defines parameters for ClearBranding.
+type ClearBrandingParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UploadBrandingLogoParams defines parameters for UploadBrandingLogo.
+type UploadBrandingLogoParams struct {
+	// Variant Which slot to set. "dark" is the optional variant for the dark top bar.
+	Variant *UploadBrandingLogoParamsVariant `form:"variant,omitempty" json:"variant,omitempty"`
+
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
+// UploadBrandingLogoParamsVariant defines parameters for UploadBrandingLogo.
+type UploadBrandingLogoParamsVariant string
+
+// ClearBrandingDarkParams defines parameters for ClearBrandingDark.
+type ClearBrandingDarkParams struct {
+	// XCSRFToken Required with session cookies; ignored with bearer tokens.
+	XCSRFToken *CsrfToken `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListBuildCachesParams defines parameters for ListBuildCaches.
 type ListBuildCachesParams struct {
 	// Limit Page size. Without limit or cursor this list returns every item, as it did before it was paginated.
@@ -12209,6 +12295,37 @@ type ClientInterface interface {
 	//
 	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
 	RenewSession(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClearBranding performs a DELETE /branding (the `ClearBranding` operationId) request.
+	//
+	// Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited.
+	ClearBranding(ctx context.Context, params *ClearBrandingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBranding performs a GET /branding (the `GetBranding` operationId) request.
+	//
+	// Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072).
+	GetBranding(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBrandingLogo performs a GET /branding/logo (the `GetBrandingLogo` operationId) request.
+	//
+	// The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072).
+	GetBrandingLogo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UploadBrandingLogoWithBody performs a POST /branding/logo (the `UploadBrandingLogo` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited.
+	UploadBrandingLogoWithBody(ctx context.Context, params *UploadBrandingLogoParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClearBrandingDark performs a DELETE /branding/logo/dark (the `ClearBrandingDark` operationId) request.
+	//
+	// Removes only the dark-mode logo, leaving the primary in place. Audited.
+	ClearBrandingDark(ctx context.Context, params *ClearBrandingDarkParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBrandingLogoDark performs a GET /branding/logo/dark (the `GetBrandingLogoDark` operationId) request.
+	//
+	// The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072).
+	GetBrandingLogoDark(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListBuildCaches performs a GET /build-caches (the `ListBuildCaches` operationId) request.
 	//
@@ -14650,6 +14767,97 @@ func (c *Client) RenewSessionWithBody(ctx context.Context, params *RenewSessionP
 // Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
 func (c *Client) RenewSession(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenewSessionRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ClearBranding performs a DELETE /branding (the `ClearBranding` operationId) request.
+//
+// Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited.
+func (c *Client) ClearBranding(ctx context.Context, params *ClearBrandingParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClearBrandingRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetBranding performs a GET /branding (the `GetBranding` operationId) request.
+//
+// Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072).
+func (c *Client) GetBranding(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBrandingRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetBrandingLogo performs a GET /branding/logo (the `GetBrandingLogo` operationId) request.
+//
+// The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072).
+func (c *Client) GetBrandingLogo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBrandingLogoRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UploadBrandingLogoWithBody performs a POST /branding/logo (the `UploadBrandingLogo` operationId) request,
+// with any type of body and a specified content type.
+//
+// Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited.
+func (c *Client) UploadBrandingLogoWithBody(ctx context.Context, params *UploadBrandingLogoParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadBrandingLogoRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ClearBrandingDark performs a DELETE /branding/logo/dark (the `ClearBrandingDark` operationId) request.
+//
+// Removes only the dark-mode logo, leaving the primary in place. Audited.
+func (c *Client) ClearBrandingDark(ctx context.Context, params *ClearBrandingDarkParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClearBrandingDarkRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetBrandingLogoDark performs a GET /branding/logo/dark (the `GetBrandingLogoDark` operationId) request.
+//
+// The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072).
+func (c *Client) GetBrandingLogoDark(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBrandingLogoDarkRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -22336,6 +22544,242 @@ func NewRenewSessionRequestWithBody(server string, params *RenewSessionParams, c
 			req.Header.Set("X-CSRF-Token", headerParam0)
 		}
 
+	}
+
+	return req, nil
+}
+
+// NewClearBrandingRequest constructs an http.Request for the ClearBranding method
+func NewClearBrandingRequest(server string, params *ClearBrandingParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetBrandingRequest constructs an http.Request for the GetBranding method
+func NewGetBrandingRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetBrandingLogoRequest constructs an http.Request for the GetBrandingLogo method
+func NewGetBrandingLogoRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding/logo")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUploadBrandingLogoRequestWithBody constructs an http.Request for the UploadBrandingLogo method, with any body, and a specified content type
+func NewUploadBrandingLogoRequestWithBody(server string, params *UploadBrandingLogoParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding/logo")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Variant != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "variant", *params.Variant, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewClearBrandingDarkRequest constructs an http.Request for the ClearBrandingDark method
+func NewClearBrandingDarkRequest(server string, params *ClearBrandingDarkParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding/logo/dark")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-CSRF-Token", *params.XCSRFToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetBrandingLogoDarkRequest constructs an http.Request for the GetBrandingLogoDark method
+func NewGetBrandingLogoDarkRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/branding/logo/dark")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return req, nil
@@ -38733,6 +39177,49 @@ type ClientWithResponsesInterface interface {
 	// Re-authenticates the user of a live browser session and replaces it with a new session (ADR 0068): a new session ID and CSRF token, and new idle and absolute deadlines; the old session ends. Password accounts (local and LDAP) send the current password, checked under the sign-in rate limit and lockout. OIDC accounts get 202 with the provider URL; the provider's callback then replaces the session for the same user only and returns to returnTo. An ended session cannot be renewed; sign in again instead.
 	RenewSessionWithResponse(ctx context.Context, params *RenewSessionParams, body RenewSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSessionResponse, error)
 
+	// ClearBrandingWithResponse performs a DELETE /branding (the `ClearBranding` operationId) request.
+	//
+	// Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ClearBrandingWithResponse(ctx context.Context, params *ClearBrandingParams, reqEditors ...RequestEditorFn) (*ClearBrandingResponse, error)
+
+	// GetBrandingWithResponse performs a GET /branding (the `GetBranding` operationId) request.
+	//
+	// Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetBrandingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingResponse, error)
+
+	// GetBrandingLogoWithResponse performs a GET /branding/logo (the `GetBrandingLogo` operationId) request.
+	//
+	// The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetBrandingLogoWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingLogoResponse, error)
+
+	// UploadBrandingLogoWithBodyWithResponse performs a POST /branding/logo (the `UploadBrandingLogo` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UploadBrandingLogoWithBodyWithResponse(ctx context.Context, params *UploadBrandingLogoParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadBrandingLogoResponse, error)
+
+	// ClearBrandingDarkWithResponse performs a DELETE /branding/logo/dark (the `ClearBrandingDark` operationId) request.
+	//
+	// Removes only the dark-mode logo, leaving the primary in place. Audited.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ClearBrandingDarkWithResponse(ctx context.Context, params *ClearBrandingDarkParams, reqEditors ...RequestEditorFn) (*ClearBrandingDarkResponse, error)
+
+	// GetBrandingLogoDarkWithResponse performs a GET /branding/logo/dark (the `GetBrandingLogoDark` operationId) request.
+	//
+	// The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetBrandingLogoDarkWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingLogoDarkResponse, error)
+
 	// ListBuildCachesWithResponse performs a GET /build-caches (the `ListBuildCaches` operationId) request.
 	//
 	// Shared build caches by scope (project, trust domain, binding and policy versions). Secret-bearing and clean builds use none.
@@ -43435,6 +43922,371 @@ func (r RenewSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RenewSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ClearBrandingResponse429Headers the declared response headers of an HTTP 429 response for ClearBranding
+type ClearBrandingResponse429Headers struct {
+	RetryAfter *int
+}
+
+type ClearBrandingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ClearBrandingResponse429Headers
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ClearBrandingResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ClearBrandingResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ClearBrandingResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r ClearBrandingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ClearBrandingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClearBrandingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ClearBrandingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetBrandingResponse429Headers the declared response headers of an HTTP 429 response for GetBranding
+type GetBrandingResponse429Headers struct {
+	RetryAfter *int
+}
+
+type GetBrandingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BrandingStatus
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetBrandingResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetBrandingResponse) GetJSON200() *BrandingStatus {
+	return r.JSON200
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetBrandingResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetBrandingResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBrandingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBrandingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBrandingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBrandingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetBrandingLogoResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetBrandingLogoResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBrandingLogoResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBrandingLogoResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBrandingLogoResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBrandingLogoResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UploadBrandingLogoResponse429Headers the declared response headers of an HTTP 429 response for UploadBrandingLogo
+type UploadBrandingLogoResponse429Headers struct {
+	RetryAfter *int
+}
+
+type UploadBrandingLogoResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BrandingStatus
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Problem
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Problem
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Problem
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UploadBrandingLogoResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON200() *BrandingStatus {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON400() *Problem {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON413() *Problem {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON415() *Problem {
+	return r.JSON415
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON422() *Problem {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UploadBrandingLogoResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r UploadBrandingLogoResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UploadBrandingLogoResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UploadBrandingLogoResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UploadBrandingLogoResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ClearBrandingDarkResponse429Headers the declared response headers of an HTTP 429 response for ClearBrandingDark
+type ClearBrandingDarkResponse429Headers struct {
+	RetryAfter *int
+}
+
+type ClearBrandingDarkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Problem
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Problem
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ClearBrandingDarkResponse429Headers
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ClearBrandingDarkResponse) GetJSON401() *Problem {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ClearBrandingDarkResponse) GetJSON403() *Problem {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ClearBrandingDarkResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r ClearBrandingDarkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ClearBrandingDarkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClearBrandingDarkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ClearBrandingDarkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetBrandingLogoDarkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Problem
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetBrandingLogoDarkResponse) GetJSON404() *Problem {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBrandingLogoDarkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBrandingLogoDarkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBrandingLogoDarkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBrandingLogoDarkResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -67340,6 +68192,85 @@ func (c *ClientWithResponses) RenewSessionWithResponse(ctx context.Context, para
 	return ParseRenewSessionResponse(rsp)
 }
 
+// ClearBrandingWithResponse performs a DELETE /branding (the `ClearBranding` operationId) request.
+//
+// Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ClearBrandingWithResponse(ctx context.Context, params *ClearBrandingParams, reqEditors ...RequestEditorFn) (*ClearBrandingResponse, error) {
+	rsp, err := c.ClearBranding(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClearBrandingResponse(rsp)
+}
+
+// GetBrandingWithResponse performs a GET /branding (the `GetBranding` operationId) request.
+//
+// Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetBrandingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingResponse, error) {
+	rsp, err := c.GetBranding(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBrandingResponse(rsp)
+}
+
+// GetBrandingLogoWithResponse performs a GET /branding/logo (the `GetBrandingLogo` operationId) request.
+//
+// The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetBrandingLogoWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingLogoResponse, error) {
+	rsp, err := c.GetBrandingLogo(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBrandingLogoResponse(rsp)
+}
+
+// UploadBrandingLogoWithBodyWithResponse performs a POST /branding/logo (the `UploadBrandingLogo` operationId) request,
+// with any type of body and a specified content type.
+//
+// Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UploadBrandingLogoWithBodyWithResponse(ctx context.Context, params *UploadBrandingLogoParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadBrandingLogoResponse, error) {
+	rsp, err := c.UploadBrandingLogoWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUploadBrandingLogoResponse(rsp)
+}
+
+// ClearBrandingDarkWithResponse performs a DELETE /branding/logo/dark (the `ClearBrandingDark` operationId) request.
+//
+// Removes only the dark-mode logo, leaving the primary in place. Audited.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ClearBrandingDarkWithResponse(ctx context.Context, params *ClearBrandingDarkParams, reqEditors ...RequestEditorFn) (*ClearBrandingDarkResponse, error) {
+	rsp, err := c.ClearBrandingDark(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClearBrandingDarkResponse(rsp)
+}
+
+// GetBrandingLogoDarkWithResponse performs a GET /branding/logo/dark (the `GetBrandingLogoDark` operationId) request.
+//
+// The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetBrandingLogoDarkWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBrandingLogoDarkResponse, error) {
+	rsp, err := c.GetBrandingLogoDark(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBrandingLogoDarkResponse(rsp)
+}
+
 // ListBuildCachesWithResponse performs a GET /build-caches (the `ListBuildCaches` operationId) request.
 //
 // Shared build caches by scope (project, trust domain, binding and policy versions). Secret-bearing and clean builds use none.
@@ -74166,6 +75097,311 @@ func ParseRenewSessionResponse(rsp *http.Response) (*RenewSessionResponse, error
 			headers.RetryAfter = &value
 		}
 		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseClearBrandingResponse parses an HTTP response from a ClearBrandingWithResponse call
+func ParseClearBrandingResponse(rsp *http.Response) (*ClearBrandingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClearBrandingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ClearBrandingResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetBrandingResponse parses an HTTP response from a GetBrandingWithResponse call
+func ParseGetBrandingResponse(rsp *http.Response) (*GetBrandingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBrandingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BrandingStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers GetBrandingResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetBrandingLogoResponse parses an HTTP response from a GetBrandingLogoWithResponse call
+func ParseGetBrandingLogoResponse(rsp *http.Response) (*GetBrandingLogoResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBrandingLogoResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUploadBrandingLogoResponse parses an HTTP response from a UploadBrandingLogoWithResponse call
+func ParseUploadBrandingLogoResponse(rsp *http.Response) (*UploadBrandingLogoResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UploadBrandingLogoResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BrandingStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers UploadBrandingLogoResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseClearBrandingDarkResponse parses an HTTP response from a ClearBrandingDarkWithResponse call
+func ParseClearBrandingDarkResponse(rsp *http.Response) (*ClearBrandingDarkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClearBrandingDarkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ClearBrandingDarkResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetBrandingLogoDarkResponse parses an HTTP response from a GetBrandingLogoDarkWithResponse call
+func ParseGetBrandingLogoDarkResponse(rsp *http.Response) (*GetBrandingLogoDarkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBrandingLogoDarkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil

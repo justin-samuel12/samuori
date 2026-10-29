@@ -43,6 +43,7 @@ import (
 	"samuori.invalid/samuori/internal/auth"
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/backup"
+	"samuori.invalid/samuori/internal/branding"
 	"samuori.invalid/samuori/internal/builds"
 	"samuori.invalid/samuori/internal/capacity"
 	"samuori.invalid/samuori/internal/cluster"
@@ -731,7 +732,7 @@ func run(ctx context.Context, args []string) error {
 	handler, err := api.Handler(api.New(api.Deps{Log: log, Health: checks, Tenancy: tenants, Auth: authn, DataDir: cfg.DataDir, SecureCookies: cfg.TLSEnabled(), Sources: uploads, Operations: ops, Discovery: discoveries,
 		Specs: specSvc, Admission: checker, Recipes: recipeStatus, Policies: policies,
 		Workers: workerStore, DB: store, Builds: buildSvc, Secrets: secretSvc, Validations: validations, Publications: publications, Approvals: approvalSvc, Signing: signingKeys, Artifacts: art, Bus: bus, Channel: workerSrv,
-		Identity: signIn, IdentityStore: idStore, ImageSources: imageSources, Notify: notifications, Pipelines: pipelineSvc, Topology: topologyPlans, Providers: providerStore, Kube: kube, TopologyInfo: api.TopologyInfo{Storage: weakestStorage(cfg), ExternalURL: cfg.ExternalURL},
+		Identity: signIn, IdentityStore: idStore, ImageSources: imageSources, Notify: notifications, Pipelines: pipelineSvc, Topology: topologyPlans, Providers: providerStore, Kube: kube, Branding: branding.NewStore(store, blobs), TopologyInfo: api.TopologyInfo{Storage: weakestStorage(cfg), ExternalURL: cfg.ExternalURL},
 		Retention: retention, Diagnostics: diagnostics, ConfirmKey: secretSvc.Derive("policy-confirmation"), Backups: backups, Cluster: member, Removals: removals, ClusterJoin: join, WorkerJoin: api.WorkerJoin{Listen: cfg.WorkerListen, Hostnames: cfg.WorkerHostnames}, Database: dbCreds, SelfUpdate: updates, Capacity: hosts, Federation: fedStore,
 		FederationInfo: api.FederationInfo{CAPin: func() string { return ca.Issuing().Pin() }, Listening: cfg.FederationListen != "", Hostnames: cfg.FederationHostnames}, Telemetry: api.TelemetryStatus{MetricsEnabled: cfg.MetricsListen != "", TracingEnabled: cfg.TracingEndpoint != ""}}), authn)
 	if err != nil {

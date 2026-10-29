@@ -59,6 +59,49 @@ func TestDeletedBuildsAreNotKept(t *testing.T) {
 	}
 }
 
+// TestOperatorLogoIsReferenced: the operator logo blobs are referenced, so garbage collection does not delete the
+// branding image (ADR 0072). Without this the login page would lose its logo after the grace period.
+func TestOperatorLogoIsReferenced(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	d, err := db.Open(ctx, dbtest.SQLite(t, dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	if _, err := d.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	blobs, err := storage.NewBlobs(filepath.Join(dir, "blobs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := NewStore(d, blobs, filepath.Join(dir, "keys"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	for _, q := range []string{
+		`PRAGMA foreign_keys = OFF`,
+		`INSERT INTO branding (org_id, logo_digest, logo_content_type, logo_dark_digest, updated_by, updated_at) VALUES ('o1', 'sha256:logo-primary', 'image/svg+xml', 'sha256:logo-dark', 'u', ?)`,
+	} {
+		args := []any{}
+		for range countPlaceholders(q) {
+			args = append(args, now)
+		}
+		if _, err := d.SQL.ExecContext(ctx, q, args...); err != nil {
+			t.Fatal(q, err)
+		}
+	}
+	keep, err := s.references(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !keep["sha256:logo-primary"] || !keep["sha256:logo-dark"] {
+		t.Errorf("operator logo not referenced: %v", keep)
+	}
+}
+
 func countPlaceholders(q string) int {
 	n := 0
 	for _, c := range q {

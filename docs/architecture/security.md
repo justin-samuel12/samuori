@@ -39,6 +39,20 @@ Normalize UTF-8 and Unicode paths; reject traversal, symlink/hardlink escapes, s
 bombs, path overlaps (including case-folding collisions) and flag suspicious executables. Run malware and secret
 preflight checks where practical; never claim detection is exhaustive.
 
+## Operator logos
+
+An installation may show its own logo in the top bar and on the sign-in page (ADR 0072). Uploaded images are
+untrusted. PNG and SVG only, bounded at 512 KB, with the format confirmed server-side (PNG decoded, SVG parsed).
+Every SVG is sanitized before it is stored or served, through an allowlist of safe elements and attributes rather
+than a denylist: scripts, `on*` event handlers, `<foreignObject>`, remote references (`href`/`xlink:href`, `<image>`,
+`url()` to anything but a same-document fragment), DOCTYPE and entities are dropped; safe geometry and local gradient
+references survive. The logo blobs are served with their exact `Content-Type`, `X-Content-Type-Options: nosniff` and
+a restrictive `Content-Security-Policy` (`default-src 'none'; sandbox`) so an image opened directly cannot execute or
+fetch. The two logo reads are unauthenticated because the sign-in page precedes authentication; they return only the
+image bytes, carry no other data, take no identifier (one brand per installation, ADR 0071) and 404 when none is set.
+Setting, uploading and clearing are administrators only, enforced server-side. Branding never removes the Samuori
+attribution, the `NOTICE` or the licence, and the About dialog still identifies Samuori. See SEC-BRAND-01 and TM-134.
+
 ## Outbound requests
 
 No URL fetch can reach metadata services or private endpoints unless allowlisted. Enforce redirect limits and

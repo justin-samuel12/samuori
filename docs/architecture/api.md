@@ -113,6 +113,12 @@ Promotion is a `Publication` with `kind: promote`, not a separate resource.
 | system | GET | `/build-caches` | `listBuildCaches` | administrator, operator |
 | system | POST | `/build-caches/{scope}/purge` | `purgeBuildCache` | administrator |
 | system | GET | `/operations/{operationId}` | `getOperation` | any |
+| branding | GET | `/branding` | `getBranding` | any (operator logo status; no secrets; ADR 0072) |
+| branding | GET | `/branding/logo` | `getBrandingLogo` | public (logo image bytes only; pre-authentication for the sign-in page) |
+| branding | GET | `/branding/logo/dark` | `getBrandingLogoDark` | public (dark-mode logo image bytes only) |
+| branding | POST | `/branding/logo` | `uploadBrandingLogo` | administrator (PNG or SVG ≤ 512 KB; SVG sanitized; `variant` = primary or dark) |
+| branding | DELETE | `/branding` | `clearBranding` | administrator (reverts to the Samuori mark; also clears the dark variant) |
+| branding | DELETE | `/branding/logo/dark` | `clearBrandingDark` | administrator (removes only the dark-mode logo) |
 | identity | POST | `/auth/login` | `login` | public |
 | identity | POST | `/auth/logout` | `logout` | any |
 | identity | GET | `/auth/session` | `getSession` | any, browser session only |

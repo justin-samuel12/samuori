@@ -6496,6 +6496,109 @@ paths:
         "404": { $ref: "#/components/responses/Problem" }
         "429": { $ref: "#/components/responses/RateLimited" }
 
+  /branding:
+    get:
+      tags: [branding]
+      operationId: getBranding
+      description: Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072).
+      x-samuori-roles: [any]
+      responses:
+        "200":
+          description: Operator branding
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BrandingStatus" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    delete:
+      tags: [branding]
+      operationId: clearBranding
+      description: Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Branding cleared }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /branding/logo:
+    get:
+      tags: [branding]
+      operationId: getBrandingLogo
+      description: The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072).
+      security: []
+      x-samuori-public: true
+      responses:
+        "200":
+          description: Logo image
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/svg+xml:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [branding]
+      operationId: uploadBrandingLogo
+      description: Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited.
+      x-samuori-roles: [administrator]
+      x-samuori-max-body-bytes: 524288
+      parameters:
+        - { $ref: "#/components/parameters/CsrfToken" }
+        - name: variant
+          in: query
+          description: Which slot to set. "dark" is the optional variant for the dark top bar.
+          schema: { type: string, enum: [primary, dark], default: primary }
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema: { type: string, format: binary }
+          image/svg+xml:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Stored; the new branding
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BrandingStatus" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }
+        "415": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /branding/logo/dark:
+    get:
+      tags: [branding]
+      operationId: getBrandingLogoDark
+      description: The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072).
+      security: []
+      x-samuori-public: true
+      responses:
+        "200":
+          description: Dark-mode logo image
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/svg+xml:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [branding]
+      operationId: clearBrandingDark
+      description: Removes only the dark-mode logo, leaving the primary in place. Audited.
+      x-samuori-roles: [administrator]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Dark-mode logo cleared }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
 components:
   securitySchemes:
     sessionCookie:
@@ -6636,6 +6739,23 @@ components:
               id: { $ref: "#/components/schemas/Id" }
               name: { type: string }
               kind: { type: string, enum: [oidc, ldap] }
+    BrandingLogo:
+      type: object
+      required: [url, contentType, width, height, aspectRatio]
+      properties:
+        url: { type: string, description: "Same-origin path to fetch the image bytes, with a cache-busting token" }
+        contentType: { type: string, enum: ["image/png", "image/svg+xml"] }
+        width: { type: number, description: "Intrinsic width in pixels (0 when unknown for an SVG without a size)" }
+        height: { type: number }
+        aspectRatio: { type: number, description: "width / height, 0 when unknown" }
+    BrandingStatus:
+      type: object
+      required: [customLogo]
+      properties:
+        customLogo: { type: boolean, description: "A primary operator logo is set; the UI shows it in place of the Samuori mark" }
+        logo: { $ref: "#/components/schemas/BrandingLogo" }
+        logoDark: { $ref: "#/components/schemas/BrandingLogo" }
+        updatedAt: { type: string, format: date-time }
     OidcSettings:
       type: object
       required: [issuer, clientId]

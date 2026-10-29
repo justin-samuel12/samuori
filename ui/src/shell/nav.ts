@@ -17,6 +17,7 @@ import {
   Hammer,
   HardDrive,
   HeartPulse,
+  Image,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -355,6 +356,13 @@ export const workspaces: Workspace[] = [
             label: "Notification channels",
             icon: Bell,
             admin: true,
+          },
+          {
+            href: "/admin/branding",
+            label: "Branding",
+            icon: Image,
+            admin: true,
+            help: ["branding"],
           },
           {
             href: "/admin/federation",

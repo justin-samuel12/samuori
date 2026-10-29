@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"samuori.invalid/samuori/internal/backup"
+	"samuori.invalid/samuori/internal/branding"
 	"samuori.invalid/samuori/internal/capacity"
 	"samuori.invalid/samuori/internal/cluster"
 	"samuori.invalid/samuori/internal/federation"
@@ -98,6 +99,7 @@ type Deps struct {
 	Topology       *topology.Store
 	Providers      *providers.Store
 	Kube           *kubeconvert.Service
+	Branding       *branding.Store
 	TopologyInfo   TopologyInfo
 }
 
@@ -146,6 +148,7 @@ type API struct {
 	topology       *topology.Store
 	providers      *providers.Store
 	kube           *kubeconvert.Service
+	branding       *branding.Store
 	projects       *projects.Service
 	topologyInfo   TopologyInfo
 	hookLimit      *limiter
@@ -164,7 +167,7 @@ type API struct {
 }
 
 func New(d Deps) *API {
-	a := &API{log: d.Log, health: d.Health, tenancy: d.Tenancy, auth: d.Auth, dataDir: d.DataDir, secureCookies: d.SecureCookies, sources: d.Sources, ops: d.Operations, discovery: d.Discovery, specs: d.Specs, admission: d.Admission, recipes: d.Recipes, policies: d.Policies, workers: d.Workers, db: d.DB, builds: d.Builds, secrets: d.Secrets, validations: d.Validations, publications: d.Publications, approvals: d.Approvals, signing: d.Signing, artifacts: d.Artifacts, bus: d.Bus, channel: d.Channel, rateLimit: d.RateLimit, retention: d.Retention, diagnostics: d.Diagnostics, telemetry: d.Telemetry, signIn: d.Identity, idStore: d.IdentityStore, imageSources: d.ImageSources, notify: d.Notify, pipelines: d.Pipelines, topology: d.Topology, providers: d.Providers, kube: d.Kube, topologyInfo: d.TopologyInfo, hookLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 30}), confirmKey: d.ConfirmKey, backups: d.Backups, cluster: d.Cluster, removals: d.Removals, clusterJoin: d.ClusterJoin, workerJoin: d.WorkerJoin, database: d.Database, selfUpdate: d.SelfUpdate, capacity: d.Capacity, joinLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 5}), federation: d.Federation, federationInfo: d.FederationInfo,
+	a := &API{log: d.Log, health: d.Health, tenancy: d.Tenancy, auth: d.Auth, dataDir: d.DataDir, secureCookies: d.SecureCookies, sources: d.Sources, ops: d.Operations, discovery: d.Discovery, specs: d.Specs, admission: d.Admission, recipes: d.Recipes, policies: d.Policies, workers: d.Workers, db: d.DB, builds: d.Builds, secrets: d.Secrets, validations: d.Validations, publications: d.Publications, approvals: d.Approvals, signing: d.Signing, artifacts: d.Artifacts, bus: d.Bus, channel: d.Channel, rateLimit: d.RateLimit, retention: d.Retention, diagnostics: d.Diagnostics, telemetry: d.Telemetry, signIn: d.Identity, idStore: d.IdentityStore, imageSources: d.ImageSources, notify: d.Notify, pipelines: d.Pipelines, topology: d.Topology, providers: d.Providers, kube: d.Kube, topologyInfo: d.TopologyInfo, hookLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 30}), confirmKey: d.ConfirmKey, backups: d.Backups, cluster: d.Cluster, removals: d.Removals, clusterJoin: d.ClusterJoin, workerJoin: d.WorkerJoin, database: d.Database, selfUpdate: d.SelfUpdate, capacity: d.Capacity, joinLimit: newLimiter(RateLimit{PerSecond: 1, Burst: 5}), federation: d.Federation, federationInfo: d.FederationInfo, branding: d.Branding,
 		projects: projects.NewService(d.DB, d.Tenancy, d.Approvals, d.Builds, d.Sources, d.Artifacts)}
 	if a.confirmKey == nil {
 		a.confirmKey = randomKey()

@@ -116,6 +116,7 @@ test("each role sees the administration sections it can use", () => {
       "Teams",
       "Identity & sign-in",
       "Notification channels",
+      "Branding",
       "Federation",
       "Backups",
       "Export & import",

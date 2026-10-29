@@ -23,6 +23,7 @@ import (
 	"samuori.invalid/samuori/internal/artifacts"
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/auth"
+	"samuori.invalid/samuori/internal/branding"
 	"samuori.invalid/samuori/internal/builds"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/discovery/jobs"
@@ -141,5 +142,6 @@ func testDeps(t *testing.T, d *db.DB, store *tenancy.Store, log *slog.Logger, h 
 		Workers: workerStore, DB: d, Builds: buildSvc, Secrets: sec, Validations: val, Publications: pubs, Approvals: appr, Signing: signingKeys, Artifacts: art,
 		Retention: &audit.Retention{DB: d, Dir: filepath.Join(dir, "audit-export")}, Federation: federation.NewStore(d), Diagnostics: observability.Source{DB: d, Health: h},
 		Identity: identity.NewService(idStore, oidcadapter.New(), nil, testRedirect), IdentityStore: idStore, Topology: topology.NewStore(d), Providers: providerStore, Kube: kubeconvert.NewService(d, store, src, blobs, providerStore, ops), TopologyInfo: TopologyInfo{Storage: topology.Local, ExternalURL: "http://127.0.0.1:8080"}, ImageSources: imagesources.NewStore(d, sec), Notify: notify.NewService(d, sec),
+		Branding:  branding.NewStore(d, blobs),
 		Pipelines: pipelines.NewService(d, sec, src, buildSvc, specSvc, store, gogit.Fetcher{Dir: t.TempDir()})}
 }

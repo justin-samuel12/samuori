@@ -33,10 +33,11 @@ const (
 	ClassSource Class = "source"
 	ClassImage  Class = "image"
 	ClassReport Class = "report"
+	ClassLogo   Class = "logo"
 	ClassOther  Class = "other"
 )
 
-var Classes = []Class{ClassSource, ClassImage, ClassReport, ClassOther}
+var Classes = []Class{ClassSource, ClassImage, ClassReport, ClassLogo, ClassOther}
 
 // Blobs is a filesystem blob store laid out as <root>/sha256/<2 hex>/<64 hex>. A class routed to a Remote keeps its
 // durable copy there and uses the directory as a verified cache; other classes keep the directory as the only copy

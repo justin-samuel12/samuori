@@ -5,6 +5,28 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Operator logo branding (2026-10-29, owner request, ADR 0072; provisional).** An administrator can replace the
+  Samuori logo in the portal top bar and on the sign-in page with their own, logo only; Samuori's colours, semantic
+  tokens, artwork and the About dialog are unchanged, and the Samuori mark is the fallback when none is set. New
+  `branding` table (migration `00073`, both dialects) keyed by `org_id` (one per installation, ADR 0071); images are
+  stored as content-addressed blobs (`storage.ClassLogo`), referenced so garbage collection keeps them, never inline
+  in the row. API: `GET /branding` (any signed-in user; status and URLs, no secrets), the unauthenticated logo-only
+  `GET /branding/logo` and `/branding/logo/dark` for the pre-authentication sign-in page (exact Content-Type, ETag,
+  restrictive CSP, 404 when unset), and administrator-only `POST /branding/logo` (PNG or SVG ≤ 512 KB, server-side
+  format check and SVG sanitiser), `DELETE /branding` and `DELETE /branding/logo/dark`. SVGs are sanitised through an
+  allowlist that strips scripts, event handlers, external references, `<foreignObject>` and DOCTYPE/entities before
+  storage or serving ([security](architecture/security.md#operator-logos)). Organization > Branding in the portal is
+  an intelligent uploader: on drop it reports format, size, dimensions, aspect ratio against the top bar's wide strip
+  and a transparent-background and dark-bar contrast check that offers an optional dark-mode logo, previews the logo
+  in a mock top bar and sign-in card, and saves, edits and removes with the shared buttons. Clearing is a DELETE
+  (there is no non-logo field a PUT would set), a deliberate deviation from the ADR's informal `PUT` sketch to avoid a
+  placeholder endpoint. Runnable: API and UI; SEC-BRAND-01 (`TestSanitizeSVGStripsActiveContent`,
+  `TestOperatorLogoBranding`, `TestOperatorLogoIsReferenced`) passes on SQLite. Not verified: a browser check of the
+  page and its previews, PostgreSQL, and a malicious-SVG pen test beyond the unit cases. The previews render in the
+  current theme (the semantic tokens bind to `:root` only, so a nested opposite-theme surface was not built without
+  changing tokens); the admin flips the app theme or adds a dark-mode logo to check the other, and the contrast check
+  covers the dark-bar risk directly. Screenshots not regenerated (owner regenerates on main); the tour has a Branding
+  scene showing the default empty state, so the rest of the app keeps the Samuori artwork.
 - **Faster `make ci` (2026-10-29, owner request).** `make ci` went from 833 s to 100 s on the development Mac, and
   `internal/api` under `-race` from 790 s to 48 s, by making setup cheaper; `-race`, `-count=1`, the timeout and
   every test and assertion are unchanged, and nothing runs in parallel that did not before

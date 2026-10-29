@@ -123,6 +123,30 @@ func (Unimplemented) RenewSession(w http.ResponseWriter, r *http.Request, _ Rene
 	NotImplemented(w, r, "RenewSession")
 }
 
+func (Unimplemented) ClearBranding(w http.ResponseWriter, r *http.Request, _ ClearBrandingParams) {
+	NotImplemented(w, r, "ClearBranding")
+}
+
+func (Unimplemented) GetBranding(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "GetBranding")
+}
+
+func (Unimplemented) GetBrandingLogo(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "GetBrandingLogo")
+}
+
+func (Unimplemented) UploadBrandingLogo(w http.ResponseWriter, r *http.Request, _ UploadBrandingLogoParams) {
+	NotImplemented(w, r, "UploadBrandingLogo")
+}
+
+func (Unimplemented) ClearBrandingDark(w http.ResponseWriter, r *http.Request, _ ClearBrandingDarkParams) {
+	NotImplemented(w, r, "ClearBrandingDark")
+}
+
+func (Unimplemented) GetBrandingLogoDark(w http.ResponseWriter, r *http.Request) {
+	NotImplemented(w, r, "GetBrandingLogoDark")
+}
+
 func (Unimplemented) ListBuildCaches(w http.ResponseWriter, r *http.Request, _ ListBuildCachesParams) {
 	NotImplemented(w, r, "ListBuildCaches")
 }

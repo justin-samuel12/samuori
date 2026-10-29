@@ -4328,6 +4328,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Whether this installation shows its own logo in place of the Samuori mark, and where to fetch it. No secrets; readable by any signed-in user because the portal needs it at load (ADR 0072). */
+        get: operations["getBranding"];
+        put?: never;
+        post?: never;
+        /** @description Removes the operator logo, reverting to the Samuori mark. Clearing the primary logo also removes the dark variant. Audited. */
+        delete: operations["clearBranding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branding/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The operator's primary logo image bytes, or 404 when none is set so the UI falls back to the Samuori mark. Unauthenticated, because the login page is shown before sign-in; it serves only the logo and no other data (ADR 0072). */
+        get: operations["getBrandingLogo"];
+        put?: never;
+        /** @description Uploads a PNG or SVG logo. The server enforces the format and size, sanitizes SVG, and stores it. Audited. */
+        post: operations["uploadBrandingLogo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branding/logo/dark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The operator's dark-mode logo image bytes, or 404 when none is set. Unauthenticated and logo-only, like the primary logo (ADR 0072). */
+        get: operations["getBrandingLogoDark"];
+        put?: never;
+        post?: never;
+        /** @description Removes only the dark-mode logo, leaving the primary in place. Audited. */
+        delete: operations["clearBrandingDark"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4384,6 +4438,25 @@ export interface components {
                 /** @enum {string} */
                 kind: "oidc" | "ldap";
             }[];
+        };
+        BrandingLogo: {
+            /** @description Same-origin path to fetch the image bytes, with a cache-busting token */
+            url: string;
+            /** @enum {string} */
+            contentType: "image/png" | "image/svg+xml";
+            /** @description Intrinsic width in pixels (0 when unknown for an SVG without a size) */
+            width: number;
+            height: number;
+            /** @description width / height, 0 when unknown */
+            aspectRatio: number;
+        };
+        BrandingStatus: {
+            /** @description A primary operator logo is set; the UI shows it in place of the Samuori mark */
+            customLogo: boolean;
+            logo?: components["schemas"]["BrandingLogo"];
+            logoDark?: components["schemas"]["BrandingLogo"];
+            /** Format: date-time */
+            updatedAt?: string;
         };
         OidcSettings: {
             issuer: string;
@@ -17639,6 +17712,158 @@ export interface operations {
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator branding */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingStatus"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    clearBranding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Branding cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getBrandingLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/svg+xml": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
+    uploadBrandingLogo: {
+        parameters: {
+            query?: {
+                /** @description Which slot to set. "dark" is the optional variant for the dark top bar. */
+                variant?: "primary" | "dark";
+            };
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/png": string;
+                "image/svg+xml": string;
+            };
+        };
+        responses: {
+            /** @description Stored; the new branding */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingStatus"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            413: components["responses"]["Problem"];
+            415: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getBrandingLogoDark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dark-mode logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/svg+xml": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
+    clearBrandingDark: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with session cookies; ignored with bearer tokens. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dark-mode logo cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
             429: components["responses"]["RateLimited"];
         };
     };

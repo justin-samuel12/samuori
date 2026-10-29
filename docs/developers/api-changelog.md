@@ -6,6 +6,14 @@ nothing is stable yet.
 
 ## 2026-10-29
 
+- Added operator logo branding (ADR 0072, additive): `GET /branding` (`getBranding`, any signed-in user) reports
+  whether a custom logo is set and where to fetch it, with no secrets. `GET /branding/logo` and
+  `GET /branding/logo/dark` (`getBrandingLogo`, `getBrandingLogoDark`) are unauthenticated and serve only the logo
+  image bytes (PNG or SVG, strong ETag, 404 when none is set), because the sign-in page needs them before
+  authentication. `POST /branding/logo` (`uploadBrandingLogo`, administrators) uploads a PNG or SVG (up to 512 KB; SVG
+  sanitized server-side); a `variant` query selects the primary or the optional dark-mode slot. `DELETE /branding`
+  (`clearBranding`) reverts to the Samuori mark and `DELETE /branding/logo/dark` (`clearBrandingDark`) removes only the
+  dark variant; both administrators.
 - Added `GET /configuration/export` and `POST /configuration/import` (`exportConfiguration`, `importConfiguration`,
   administrators, additive): the organization's configuration as a `kind: Configuration` document without secrets,
   and a preview-first import that applies it through the existing checks (ADR 0069). The import takes `dryRun`

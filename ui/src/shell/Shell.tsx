@@ -34,6 +34,7 @@ import { isOrgAdmin, useSession, type Me } from "../session/session";
 import { useHealth } from "./health";
 import { healthState } from "../pages/display";
 import { BrandMark } from "../components/BrandMark";
+import { TopBarLogo } from "../components/OperatorLogo";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import {
@@ -105,7 +106,7 @@ export function Shell({ me, title, children }: Props) {
             href="/"
             className={`flex flex-none items-center gap-2.5 rounded-lg text-fg no-underline ${focusRing}`}
           >
-            <BrandMark kind="logo" className="w-[120px]" />
+            <TopBarLogo className="max-h-9 w-[120px]" />
           </Link>
           <nav
             aria-label="Main"

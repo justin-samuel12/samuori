@@ -107,6 +107,8 @@ func (s *Store) references(ctx context.Context) (map[string]bool, error) {
 		`SELECT artifact_digest FROM publications WHERE artifact_id NOT IN (SELECT a.id FROM build_artifacts a JOIN build_run_deletions d ON d.run_id = a.run_id)`,
 		`SELECT digest FROM upload_chunks WHERE digest IS NOT NULL`,
 		`SELECT digest FROM releases`,
+		`SELECT logo_digest FROM branding WHERE logo_digest IS NOT NULL`,
+		`SELECT logo_dark_digest FROM branding WHERE logo_dark_digest IS NOT NULL`,
 	} {
 		if err := s.collect(ctx, q, keep); err != nil {
 			return nil, err
