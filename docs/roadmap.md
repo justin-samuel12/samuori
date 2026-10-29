@@ -5,6 +5,22 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **One consistent product (2026-10-29, usability review, polish after the developer journey and ADR 0070).** In-app
+  help follows the menu: each page in `ui/src/shell/nav.ts` names its guides, guides are filed under that page's
+  top-bar section and name pages as *Section > Page*, and the UI offers a page's guide only to people who can see the
+  page (the server's role filter still applies first). `ui/src/help/content.test.ts` fails on a guide filed under the
+  wrong section, a section or page the menu does not have, a former name (Administration, Registries & Recipes,
+  Security & Secrets, Recipes & base images, Network egress, Backup & Restore, Upgrades & Diagnostics), a link outside
+  the menu, or a role that sees none of its pages; the Kubernetes guide no longer lists operators, who cannot open
+  that page. Guides, operator and architecture documents and `docs/product/administration.md` now use the menu's
+  names. States share one set of plain labels and badges (`ui/src/pages/display.ts`, `StateBadge`): worker state and
+  self-test, isolation profiles, recipe and runtime status, health, Kubernetes conversions, update rollouts and
+  import changes, instead of raw values such as `enrolled, active`. Long page intros are one or two plain sentences
+  with every safety statement kept; text fields have neutral examples; empty tables name the button that adds one.
+  Download links use the shared button style (`buttonClass`); the Export & import file hint sits under its button;
+  the Next step card reads "A publisher or maintainer of this project's team can publish it." Runnable: UI;
+  `content.test.ts`, `display.test.ts` and `nav.test.ts` pass. Not checked in a browser; the screenshots were not
+  regenerated; the acceptance specs were updated for the new labels but not rerun.
 - **Configuration export and import (2026-10-29, owner request, ADR 0069).** `GET /configuration/export` gives an
   organization administrator the configuration as one `kind: Configuration` YAML (or JSON) file without secrets:
   policies, build methods and providers, recipe decisions and custom recipes, worker pools, registries, credential

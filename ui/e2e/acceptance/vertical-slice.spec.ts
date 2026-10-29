@@ -179,7 +179,7 @@ test("the local worker enrolls by itself; the administrator enables its pool and
   await until(
     page,
     async () =>
-      /local\s*rootless-dedicated-vm/.test(
+      /local\s*Rootless, dedicated VM/.test(
         await page.getByRole("grid", { name: "Worker pools" }).innerText(),
       ),
     3,
@@ -188,7 +188,7 @@ test("the local worker enrolls by itself; the administrator enables its pool and
   const workers = page.getByRole("grid", { name: "Workers" });
   await until(
     page,
-    async () => /enrolled, active/.test(await workers.innerText()),
+    async () => /\bActive\b/.test(await workers.innerText()),
     3,
     "the local worker to enroll by itself",
   );

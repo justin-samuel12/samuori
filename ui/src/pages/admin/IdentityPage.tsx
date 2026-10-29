@@ -254,7 +254,7 @@ export function IdentityPage() {
         <Table
           label="Service identities"
           rows={services}
-          empty="No service identities."
+          empty="No service identities. Choose Add service identity for automation."
           columns={[
             {
               id: "name",
@@ -566,6 +566,7 @@ function ProviderDialog({
           isDisabled={!!editing}
         />
         <TextField
+          placeholder="directory"
           label="Name"
           value={name}
           onChange={setName}
@@ -580,6 +581,7 @@ function ProviderDialog({
           }
         />
         <TextField
+          placeholder="Company account"
           label="Label on the sign-in page"
           value={display}
           onChange={setDisplay}
@@ -587,12 +589,14 @@ function ProviderDialog({
         {kind === "oidc" ? (
           <>
             <TextField
+              placeholder="https://login.example.com"
               label="Issuer URL"
               value={issuer}
               onChange={setIssuer}
               isRequired
             />
             <TextField
+              placeholder="samuori"
               label="Client ID"
               value={clientId}
               onChange={setClientId}
@@ -612,6 +616,7 @@ function ProviderDialog({
               description="Fills in the filters and attributes below; change any of them."
             />
             <TextField
+              placeholder="ldaps://ldap.example.com"
               label="Server URLs"
               description="ldaps://host:636, or ldap://host with StartTLS. List several domain controllers separated by spaces; they are tried in order."
               value={url}
@@ -622,18 +627,21 @@ function ProviderDialog({
               Use StartTLS
             </Checkbox>
             <TextField
+              placeholder="cn=samuori,ou=services,dc=example,dc=com"
               label="Bind DN"
               value={bindDn}
               onChange={setBindDn}
               isRequired
             />
             <TextField
+              placeholder="ou=people,dc=example,dc=com"
               label="User base DN"
               value={userBaseDn}
               onChange={setUserBaseDn}
               isRequired
             />
             <TextField
+              placeholder="(uid={username})"
               label="User filter"
               description="{username} is replaced by the escaped username."
               value={userFilter}
@@ -641,6 +649,7 @@ function ProviderDialog({
               isRequired
             />
             <TextField
+              placeholder="ou=groups,dc=example,dc=com"
               label="Group base DN"
               value={groupBaseDn}
               onChange={setGroupBaseDn}
@@ -652,11 +661,13 @@ function ProviderDialog({
               onChange={setGroupFilter}
             />
             <TextField
+              placeholder="uid"
               label="Username attribute"
               value={usernameAttr}
               onChange={setUsernameAttr}
             />
             <TextField
+              placeholder="cn"
               label="Display name attribute"
               value={displayAttr}
               onChange={setDisplayAttr}
@@ -809,6 +820,7 @@ function MappingDialog({
       <Form onSubmit={add} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="cn=web-developers,ou=groups,dc=example,dc=com"
           label="Group"
           value={group}
           onChange={setGroup}
@@ -878,6 +890,7 @@ function ServiceDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="web-pipeline"
           label="Name"
           description={
             slug(username)
@@ -888,7 +901,12 @@ function ServiceDialog({
           onChange={setUsername}
           isRequired
         />
-        <TextField label="Display name" value={display} onChange={setDisplay} />
+        <TextField
+          placeholder="Web pipeline"
+          label="Display name"
+          value={display}
+          onChange={setDisplay}
+        />
         <div className="samuori-actions">
           <Button variant="secondary" onPress={onClose}>
             Cancel
@@ -947,6 +965,7 @@ function TokenDialog({
         <Form onSubmit={submit} className="samuori-form">
           {error && <Alert>{error}</Alert>}
           <TextField
+            placeholder="web-ci"
             label="Token name"
             value={name}
             onChange={setName}
@@ -1131,6 +1150,7 @@ function ServiceNameDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="Web pipeline"
           label="Display name"
           value={display}
           onChange={setDisplay}

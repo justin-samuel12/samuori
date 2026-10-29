@@ -883,11 +883,12 @@ function RequestRepositoryDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="team/web"
           label="Repository"
           value={repository}
           onChange={(v) => setRepository(correctName(v, { extra: "/._" }))}
           isRequired
-          description="Saved in lowercase, such as payments/orders-api."
+          description="Saved in lowercase, such as team/web."
         />
         <TextField
           label="Why it is needed"

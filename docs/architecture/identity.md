@@ -1,7 +1,7 @@
 # Identity
 
 Status: **Implemented (WP27).** Product decision: D09. Threat rows: TM-08 (OIDC and LDAP sign-in manipulation),
-TM-04 (tokens). Screen: Organization → Identity & sign-in.
+TM-04 (tokens). Screen: Organization > Identity & sign-in.
 
 Samuori signs people in with local passwords, OpenID Connect or LDAP/Active Directory. Groups from a provider map to
 Samuori roles. Automation uses service identities with expiring API tokens. No identity provider is required: an
@@ -10,11 +10,11 @@ principle applied to identity).
 
 ## Providers
 
-An administrator adds a provider under **Identity** (`POST /identity-providers`). It starts **disabled**; test it,
+An administrator adds a provider under **Organization > Identity & sign-in** (`POST /identity-providers`). It starts **disabled**; test it,
 add group mappings, then enable it. Every change is audited. The OIDC client secret or LDAP bind password is a
 local secret that becomes **controller-only**, so it can never be bound to a build or read back. Type it in the
 provider dialog (it is stored as `identity-<name>-bind-password` or `identity-<name>-client-secret`), or choose a
-secret stored earlier under **Secrets**.
+secret stored earlier under **Security > Secrets**.
 
 | Kind | Settings | Notes |
 |---|---|---|
@@ -36,7 +36,7 @@ the group search's name attribute (default `cn`), compared case-insensitively as
 the claim exactly.
 
 Set `externalUrl` (for example `https://samuori.example`) before adding an OIDC provider. Register
-`<externalUrl>/api/v1/auth/oidc/callback` with the provider; the Identity page shows it.
+`<externalUrl>/api/v1/auth/oidc/callback` with the provider; Organization > Identity & sign-in shows it.
 
 ## OIDC sign-in
 
@@ -140,7 +140,7 @@ down.
 
 Samuori keeps one local administrator: revoking the organization administrator role from the last enabled local
 (password) user is refused with `409 last_local_administrator`, even when directory administrators remain, so the
-organization stays reachable when every provider fails. The Users page shows each user's source and which roles
+organization stays reachable when every provider fails. Organization > Users shows each user's source and which roles
 come from group mappings.
 
 ## Managing people and teams

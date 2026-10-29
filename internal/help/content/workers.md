@@ -1,6 +1,6 @@
 ---
 title: Workers and pools
-section: Operating Samuori
+section: Infrastructure
 summary: Pools, isolation profiles, enrollment, self-tests and taking workers out of service.
 roles: [operator, administrator]
 order: 100

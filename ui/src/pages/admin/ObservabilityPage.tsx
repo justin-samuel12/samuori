@@ -4,6 +4,7 @@ import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Checkbox, TextField } from "../../components/Field";
 import { Alert, Loading, PageHeader } from "../../components/Feedback";
+import { isolationText } from "../display";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { isOrgAdmin, useMe, type Me } from "../../session/session";
@@ -27,7 +28,7 @@ export function ObservabilityPage() {
       <PageHeader
         help="security-review"
         title="Audit & observability"
-        description="Operational state and the audit log, read from Samuori's own database. No external monitoring system is needed."
+        description="Operational state and the audit log, from Samuori's own database."
       />
       {diagnostics && <DiagnosticsSection />}
       {audit && <AuditSection />}
@@ -124,7 +125,7 @@ function DiagnosticsSection() {
       <Table
         label="Worker pools"
         rows={d.workers.pools}
-        empty="No worker pools yet."
+        empty="No worker pools yet. Create one under Infrastructure > Workers & pools."
         columns={[
           {
             id: "name",
@@ -145,7 +146,7 @@ function DiagnosticsSection() {
             id: "profile",
             name: "Isolation profile",
             render: (p) =>
-              `${p.isolationProfile}${p.profileApproved ? "" : " (disabled)"}`,
+              `${isolationText(p.isolationProfile)}${p.profileApproved ? "" : " (disabled)"}`,
           },
           {
             id: "workers",
@@ -161,7 +162,7 @@ function DiagnosticsSection() {
           ...r,
           id: `${r.registry}/${r.profile}`,
         }))}
-        empty="No registry profiles yet."
+        empty="No registry profiles yet. Add one under Build supply > Registries & destinations."
         columns={[
           {
             id: "registry",
@@ -255,6 +256,7 @@ function AuditSection() {
           onChange={(v) => setDraft({ ...draft, action: v })}
         />
         <TextField
+          placeholder="publication"
           label="Resource type"
           value={draft.resourceType}
           onChange={(v) => setDraft({ ...draft, resourceType: v })}

@@ -1,11 +1,11 @@
 ---
 title: Registries and destinations
-section: Administration
+section: Build supply
 summary: Connect registries, store push credentials, and decide where projects may publish.
 roles: [administrator]
 order: 230
 ---
-**Registries** sets up where images go.
+**Build supply > Registries & destinations** sets up where images go.
 
 1. **Registries:** add each registry: a generic OCI registry or Amazon ECR (account ID and region). Add an ECR
    registry as kind **Amazon ECR**, not OCI, so its credentials can use IAM roles.

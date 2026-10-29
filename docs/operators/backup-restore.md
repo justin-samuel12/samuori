@@ -37,7 +37,7 @@ The default controller image carries no PostgreSQL tools. Controllers that back 
 
 ## Verify and restore
 
-- On the Backup & Restore screen, **Check** confirms the archive is unchanged since it was written.
+- On Organization > Backups, **Check** confirms the archive is unchanged since it was written.
 - `samuori-server verify-backup --identity-file samuori-backup.key ARCHIVE` decrypts it and checks every file and, for
   SQLite backups, every table.
 - To restore, stop the controller and run, into an empty data directory and an empty database:

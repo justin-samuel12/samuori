@@ -1,11 +1,11 @@
 ---
 title: Sign-in and directory groups
-section: Administration
+section: Organization
 summary: Connect LDAP, Active Directory or OIDC, and map directory groups to Samuori roles.
 roles: [administrator]
 order: 210
 ---
-**Identity** connects Samuori to your directory so people sign in with their company account and get roles from their
+**Organization > Identity & sign-in** connects Samuori to your directory so people sign in with their company account and get roles from their
 groups.
 
 ## Add a provider

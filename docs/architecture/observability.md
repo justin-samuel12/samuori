@@ -1,7 +1,7 @@
 # Observability and audit
 
 Status: **Implemented (WP26).** Decision: ADR 0016 (built-in observability; Grafana, Loki and Prometheus are optional
-and external). Product decision: D18. Screen: Security → Audit & observability.
+and external). Product decision: D18. Screen: Security > Audit & observability.
 
 Samuori answers its operational questions from its own database. Diagnostics, audit search, export and retention need no
 external monitoring system. Prometheus metrics and OpenTelemetry traces are optional outputs for operators who
@@ -136,7 +136,7 @@ keep a copy the controller cannot alter, ship scheduled exports off the host.
 
 ## UI
 
-Security → **Audit & observability**:
+Security > **Audit & observability**:
 
 - **Diagnostics:** shown to administrators and operators, with a refresh action.
 - **Audit log:** shown to administrators and security reviewers. It has filters, Load more and an export link for

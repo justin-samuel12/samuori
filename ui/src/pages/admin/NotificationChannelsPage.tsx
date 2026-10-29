@@ -126,8 +126,8 @@ export function NotificationChannelsPage() {
   return (
     <>
       <PageHeader
-        title="Notifications"
-        description="Channels that receive events, rules that choose which events go where, and the delivery log. Messages carry titles, project names and links only, never logs or failure details."
+        title="Notification channels"
+        description="Where events are sent and what was delivered. Messages carry titles, project names and links only, never logs or failure details."
         actions={
           <>
             <Button onPress={() => setCreating("channel")}>Add channel</Button>
@@ -166,7 +166,7 @@ export function NotificationChannelsPage() {
         <Table
           label="Channels"
           rows={channels ?? []}
-          empty="No channels. Users still see their notifications in the app."
+          empty="No channels. Users still see their notifications in the app; choose Add channel to send them elsewhere too."
           columns={[
             {
               id: "name",
@@ -230,7 +230,7 @@ export function NotificationChannelsPage() {
           label="Rules"
           rows={rules}
           dependencies={[channels, teams]}
-          empty="No rules. Channels receive nothing until a rule routes events to them."
+          empty="No rules. Channels receive nothing until a rule routes events to them; choose Add rule."
           columns={[
             {
               id: "channel",
@@ -308,7 +308,7 @@ export function NotificationChannelsPage() {
           label="Deliveries"
           rows={deliveries}
           dependencies={[channels]}
-          empty="No deliveries."
+          empty="No deliveries yet."
           columns={[
             {
               id: "event",
@@ -461,7 +461,7 @@ function DeleteChannelDialog({
             The channel and its delivery log are deleted; the deletion is
             audited.
             {channel.kind !== "email"
-              ? " Its stored secret then shows as no longer used on the Secrets page, where you can delete it."
+              ? " Its stored secret then shows as no longer used under Security > Secrets, where you can delete it."
               : ""}
           </p>
         )}
@@ -563,7 +563,13 @@ function ChannelDialog({
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          placeholder="build-alerts"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
         <Select
           label="Kind"
           value={kind}
@@ -577,6 +583,7 @@ function ChannelDialog({
         />
         {kind === "webhook" && (
           <TextField
+            placeholder="https://hooks.example.com/samuori"
             label="Endpoint URL"
             description="HTTPS only. Each request is signed with a key shown once after you add the channel."
             value={url}
@@ -605,6 +612,7 @@ function ChannelDialog({
         )}
         {kind === "email" && (
           <TextField
+            placeholder="web-team@example.com"
             label="Recipients"
             description="Addresses separated by commas. Requires SMTP to be configured on the server."
             value={recipients}

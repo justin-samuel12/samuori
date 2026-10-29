@@ -1,6 +1,6 @@
 ---
 title: Manage projects
-section: Building images
+section: Projects
 summary: Create projects and request repositories and output exceptions.
 roles: [maintainer, administrator]
 order: 60

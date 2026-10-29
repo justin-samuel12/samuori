@@ -51,7 +51,7 @@ export function UsersPage() {
       <PageHeader
         help="people-and-access"
         title="Users"
-        description="Local and directory accounts and their roles. Keep at least one local administrator: it is the way in if the identity provider fails."
+        description="Local and directory accounts and their roles. Keep at least one local administrator in case the identity provider fails."
         actions={<Button onPress={() => setCreating(true)}>New user</Button>}
       />
       {error && <Alert>{error}</Alert>}
@@ -143,7 +143,8 @@ export function UsersPage() {
                   </Button>
                   {u.kind === "service" ? (
                     <span className="samuori-muted">
-                      Service identity: manage it on the Identity page
+                      Service identity: manage it under Organization &gt;
+                      Identity &amp; sign-in
                     </span>
                   ) : (
                     <Button
@@ -289,6 +290,7 @@ function CreateUserDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="alex"
           label="Username"
           value={form.username}
           onChange={set("username")}
@@ -297,6 +299,7 @@ function CreateUserDialog({
           autoComplete="off"
         />
         <TextField
+          placeholder="Alex Example"
           label="Display name"
           value={form.displayName}
           onChange={set("displayName")}
@@ -428,6 +431,7 @@ function RenameUserDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="Alex Example"
           label="Display name"
           value={name}
           onChange={setName}

@@ -8,7 +8,8 @@ import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { TextField } from "../../components/Field";
-import { Alert, Badge, Loading } from "../../components/Feedback";
+import { Alert, Loading, StateBadge } from "../../components/Feedback";
+import { recipeStatus } from "../display";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 
@@ -47,13 +48,6 @@ stages:
       - user: "10001"
       - cmd: [node, server.js]
 `;
-
-const tone = {
-  draft: "neutral",
-  approved: "ok",
-  deprecated: "warn",
-  withdrawn: "bad",
-} as const;
 
 function nextVersion(v: string): string {
   const [a = "0", b = "0", c = "0"] = v.split(".");
@@ -112,7 +106,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
             key: r.id,
             id: `${r.id}@${r.version}`,
           }))}
-          empty="No custom recipes yet."
+          empty="No custom recipes yet. Choose New recipe to define one."
           columns={[
             {
               id: "name",
@@ -138,7 +132,7 @@ export function CustomRecipes({ onChange }: { onChange: () => void }) {
               name: "Status",
               render: (r) => (
                 <>
-                  <Badge tone={tone[r.status]}>{r.status}</Badge>
+                  <StateBadge state={recipeStatus(r.status)} />
                   {r.reason && (
                     <div className="samuori-muted text-xs">{r.reason}</div>
                   )}

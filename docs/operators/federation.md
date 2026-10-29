@@ -38,7 +38,7 @@ On the originator:
 
 ## When a peer cannot be reached
 
-The build stays **delegated** and the Federation page shows since when the peer is unreachable. It is never run
+The build stays **delegated** and Organization > Federation shows since when the peer is unreachable. It is never run
 anywhere else, so it never has two executors. When the peer is back, the build continues.
 
 If the peer will not come back, **Abandon** the delegation (with a reason). The build fails here at once, the peer is

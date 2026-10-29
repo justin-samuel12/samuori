@@ -1,11 +1,11 @@
 ---
 title: Create an image
-section: Building images
+section: Projects
 summary: The New image steps, the form and YAML views, and starting a build.
 roles: [developer, maintainer]
 order: 20
 ---
-**New image** walks you through a build specification in seven steps:
+**Projects > New image** walks you through a build specification in seven steps:
 
 1. **Upload source**: pick an upload, or upload new files.
 2. **Choose app**: what to build. If the upload has a Dockerfile, **Build my Dockerfile** builds it exactly as

@@ -105,16 +105,16 @@ Then, in the browser:
 
 1. Open the UI and complete setup with the code from `sudo samuori-setup-code` (not needed after `samuori-setup`, which
    creates the organization and administrator).
-2. **Infrastructure → Workers & pools**: the `local` worker appears within seconds. Choose **Enable pool** on
+2. **Infrastructure > Workers & pools**: the `local` worker appears within seconds. Choose **Enable pool** on
    the `local` pool. Enabling starts the worker's own self-test (about a minute); uploaded source builds once it passes.
    Workers are retested after configuration changes and every 20 hours.
-3. **Build supply → Registries & destinations**: add `127.0.0.1:5001` with **Plain HTTP** and **private network**,
+3. **Build supply > Registries & destinations**: add `127.0.0.1:5001` with **Plain HTTP** and **private network**,
    credentials of type None, and a destination for your projects.
 
 ### Add a remote worker
 
 A controller installed with `--worker-listen 0.0.0.0:8444 --worker-hostnames samuori.example.com` (add
-`--no-local-worker` for one that runs no builds itself) accepts remote build VMs. Under **Infrastructure → Servers**,
+`--no-local-worker` for one that runs no builds itself) accepts remote build VMs. Under **Infrastructure > Servers**,
 select **Add a worker**, then on the build VM, from the release folder:
 
 ```
@@ -266,7 +266,7 @@ and their self-test has passed (`POST /api/v1/worker-pools/{poolId}/self-tests`,
 provider that can pass it in this release is `rootless-dedicated-vm`, on a Linux VM dedicated to the worker
 (`docs/architecture/build-execution.md`). `vm-per-job` needs a provider validated on a KVM host. Without a verified
 pool, every build of uploaded source is recorded as `blocked` with the reason. The same steps are available in the UI
-under Infrastructure → Workers & pools. Infrastructure → Build queue, Build engines, Storage (with on-demand garbage
+under Infrastructure > Workers & pools. Infrastructure > Build queue, Build engines, Storage (with on-demand garbage
 collection) and Messaging show live state from the controller.
 
 ## Source uploads
@@ -278,6 +278,6 @@ Uploaded source is stored under `<dataDir>/blobs` (content-addressed, verified o
 
 Passwords use argon2id. After 5 failed attempts an account is locked for 15 minutes, and each client address is
 limited to 20 sign-in attempts per minute. Failures and lockouts are kept in the database, so controllers of a cluster
-share them; the per-address limit applies per controller. Sessions end after 30 minutes idle or 12 hours in total by default; administrators change both on the Identity page
+share them; the per-address limit applies per controller. Sessions end after 30 minutes idle or 12 hours in total by default; administrators change both under Organization > Identity & sign-in
 (docs/architecture/identity.md#sessions). API tokens are
 shown once, stored only as hashes, expire within a year, and are read-only unless created with write access.

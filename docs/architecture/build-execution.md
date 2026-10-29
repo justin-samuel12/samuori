@@ -241,7 +241,7 @@ only from the worker the test was sent to, only while it runs, and records `pass
 test that has not reported within 45 minutes counts as failed.
 
 A worker is eligible for uploaded source while its pool is approved and its newest finished test passed less than 24
-hours ago, for the pool's profile and the worker's current digest. The Workers page shows each worker's result (marked
+hours ago, for the pool's profile and the worker's current digest. Infrastructure > Workers & pools shows each worker's result (marked
 outdated after a change) with **Run self-test**, and each pool's verified workers.
 
 Evidence: `TestDedicatedVMSelfTest` (all 10 checks pass in the Linux dev VM, a Lima VM on Apple Virtualization
@@ -253,7 +253,7 @@ recording.
 
 The `rootless-host` and `rootless-dedicated-vm` provider runs one of two engines, chosen per worker with
 `--engine` (`buildkit` by default, or `buildah`). The engine is part of the worker's configuration digest, so
-changing it invalidates the self-test. Workers advertise their engine, and the Workers & pools page shows it.
+changing it invalidates the self-test. Workers advertise their engine, and Infrastructure > Workers & pools shows it.
 Both engines implement `engine.Runner` (`internal/engine`), so the same provider code, egress rules, limits, canary,
 runtime test and self-test apply.
 

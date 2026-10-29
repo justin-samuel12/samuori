@@ -5,7 +5,13 @@ import { Button } from "../../components/Button";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select, TextField } from "../../components/Field";
-import { Alert, Explain, Loading, PageHeader } from "../../components/Feedback";
+import {
+  Alert,
+  Explain,
+  Loading,
+  PageHeader,
+  StateBadge,
+} from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { useCan } from "../../session/session";
@@ -17,6 +23,7 @@ import {
 } from "./WorkerJoin";
 import { WorkerStatus } from "./WorkerStatus";
 import { readinessText } from "./workerFigures";
+import { isolationText, selfTestState, workerState } from "../display";
 
 type Pool = Schemas["WorkerPool"];
 type Worker = Schemas["Worker"];
@@ -40,13 +47,16 @@ const reasonText: Record<string, string> = {
 const profiles = [
   {
     id: "rootless-dedicated-vm",
-    label: "rootless-dedicated-vm (a VM dedicated to one trust domain)",
+    label: `${isolationText("rootless-dedicated-vm")}: one trust domain per VM`,
   },
   {
     id: "vm-per-job",
-    label: "vm-per-job (a fresh VM for every build; not available yet)",
+    label: `${isolationText("vm-per-job")} (not available yet)`,
   },
-  { id: "rootless-host", label: "rootless-host (trusted workloads only)" },
+  {
+    id: "rootless-host",
+    label: `${isolationText("rootless-host")} (trusted workloads only)`,
+  },
 ];
 
 export function WorkersPage() {
@@ -157,7 +167,7 @@ export function WorkersPage() {
             {
               id: "profile",
               name: "Isolation profile",
-              render: (p) => p.isolationProfile,
+              render: (p) => isolationText(p.isolationProfile),
             },
             {
               id: "approved",
@@ -307,7 +317,7 @@ export function WorkersPage() {
         <Table
           label="Workers"
           rows={workers}
-          empty="No workers enrolled."
+          empty="No workers enrolled yet. Choose Enroll a worker to get a join command for a new host."
           columns={[
             {
               id: "name",
@@ -327,9 +337,11 @@ export function WorkersPage() {
               id: "state",
               name: "State",
               render: (w) =>
-                w.removal
-                  ? removalText(w.removal)
-                  : `${w.enrollmentState}, ${w.operationalState}`,
+                w.removal ? (
+                  removalText(w.removal)
+                ) : (
+                  <StateBadge state={workerState(w)} />
+                ),
             },
             {
               id: "seen",
@@ -347,10 +359,14 @@ export function WorkersPage() {
             {
               id: "selftest",
               name: "Self-test",
-              render: (w) =>
-                w.selfTest.running
-                  ? "running"
-                  : `${w.selfTest.status}${w.selfTest.status !== "never-run" && !w.selfTest.current ? " (outdated)" : ""}${w.selfTest.failedChecks?.length ? `: ${w.selfTest.failedChecks.join(", ")}` : ""}`,
+              render: (w) => (
+                <>
+                  <StateBadge state={selfTestState(w.selfTest)} />
+                  {!w.selfTest.running && w.selfTest.failedChecks?.length
+                    ? ` ${w.selfTest.failedChecks.join(", ")}`
+                    : ""}
+                </>
+              ),
             },
             {
               id: "actions",
@@ -586,6 +602,7 @@ function PoolDialog({
           </Alert>
         )}
         <TextField
+          placeholder="builders"
           label="Name"
           value={form.name}
           onChange={set("name")}
@@ -593,6 +610,7 @@ function PoolDialog({
         />
         {showLocation ? (
           <TextField
+            placeholder="eu-west"
             label="Location"
             value={location}
             onChange={setLocation}
@@ -605,6 +623,7 @@ function PoolDialog({
           </Checkbox>
         )}
         <TextField
+          placeholder="web"
           label="Trust domain"
           value={form.trustDomain}
           onChange={set("trustDomain")}
@@ -650,6 +669,7 @@ function LocationDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="eu-west"
           label="Name"
           value={name}
           onChange={setName}
@@ -657,6 +677,7 @@ function LocationDialog({
           description="Lowercase letters, digits and dashes, for example lab-1"
         />
         <TextField
+          placeholder="Main data centre"
           label="Description (optional)"
           value={description}
           onChange={setDescription}
@@ -750,7 +771,7 @@ export function AssignDialog({
     .filter((p) => p.id !== worker.poolId)
     .map((p) => ({
       id: p.id,
-      label: `${p.name} (${p.isolationProfile}${p.profileApproved ? "" : ", disabled"})`,
+      label: `${p.name} (${isolationText(p.isolationProfile)}${p.profileApproved ? "" : ", disabled"})`,
     }));
   const [poolId, setPoolId] = useState<string | null>(
     options.length === 1 ? (options[0]?.id ?? null) : null,

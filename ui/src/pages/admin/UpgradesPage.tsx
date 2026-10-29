@@ -49,7 +49,7 @@ export function UpgradesPage() {
         <PageHeader
           help="upgrades"
           title="Upgrades & diagnostics"
-          description="The release of each controller, the database schema and the versions workers run, checked against the supported version matrix."
+          description="Controller, database schema and worker versions, checked against the supported version matrix."
         />
         <Alert>
           The upgrade status could not be read: {failure} Reload to try again;
@@ -68,7 +68,7 @@ export function UpgradesPage() {
       <PageHeader
         help="upgrades"
         title="Upgrades & diagnostics"
-        description="The release of each controller, the database schema and the versions workers run, checked against the supported version matrix."
+        description="Controller, database schema and worker versions, checked against the supported version matrix."
       />
       <dl className="samuori-details">
         <dt>This controller</dt>
@@ -112,7 +112,7 @@ export function UpgradesPage() {
       <Table
         label="Worker releases"
         rows={status.workers.map((w) => ({ ...w, id: w.version }))}
-        empty="No worker is enrolled."
+        empty="No worker is enrolled. Add one under Infrastructure > Servers."
         columns={[
           {
             id: "version",

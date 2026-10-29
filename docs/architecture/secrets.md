@@ -265,7 +265,7 @@ the portal. Migration 00058, `TestAllowedSecrets`.
 
 ## External providers (WP27)
 
-ADR 0015 lists the provider types. Administrators add them under **Secrets → External secret stores**
+ADR 0015 lists the provider types. Administrators add them under **Security > Secrets > External secret stores**
 (`POST /secret-providers`). A store's credential is written once and kept as a **controller-only** local secret
 (token, AppRole secret ID, or AWS access key). It is never returned, never bound to a build, and never sent to a
 worker.

@@ -1,6 +1,6 @@
 # Capacity and Activity
 
-**Infrastructure → Capacity** (`GET /system/capacity`, organization administrators and operators) shows, in one
+**Infrastructure > Capacity** (`GET /system/capacity`, organization administrators and operators) shows, in one
 place, what each host last reported and what is still in progress. It refreshes every 15 seconds.
 
 ## Hosts
@@ -16,7 +16,7 @@ view, or a worker that has not connected since its update, shows no report. Work
 are stored (at most 8 filesystems, labels without control characters).
 
 Disk turns amber below 15% or 5 GiB free and red below 5% or 1 GiB; memory turns amber below 10% available. With
-S3 or other object storage for artifacts, uploads and images are not on controller disks; **Infrastructure →
+S3 or other object storage for artifacts, uploads and images are not on controller disks; **Infrastructure >
 Storage** shows what Samuori keeps there.
 
 ## Builds in progress

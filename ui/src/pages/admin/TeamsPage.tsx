@@ -142,11 +142,12 @@ function TeamNameDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="web"
           label="Team name"
           value={name}
           onChange={(v) => setName(correctName(v))}
           isRequired
-          description="Saved in lowercase with dashes, for example payments."
+          description="Saved in lowercase with dashes, for example web-team."
         />
         <div className="samuori-actions">
           <Button variant="secondary" onPress={onClose}>

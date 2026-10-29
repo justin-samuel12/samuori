@@ -24,7 +24,7 @@ it, re-running the installer switches the local worker back on. A worker host re
 Firewall the worker port to your build network. Every call needs a certificate from the CA, and enrollment needs a
 single-use token, but nothing else is served there.
 
-In the UI, **Infrastructure → Servers**, choose **Add a worker** (or **Enroll a worker** under Workers & pools). On
+In the UI, **Infrastructure > Servers**, choose **Add a worker** (or **Enroll a worker** under Workers & pools). On
 each remote build VM (a dedicated VM, like the all-in-one host), from the release folder:
 
 ```sh
@@ -105,12 +105,12 @@ the revoked worker is rejected. The worker stops with exit status 3.
 
 Revoke with **The worker may be compromised** and a time window. Every image the worker built in attempts started
 in that window is quarantined: publication refuses it with the `worker-trust` gate. Review each image under
-**Security → Quarantines** (security reviewers or administrators) and release it with the review
+**Security > Quarantines** (security reviewers or administrators) and release it with the review
 result, for example after rebuilding it on a clean worker and comparing digests. Releases are audited.
 
 ## Planned CA rotation
 
-1. **Security → Certificates → Rotate the CA**. A new CA joins the trust bundle; connected workers receive it
+1. **Security > Certificates > Rotate the CA**. A new CA joins the trust bundle; connected workers receive it
    within seconds and acknowledge it with their next heartbeat.
 2. Wait until **Waiting for workers** is empty. Offline workers must connect once; a worker you no longer need can be
    revoked instead.
@@ -122,7 +122,7 @@ New enrollment tokens carry the new CA pin as soon as issuance switches.
 
 ## Emergency CA rotation
 
-Use when the CA key may be compromised: **Security → Certificates → Emergency rotation**. Every CA is replaced
+Use when the CA key may be compromised: **Security > Certificates > Emergency rotation**. Every CA is replaced
 at once, its key deleted, and every worker identity revoked; running builds are requeued. Nothing signed by the old
 CA is trusted afterwards, so each worker must be enrolled again out of band with a new token, which carries the new
 CA pin. The all-in-one `local` worker is not re-enrolled automatically after an emergency rotation: re-enroll it like

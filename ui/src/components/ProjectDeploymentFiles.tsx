@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, describeError, type Schemas } from "../api/client";
-import { Button } from "./Button";
+import { Button, buttonClass } from "./Button";
 import { Dialog } from "./Dialog";
 import { Alert, Loading } from "./Feedback";
 import { Select, TextField } from "./Field";
@@ -148,14 +148,14 @@ function ProjectDeploymentDialog({
             ) : (
               <>
                 <a
-                  className="samuori-button samuori-button--secondary no-underline"
+                  className={buttonClass("secondary")}
                   href={`${base}/compose${suffix}`}
                   download={info.composeFilename}
                 >
                   Docker Compose ({info.composeFilename})
                 </a>
                 <a
-                  className="samuori-button samuori-button--secondary no-underline"
+                  className={buttonClass("secondary")}
                   href={`${base}/helm${suffix}`}
                   download={info.chartFilename}
                 >

@@ -7,7 +7,9 @@ import {
   imageName,
   isolationText,
   plural,
+  selfTestState,
   stepStatus,
+  workerState,
 } from "./display.ts";
 
 const digest = "sha256:0123456789abcdef0123";
@@ -50,6 +52,27 @@ test("wizard steps show done, current, not reached and problems", () => {
   assert.equal(stepStatus(3, 2, 4, true), "problem");
   assert.equal(stepStatus(5, 2, 4, false), "todo");
   assert.equal(stepStatus(5, 2, 4, true), "todo");
+});
+
+test("worker states read as one plain label; a lost enrollment wins", () => {
+  assert.deepEqual(
+    workerState({ enrollmentState: "enrolled", operationalState: "active" }),
+    { text: "Active", tone: "ok" },
+  );
+  assert.equal(
+    workerState({ enrollmentState: "revoked", operationalState: "active" })
+      .text,
+    "Revoked",
+  );
+  assert.equal(
+    selfTestState({ status: "passed", current: false }).tone,
+    "warn",
+  );
+  assert.equal(selfTestState({ status: "never-run" }).text, "Not run yet");
+  assert.equal(
+    selfTestState({ status: "failed", running: true }).text,
+    "Running",
+  );
 });
 
 test("counts use the right plural", () => {

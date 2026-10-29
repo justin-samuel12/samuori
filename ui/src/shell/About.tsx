@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrandMark } from "../components/BrandMark";
-import { Button } from "../components/Button";
+import { Button, buttonClass } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import { Alert, Loading } from "../components/Feedback";
 import { loadedServerVersion } from "../api/client";
@@ -47,7 +47,7 @@ function Notices({ onBack }: { onBack: () => void }) {
       <div className="samuori-actions">
         {deps && (
           <a
-            className="samuori-button samuori-button--quiet"
+            className={buttonClass("quiet")}
             href={noticeFiles[0]}
             target="_blank"
             rel="noreferrer"

@@ -115,7 +115,7 @@ export function FederationPage() {
         <Table
           label="Peers"
           rows={state.peers}
-          empty="No peer is registered."
+          empty="No peer is registered. Choose Add peer to connect another installation."
           columns={[
             {
               id: "name",
@@ -405,8 +405,15 @@ function PeerDialog({ isOpen, onClose, onDone }: DialogProps) {
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
         <TextField
+          placeholder="second-site"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
+        <TextField
+          placeholder="https://samuori-2.example.com:8443"
           label="Endpoint"
           description="The peer's federation listener, such as https://samuori-b.example:8445"
           value={endpoint}
@@ -484,6 +491,7 @@ function GrantDialog({
           isRequired
         />
         <TextField
+          placeholder="eu-west"
           label="Locations"
           description="Comma-separated locations of this installation's own workers"
           value={locations}
@@ -542,6 +550,7 @@ function RouteDialog({
           isRequired
         />
         <TextField
+          placeholder="eu-west"
           label="Location here"
           description="Projects choose this name like any location"
           value={location}
@@ -549,6 +558,7 @@ function RouteDialog({
           isRequired
         />
         <TextField
+          placeholder="us-east"
           label="Peer location"
           value={remote}
           onChange={setRemote}

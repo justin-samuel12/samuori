@@ -1,13 +1,13 @@
 ---
 title: Teams, users and roles
-section: Administration
+section: Organization
 summary: Create teams and local users, and give people roles.
 roles: [administrator]
 order: 200
 ---
 ## Teams
 
-On **Teams**, **New team** creates a team. Projects belong to teams, and a role held on a team covers all of its
+On **Organization > Teams**, **New team** creates a team. Projects belong to teams, and a role held on a team covers all of its
 projects.
 
 **Rename** changes a team's name under the same rules. **Delete** works only for a team nothing refers to: no
@@ -16,7 +16,7 @@ notification rules or image sources. Otherwise the message says what is still th
 
 ## Users
 
-On **Users**, **New user** creates a local account with a password of at least 12 characters that does not contain
+On **Organization > Users**, **New user** creates a local account with a password of at least 12 characters that does not contain
 the username. People who sign in through LDAP, Active Directory or OIDC get an account on their first sign-in; see
 [Sign-in and directory groups](help:identity).
 

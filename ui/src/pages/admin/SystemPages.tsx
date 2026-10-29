@@ -15,7 +15,9 @@ import {
   Loading,
   PageHeader,
   Section,
+  StateBadge,
 } from "../../components/Feedback";
+import { recipeStatus } from "../display";
 import { Table } from "../../components/Table";
 import { bytes } from "../../format";
 import { useLoader } from "../../hooks";
@@ -365,7 +367,7 @@ export function RecipesPage() {
                     ? `${x.version} (added)`
                     : x.status === "approved"
                       ? x.version
-                      : `${x.version} (${x.status})`,
+                      : `${x.version} (${recipeStatus(x.status).text.toLowerCase()})`,
                 )
                 .join(", "),
           },
@@ -377,8 +379,14 @@ export function RecipesPage() {
           {
             id: "status",
             name: "Status",
-            render: (r) =>
-              `${r.status}${r.statusReason ? ` — ${r.statusReason}` : ""}`,
+            render: (r) => (
+              <>
+                <StateBadge state={recipeStatus(r.status)} />
+                {r.statusReason && (
+                  <div className="samuori-muted text-xs">{r.statusReason}</div>
+                )}
+              </>
+            ),
           },
           {
             id: "actions",
@@ -920,7 +928,7 @@ export function EgressPage() {
     <>
       <PageHeader
         title="Egress"
-        description="Builds reach the internet only through the egress proxy. Each preset and destination says which builds can reach it; everything else is refused."
+        description="Builds reach the internet only through the egress proxy; anything not allowed here is refused."
       />
       <p>
         {st.workers.strictEgress} of the {st.workers.connected} worker(s)
@@ -1181,6 +1189,7 @@ function DestinationDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="package-mirror"
           label="Name"
           value={name}
           onChange={setName}
@@ -1188,6 +1197,7 @@ function DestinationDialog({
           description="Lower-case letters, digits and dashes, such as github-releases."
         />
         <TextField
+          placeholder="packages.example.com"
           label="Addresses"
           value={text}
           onChange={setText}

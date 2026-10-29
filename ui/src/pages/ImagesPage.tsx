@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Form, Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
-import { Button } from "../components/Button";
+import { Button, buttonClass } from "../components/Button";
 import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
 import { Checkbox, Select, TextField } from "../components/Field";
@@ -150,7 +150,7 @@ export function ImagesPage() {
                 <div className="flex flex-wrap gap-2">
                   {canDownload && i.validation?.verdict === "passed" && (
                     <a
-                      className="samuori-button samuori-button--quiet no-underline"
+                      className={buttonClass("quiet")}
                       href={`/api/v1/artifacts/${i.artifactId}/download`}
                       download
                       aria-label={`Download ${imageName({ name: i.app ?? projectName, version: i.version, digest: i.digest })}`}
@@ -666,6 +666,7 @@ export function PublishDialog({
           </Alert>
         )}
         <TextField
+          placeholder="1.4.0, stable"
           label="Tags"
           value={tags}
           onChange={setTags}

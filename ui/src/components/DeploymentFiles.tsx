@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { api, describeError, type Schemas } from "../api/client";
 import { useLoader } from "../hooks";
-import { Button } from "./Button";
+import { Button, buttonClass } from "./Button";
 import { Dialog } from "./Dialog";
 import { Alert, Loading } from "./Feedback";
 import { Select } from "./Field";
@@ -93,14 +93,14 @@ function DeploymentFilesDialog({
             </p>
             <div className="samuori-actions samuori-actions--start">
               <a
-                className="samuori-button samuori-button--secondary no-underline"
+                className={buttonClass("secondary")}
                 href={`${base}/compose${query}`}
                 download={info.composeFilename}
               >
                 Docker Compose ({info.composeFilename})
               </a>
               <a
-                className="samuori-button samuori-button--secondary no-underline"
+                className={buttonClass("secondary")}
                 href={`${base}/helm${query}`}
                 download={info.chartFilename}
               >

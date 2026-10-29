@@ -147,6 +147,7 @@ export function RequestBaseImageDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="registry.example.com/team/base"
           label="Repository"
           value={repository}
           onChange={setRepository}

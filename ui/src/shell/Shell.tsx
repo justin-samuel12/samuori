@@ -32,6 +32,7 @@ import { api, onServerUpdated, type Schemas } from "../api/client";
 import { navigate, usePath } from "../router";
 import { isOrgAdmin, useSession, type Me } from "../session/session";
 import { useHealth } from "./health";
+import { healthState } from "../pages/display";
 import { BrandMark } from "../components/BrandMark";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
@@ -581,12 +582,6 @@ const healthTone: Record<Schemas["Health"]["status"], string> = {
   unavailable: "bg-bad",
 };
 
-const healthLabel: Record<Schemas["Health"]["status"], string> = {
-  ok: "Healthy",
-  degraded: "Degraded",
-  unavailable: "Unavailable",
-};
-
 /** Controller health, for the people who can act on it; administrators open the Health page from it. */
 function HealthPill({ me }: { me: Me }) {
   const { data } = useHealth();
@@ -599,7 +594,7 @@ function HealthPill({ me }: { me: Me }) {
         aria-hidden="true"
       />
       <span className="max-sm:sr-only">
-        Controller {healthLabel[data.status].toLowerCase()}
+        Controller {healthState(data.status).text.toLowerCase()}
       </span>
     </>
   );
@@ -609,7 +604,7 @@ function HealthPill({ me }: { me: Me }) {
     <Link
       href="/admin/health"
       className={className}
-      aria-label={`${title}: ${healthLabel[data.status]}`}
+      aria-label={`${title}: ${healthState(data.status).text}`}
     >
       {body}
     </Link>

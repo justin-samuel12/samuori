@@ -165,7 +165,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
           { label: "Kubernetes", href: `/projects/${projectId}/kubernetes` },
           { label: "Generate" },
         ]}
-        description="Samuori converts your Compose file, source or image with an approved provider on a worker, with no network and no credentials, and checks the result. It never deploys anything: you review and download the files."
+        description="An approved provider converts your input on a worker with no network and no credentials. Samuori never deploys anything: you review and download the files."
       />
       <ol className="samuori-stepper" aria-label="Steps">
         {steps.map((s, i) => (
@@ -246,6 +246,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                   )}
                   {kind === "compose" ? (
                     <TextField
+                      placeholder="compose.yml"
                       label="Compose file"
                       value={composePath}
                       onChange={setComposePath}
@@ -254,6 +255,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                     />
                   ) : (
                     <TextField
+                      placeholder="deploy"
                       label="Folder (optional)"
                       value={sourceDir}
                       onChange={setSourceDir}
@@ -274,6 +276,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                   )}
                   {buildRunId && (
                     <TextField
+                      placeholder="web"
                       label="Service to replace"
                       value={service}
                       onChange={(v) => setService(correctName(v))}
@@ -307,6 +310,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                 ))}
               {usesImage && (
                 <TextField
+                  placeholder="web"
                   label="Service name"
                   value={service}
                   onChange={(v) => setService(correctName(v))}
@@ -376,6 +380,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
           {step === 2 && (
             <>
               <TextField
+                placeholder="web"
                 label="Name"
                 value={name}
                 onChange={(v) => setName(correctName(v))}
@@ -383,6 +388,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                 description="Names the conversion and, for Helm, the chart. Lowercase letters, digits and dashes."
               />
               <TextField
+                placeholder="web"
                 label="Namespace"
                 value={opts.namespace ?? ""}
                 onChange={(v) =>
@@ -418,6 +424,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
               />
               {opts.exposure?.type !== "cluster-ip" && (
                 <TextField
+                  placeholder="web"
                   label="Service"
                   value={opts.exposure?.service ?? ""}
                   onChange={(v) =>
@@ -431,6 +438,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
               {opts.exposure?.type === "ingress" && (
                 <>
                   <TextField
+                    placeholder="web.example.com"
                     label="Host"
                     value={opts.exposure?.host ?? ""}
                     onChange={(v) =>
@@ -440,6 +448,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                     description="Such as shop.example.com. TLS and the ingress controller are yours to set up."
                   />
                   <TextField
+                    placeholder="/"
                     label="Path"
                     value={opts.exposure?.path ?? "/"}
                     onChange={(v) =>
@@ -507,6 +516,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                 description="Host paths are never offered: they expose the node's files."
               />
               <TextField
+                placeholder="1Gi"
                 label="Claim size"
                 value={opts.storage?.size ?? ""}
                 onChange={(v) =>
@@ -515,6 +525,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                 description="Such as 1Gi; Kompose's default is 100Mi."
               />
               <TextField
+                placeholder="standard"
                 label="Storage class"
                 value={opts.storage?.storageClass ?? ""}
                 onChange={(v) =>

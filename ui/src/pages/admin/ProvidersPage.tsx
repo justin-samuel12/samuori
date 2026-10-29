@@ -40,7 +40,7 @@ export function ProvidersPage() {
     <>
       <PageHeader
         title="Build & conversion providers"
-        description="Optional open-source tools Samuori runs on workers inside build isolation. Each stays off until you approve a version pinned by checksum or digest."
+        description="Optional open-source tools that run on workers inside build isolation, each off until you approve a pinned version."
       />
       {message && <Alert tone="success">{message}</Alert>}
       <PolicyForm

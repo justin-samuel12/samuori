@@ -105,7 +105,7 @@ const routes: Route[] = [
   },
   {
     path: "/kubernetes",
-    title: "Kubernetes",
+    title: "Kubernetes configurations",
     render: () => <KubeWorkspacePage />,
   },
   {

@@ -1,6 +1,6 @@
 ---
 title: Secrets for your build
-section: Building images
+section: Projects
 summary: Give a build a token or certificate without ever handling the value.
 roles: [developer, maintainer]
 order: 30
@@ -9,7 +9,7 @@ Builds get secrets by **name**. You never type or see a value.
 
 ## Use a key
 
-1. In **New image**, open **Secrets the build needs**. If your Dockerfile mounts a secret
+1. In **Projects > New image**, open **Secrets the build needs**. If your Dockerfile mounts a secret
    (`RUN --mount=type=secret,id=...`), Samuori lists it and offers to add it.
 2. For each secret, choose a key in the **Key** column. The list holds the keys an administrator granted to your
    project; a key set shows each of its keys by name, such as `mssql-base › sa_password`. Choosing one takes

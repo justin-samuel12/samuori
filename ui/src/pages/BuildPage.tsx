@@ -8,7 +8,7 @@ import {
 import { Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
 import { operationAccess } from "../api/generated/roles";
-import { Button } from "../components/Button";
+import { Button, buttonClass } from "../components/Button";
 import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
 import { TextField } from "../components/Field";
@@ -48,8 +48,8 @@ function whoMayPublish(): string {
       ? []
       : access.map((r) => roleLabel(r as Role).toLowerCase());
   return names.length > 0
-    ? `a ${names.join(" or ")} of this project's team`
-    : "someone with publishing rights";
+    ? `A ${names.join(" or ")} of this project's team`
+    : "Someone with publishing rights";
 }
 
 export function BuildPage({ id }: { id: string }) {
@@ -271,8 +271,8 @@ export function BuildPage({ id }: { id: string }) {
               </p>
             ) : (
               <p>
-                <strong>{name}</strong> passed validation. Ask a publisher to
-                publish it: {whoMayPublish()} can.
+                <strong>{name}</strong> passed validation. {whoMayPublish()} can
+                publish it.
               </p>
             )
           ) : run.validation?.verdict ? (
@@ -296,13 +296,13 @@ export function BuildPage({ id }: { id: string }) {
               )}
             <Link
               href={`/images/${run.artifactId}`}
-              className="samuori-button samuori-button--secondary no-underline"
+              className={buttonClass("secondary")}
             >
               Open image
             </Link>
             {downloadable && (
               <a
-                className="samuori-button samuori-button--secondary no-underline"
+                className={buttonClass("secondary")}
                 href={`/api/v1/artifacts/${run.artifactId}/download`}
                 download
               >

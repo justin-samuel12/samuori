@@ -1,11 +1,11 @@
 ---
 title: Builds and logs
-section: Building images
+section: Builds
 summary: What each build status means, and how to read, cancel and repeat a build.
 roles: [developer, maintainer, operator]
 order: 40
 ---
-**Build runs** lists every build you can see. Open one to see its status, what to do next, validation, attempts
+**Builds > Build runs** lists every build you can see. Open one to see its status, what to do next, validation, attempts
 and logs. The page updates as the build moves. Digests, worker IDs and other raw values are under **Technical
 details** at the bottom; the **Timeline** appears once the page receives state changes while you watch.
 

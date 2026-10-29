@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-aria-components";
 import { api, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
-import { Alert, Loading, PageHeader } from "../../components/Feedback";
+import {
+  Alert,
+  Loading,
+  PageHeader,
+  StateBadge,
+} from "../../components/Feedback";
+import { workerState } from "../display";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { ControllerList, JoinControllers } from "./Controllers";
@@ -64,7 +70,7 @@ export function ServersPage() {
       <PageHeader
         help="servers"
         title="Servers"
-        description="The controllers and workers of this installation. Join codes are single use, expire within the hour and grant nothing until you accept the controller or assign the worker to a pool."
+        description="Every controller and worker of this installation. Join codes are single use, expire within the hour and grant nothing until you accept the controller or assign the worker to a pool."
       />
       <Resilience admin />
       <section className="samuori-section" aria-labelledby="controllers-h">
@@ -85,14 +91,14 @@ export function ServersPage() {
             }}
           />
         ) : (
-          <div className="samuori-actions justify-start">
+          <div className="samuori-actions samuori-actions--start">
             <Button onPress={() => void addWorker()}>Add a worker</Button>
           </div>
         )}
         <Table
           label="Worker servers"
           rows={active}
-          empty="No workers enrolled."
+          empty="No workers enrolled. Choose Add a worker to get a join code."
           columns={[
             {
               id: "name",
@@ -112,9 +118,11 @@ export function ServersPage() {
               id: "state",
               name: "State",
               render: (w) =>
-                w.removal
-                  ? removalText(w.removal)
-                  : `${w.enrollmentState}, ${w.operationalState}`,
+                w.removal ? (
+                  removalText(w.removal)
+                ) : (
+                  <StateBadge state={workerState(w)} />
+                ),
             },
             { id: "version", name: "Release", render: (w) => w.version },
             {

@@ -1,6 +1,6 @@
 ---
 title: Audit log and quarantines
-section: Security review
+section: Security
 summary: Read and export the audit log, review policies, and release quarantined images.
 roles: [security-reviewer, administrator]
 order: 120

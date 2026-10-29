@@ -103,7 +103,7 @@ shows:
 | notificationChannels `ops-mail` | create | |
 | notificationRules `ops-mail: build.failed for team-a/web` | create | |
 
-After applying, add credentials `lab-push` with their password under **Registries** and import again; the destination
+After applying, add credentials `lab-push` with their password under **Build supply > Registries & destinations** and import again; the destination
 `web` is then created.
 
 ## Rules to know

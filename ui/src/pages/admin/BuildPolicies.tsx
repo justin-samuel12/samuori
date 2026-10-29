@@ -67,7 +67,7 @@ export function BuildPoliciesPage() {
     <>
       <PageHeader
         title="Build policies"
-        description="Organization-wide rules that discovery, admission and validation apply to every project. Each save is a new, audited version; a change that would block existing specs asks for a reason first."
+        description="Rules every project's builds follow. Each save is a new, audited version."
         help="build-policies"
       />
       <p className="samuori-muted">
@@ -228,7 +228,7 @@ function FrontendsEditor({
       <Table
         label="Approved frontends"
         rows={approved.map((ref, i) => ({ id: String(i), ref, i }))}
-        empty="No frontends approved."
+        empty="No frontends approved. Choose Add frontend to allow one."
         columns={[
           {
             id: "ref",

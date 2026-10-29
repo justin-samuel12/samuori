@@ -1,11 +1,11 @@
 ---
 title: Validation results
-section: Building images
+section: Builds
 summary: The checks Samuori runs on every image, and what to do about findings.
 roles: [developer, maintainer, publisher, security-reviewer]
 order: 50
 ---
-Every built image is validated before it can be published. The **Validation** section of a build shows the verdict
+Every built image is validated before it can be published. The **Validation** section of a build in **Builds > Build runs** shows the verdict
 and each check.
 
 ## Checks

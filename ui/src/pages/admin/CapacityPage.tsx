@@ -188,7 +188,7 @@ export function CapacityPage() {
   const header = (
     <PageHeader
       title="Capacity"
-      description="Disk, memory and CPUs every controller and worker last reported, with builds still running and uploads not yet finished. Refreshes every 15 seconds."
+      description="Disk, memory and CPUs each controller and worker last reported, refreshed every 15 seconds."
     />
   );
   if (q.error)

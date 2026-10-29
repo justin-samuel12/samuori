@@ -5,7 +5,8 @@ import { Button } from "../../components/Button";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Dialog } from "../../components/Dialog";
 import { Checkbox, Select } from "../../components/Field";
-import { Alert, Badge } from "../../components/Feedback";
+import { Alert, Badge, StateBadge } from "../../components/Feedback";
+import { checkState, rolloutState, rolloutStep } from "../display";
 import { Table } from "../../components/Table";
 import { bytes } from "../../format";
 import { useLoader } from "../../hooks";
@@ -17,27 +18,6 @@ type Rollout = Schemas["Rollout"];
 type Step = Schemas["RolloutStep"];
 type Preflight = Schemas["Preflight"];
 type Check = Preflight["checks"][number];
-
-const stepTone = {
-  pending: "neutral",
-  draining: "info",
-  requested: "info",
-  applying: "info",
-  testing: "info",
-  rolling_back: "warn",
-  succeeded: "ok",
-  failed: "bad",
-  skipped: "neutral",
-} as const;
-
-const rolloutTone = {
-  running: "info",
-  succeeded: "ok",
-  failed: "bad",
-  cancelled: "warn",
-} as const;
-
-const checkTone = { passed: "ok", warning: "warn", failed: "bad" } as const;
 
 const waveOptions = [
   ...["10", "25", "50"].map((id) => ({ id, label: `${id}% of each pool` })),
@@ -238,7 +218,7 @@ export function SelfUpdate({ current }: { current: string }) {
       {error && <Alert>{error}</Alert>}
       {notice && <Alert tone="success">{notice}</Alert>}
       {releases.signersConfigured && (
-        <div className="samuori-actions justify-start">
+        <div className="samuori-actions samuori-actions--start">
           <FileTrigger
             acceptedFileTypes={[".samuoriupdate"]}
             onSelect={(l) => l && setFile(l[0])}
@@ -260,7 +240,7 @@ export function SelfUpdate({ current }: { current: string }) {
       <Table<Release & { id: string }>
         label="Releases"
         rows={releases.items.map((r) => ({ ...r, id: r.version }))}
-        empty="No release uploaded."
+        empty="No release uploaded yet. Choose the update bundle above, then Upload."
         columns={[
           {
             id: "version",
@@ -288,7 +268,7 @@ export function SelfUpdate({ current }: { current: string }) {
             id: "actions",
             name: "Actions",
             render: (r) => (
-              <div className="samuori-actions justify-start">
+              <div className="samuori-actions samuori-actions--start">
                 <Button
                   variant="secondary"
                   onPress={() => setViewing(r)}
@@ -403,7 +383,7 @@ export function SelfUpdate({ current }: { current: string }) {
           {
             id: "state",
             name: "State",
-            render: (r) => <Badge tone={rolloutTone[r.state]}>{r.state}</Badge>,
+            render: (r) => <StateBadge state={rolloutState(r.state)} />,
           },
           {
             id: "hosts",
@@ -460,9 +440,7 @@ function StepsTable({ steps, label }: { steps: Step[]; label: string }) {
         {
           id: "state",
           name: "State",
-          render: (s) => (
-            <Badge tone={stepTone[s.state]}>{s.state.replace("_", " ")}</Badge>
-          ),
+          render: (s) => <StateBadge state={rolloutStep(s.state)} />,
         },
         { id: "detail", name: "Detail", render: (s) => s.detail ?? "" },
       ]}
@@ -486,10 +464,10 @@ function RolloutView({
       <h3>
         Rollout of {rollout.version}{" "}
         <Badge
-          tone={rollout.paused ? "warn" : rolloutTone[rollout.state]}
+          tone={rollout.paused ? "warn" : rolloutState(rollout.state).tone}
           live={running && !rollout.paused}
         >
-          {rollout.paused ? "paused" : rollout.state}
+          {rollout.paused ? "Paused" : rolloutState(rollout.state).text}
         </Badge>
       </h3>
       <p className="samuori-muted">
@@ -513,7 +491,7 @@ function RolloutView({
         </Alert>
       )}
       {running && latest && (
-        <div className="samuori-actions justify-start">
+        <div className="samuori-actions samuori-actions--start">
           {rollout.paused ? (
             <Button onPress={() => onControl("resume")}>Resume</Button>
           ) : (
@@ -616,9 +594,7 @@ function UpdatePanel({
               {
                 id: "state",
                 name: "Result",
-                render: (c) => (
-                  <Badge tone={checkTone[c.state]}>{c.state}</Badge>
-                ),
+                render: (c) => <StateBadge state={checkState(c.state)} />,
               },
               { id: "detail", name: "Detail", render: (c) => c.detail },
             ]}
@@ -646,7 +622,7 @@ function UpdatePanel({
       <Checkbox isSelected={downgrade} onChange={setDowngrade}>
         Allow a downgrade
       </Checkbox>
-      <div className="samuori-actions justify-start">
+      <div className="samuori-actions samuori-actions--start">
         <Button variant="secondary" onPress={onClose}>
           Close
         </Button>

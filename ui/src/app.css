@@ -914,6 +914,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--samuori-space-2);
+    align-items: center;
     justify-content: flex-end;
     margin-top: var(--samuori-space-3);
   }

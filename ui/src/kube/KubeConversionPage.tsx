@@ -6,11 +6,11 @@ import {
   TextField as AriaTextField,
 } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
-import { Button } from "../components/Button";
+import { Button, buttonClass } from "../components/Button";
 import { Select } from "../components/Field";
 import {
   Alert,
-  Badge,
+  StateBadge,
   Loading,
   PageHeader,
   Section,
@@ -19,6 +19,7 @@ import { Table } from "../components/Table";
 import { useLoader, useProject } from "../hooks";
 import { navigate } from "../router";
 import { useCan } from "../session/session";
+import { conversionState, findingSeverity } from "../pages/display";
 import { KubeQuestions } from "./KubeQuestions";
 import { ConversionManage } from "./ConversionManage";
 
@@ -28,27 +29,6 @@ type Finding = Schemas["KubeConversionFinding"];
 type RevisionItem = Schemas["KubeConversionRevisionList"]["items"][number];
 
 const active = new Set(["queued", "assigned", "running"]);
-
-export const stateTone: Record<
-  Conversion["state"],
-  "ok" | "warn" | "bad" | "info" | "neutral"
-> = {
-  queued: "info",
-  assigned: "info",
-  running: "info",
-  "needs-answers": "warn",
-  succeeded: "ok",
-  failed: "bad",
-  "timed-out": "bad",
-  cancelled: "neutral",
-};
-
-const severityTone = {
-  error: "bad",
-  review: "warn",
-  warning: "warn",
-  info: "info",
-} as const;
 
 export function KubeConversionPage({ id }: { id: string }) {
   const can = useCan();
@@ -165,9 +145,10 @@ export function KubeConversionPage({ id }: { id: string }) {
       <dl className="samuori-details">
         <dt>State</dt>
         <dd>
-          <Badge tone={stateTone[conv.state]} live={active.has(conv.state)}>
-            {conv.state}
-          </Badge>
+          <StateBadge
+            state={conversionState(conv.state)}
+            live={active.has(conv.state)}
+          />
           {run?.detail && <span className="samuori-muted"> {run.detail}</span>}
         </dd>
         <dt>Provider</dt>
@@ -300,9 +281,7 @@ function FindingsTable({ label, items }: { label: string; items: Finding[] }) {
           id: "sev",
           name: "Severity",
           isRowHeader: true,
-          render: (f) => (
-            <Badge tone={severityTone[f.severity]}>{f.severity}</Badge>
-          ),
+          render: (f) => <StateBadge state={findingSeverity(f.severity)} />,
         },
         { id: "msg", name: "Finding", render: (f) => f.message },
         {
@@ -406,7 +385,7 @@ function RevisionView({
         actions={
           <Link
             href={`/api/v1/kube-conversions/${conv.id}/revisions/${rev.number}/bundle`}
-            className="samuori-button samuori-button--primary"
+            className={buttonClass("primary")}
             download
           >
             Download ZIP
@@ -523,7 +502,7 @@ export function KubeConversionsPage({ projectId }: { projectId: string }) {
           { label: project?.name ?? "Project", href: `/projects/${projectId}` },
           { label: "Kubernetes" },
         ]}
-        description="Manifests, Helm charts or Kustomize generated from this project's Compose files and images, for you to review and apply. Samuori never deploys them."
+        description="Manifests, Helm charts or Kustomize for this project, to review and apply yourself. Samuori never deploys them."
         actions={
           can("createKubeConversion") && (
             <GenerateButton projectId={projectId} />
@@ -574,7 +553,7 @@ export function ConversionTable({
     <Table
       label="Kubernetes conversions"
       rows={items}
-      empty="No conversions yet."
+      empty="No conversions yet. Choose Generate Kubernetes configuration to make one."
       columns={[
         {
           id: "name",
@@ -589,7 +568,7 @@ export function ConversionTable({
         {
           id: "state",
           name: "State",
-          render: (c) => <Badge tone={stateTone[c.state]}>{c.state}</Badge>,
+          render: (c) => <StateBadge state={conversionState(c.state)} />,
         },
         { id: "format", name: "Format", render: (c) => c.options.format },
         {

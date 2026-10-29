@@ -54,6 +54,8 @@ export interface NavItem {
   ops?: OperationId[];
   /** Operations the page cannot work without; all must be allowed. */
   needs?: OperationId[];
+  /** Help topics for this page; a topic listed on any page is offered only to people who can see one of them. */
+  help?: string[];
 }
 
 export interface NavGroup {
@@ -89,12 +91,14 @@ export const workspaces: Workspace[] = [
             label: "Projects",
             icon: FolderKanban,
             ops: ["listProjects"],
+            help: ["projects", "upload-source"],
           },
           {
             href: "/new-image",
             label: "New image",
             icon: SquarePlus,
             ops: ["createSpec"],
+            help: ["new-image", "build-secrets"],
           },
         ],
       },
@@ -112,12 +116,14 @@ export const workspaces: Workspace[] = [
             label: "Build runs",
             icon: Hammer,
             ops: ["listBuilds"],
+            help: ["builds", "validation"],
           },
           {
             href: "/images",
             label: "Images",
             icon: Boxes,
             ops: ["listProjectImages", "listPublications"],
+            help: ["publishing", "validation"],
           },
           {
             href: "/pipelines",
@@ -130,6 +136,7 @@ export const workspaces: Workspace[] = [
             label: "Approvals",
             icon: ShieldCheck,
             ops: ["listApprovals"],
+            help: ["approvals"],
           },
         ],
       },
@@ -147,6 +154,7 @@ export const workspaces: Workspace[] = [
             label: "Configurations",
             icon: Ship,
             needs: ["listProjects", "listKubeConversions"],
+            help: ["kubernetes"],
           },
         ],
       },
@@ -165,18 +173,21 @@ export const workspaces: Workspace[] = [
             label: "Registries & destinations",
             icon: Send,
             admin: true,
+            help: ["registries"],
           },
           {
             href: "/admin/recipes",
             label: "Recipes & runtimes",
             icon: ChefHat,
             admin: true,
+            help: ["custom-recipes"],
           },
           {
             href: "/admin/policies",
             label: "Build policies",
             icon: Scale,
             admin: true,
+            help: ["build-policies"],
           },
           {
             href: "/admin/providers",
@@ -201,12 +212,14 @@ export const workspaces: Workspace[] = [
             label: "Workers & pools",
             icon: Server,
             admin: true,
+            help: ["workers"],
           },
           {
             href: "/admin/servers",
             label: "Servers",
             icon: Network,
             admin: true,
+            help: ["servers"],
           },
           {
             href: "/admin/capacity",
@@ -228,6 +241,7 @@ export const workspaces: Workspace[] = [
             icon: ListOrdered,
             admin: true,
             operator: true,
+            help: ["workers"],
           },
           {
             href: "/admin/storage",
@@ -241,6 +255,7 @@ export const workspaces: Workspace[] = [
             label: "Database",
             icon: Database,
             admin: true,
+            help: ["database"],
           },
           {
             href: "/admin/messaging",
@@ -266,6 +281,7 @@ export const workspaces: Workspace[] = [
             label: "Secrets",
             icon: KeyRound,
             admin: true,
+            help: ["secrets-admin"],
           },
           {
             href: "/admin/certificates",
@@ -284,6 +300,7 @@ export const workspaces: Workspace[] = [
             label: "Quarantines",
             icon: ShieldAlert,
             admin: true,
+            help: ["security-review"],
           },
           {
             href: "/admin/observability",
@@ -292,6 +309,7 @@ export const workspaces: Workspace[] = [
             admin: true,
             operator: true,
             reviewer: true,
+            help: ["security-review"],
           },
         ],
       },
@@ -316,18 +334,21 @@ export const workspaces: Workspace[] = [
             label: "Users",
             icon: UserRound,
             admin: true,
+            help: ["people-and-access"],
           },
           {
             href: "/admin/teams",
             label: "Teams",
             icon: UsersRound,
             admin: true,
+            help: ["people-and-access"],
           },
           {
             href: "/admin/identity",
             label: "Identity & sign-in",
             icon: Fingerprint,
             admin: true,
+            help: ["identity"],
           },
           {
             href: "/admin/notifications",
@@ -346,12 +367,14 @@ export const workspaces: Workspace[] = [
             label: "Backups",
             icon: DatabaseBackup,
             admin: true,
+            help: ["backups"],
           },
           {
             href: "/admin/configuration",
             label: "Export & import",
             icon: ArrowLeftRight,
             admin: true,
+            help: ["configuration"],
           },
           {
             href: "/admin/upgrades",
@@ -359,6 +382,7 @@ export const workspaces: Workspace[] = [
             icon: Stethoscope,
             admin: true,
             operator: true,
+            help: ["upgrades"],
           },
         ],
       },
@@ -468,4 +492,52 @@ export function locate(
       )
         best = { workspace, item };
   return best;
+}
+
+export interface HelpPlace {
+  workspace: Workspace;
+  item: NavItem;
+}
+
+/** Where each help topic belongs: the first page in `list` that names it. */
+export function helpPlaces(list: Workspace[]): Map<string, HelpPlace> {
+  const out = new Map<string, HelpPlace>();
+  for (const workspace of list)
+    for (const item of items(workspace))
+      for (const id of item.help ?? [])
+        if (!out.has(id)) out.set(id, { workspace, item });
+  return out;
+}
+
+const allHelpPlaces = helpPlaces(workspaces);
+
+/** Help sections that belong to no page, in reading order around the workspaces. */
+export const helpSectionsBefore = ["Getting started"];
+export const helpSectionsAfter = ["Reference"];
+
+function helpRank(section: string): number {
+  const before = helpSectionsBefore.indexOf(section);
+  if (before >= 0) return before;
+  const w = workspaces.findIndex((x) => x.label === section);
+  if (w >= 0) return helpSectionsBefore.length + w;
+  return helpSectionsBefore.length + workspaces.length + 1;
+}
+
+/**
+ * The help topics to offer: a topic that belongs to pages is offered only to people who can see one of those pages,
+ * under that page's workspace, in menu order. The server still filters every topic by role.
+ */
+export function offeredHelp<T extends { id: string; section: string }>(
+  me: Me,
+  topics: readonly T[],
+): T[] {
+  const mine = helpPlaces(visibleWorkspaces(me));
+  return topics
+    .filter((t) => !allHelpPlaces.has(t.id) || mine.has(t.id))
+    .map((t, i) => ({
+      t: { ...t, section: mine.get(t.id)?.workspace.label ?? t.section },
+      i,
+    }))
+    .sort((a, b) => helpRank(a.t.section) - helpRank(b.t.section) || a.i - b.i)
+    .map(({ t }) => t);
 }

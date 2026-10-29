@@ -1,7 +1,7 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { Form, Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 import { api, serverIsNewer, type Schemas } from "../api/client";
-import { Button } from "../components/Button";
+import { Button, buttonClass } from "../components/Button";
 import { TextField } from "../components/Field";
 import { Alert, Loading } from "../components/Feedback";
 import { ScanSearch, Send, ShieldCheck } from "lucide-react";
@@ -199,7 +199,7 @@ export function LoginPage({ notice }: { notice?: string }) {
               key={p.id}
               href={oidcStartUrl(p.id, currentPage(window.location))}
               onClick={rememberReturn}
-              className="samuori-button samuori-button--secondary"
+              className={buttonClass("secondary")}
             >
               Sign in with {p.name}
             </a>

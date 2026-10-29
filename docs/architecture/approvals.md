@@ -34,7 +34,7 @@ pending approval. Approval moves the publication to `approved` and queues it. Re
 
 A developer who needs a secret for a build asks for it from the wizard's secrets panel (**Ask for binding**) or with
 `POST /projects/{id}/secret-requests`. The request names the logical ID and why the build needs it. An administrator
-binds a secret under **Secrets**, then approves the request, or rejects it. Developers never see or enter values.
+binds a secret under **Security > Secrets**, then approves the request, or rejects it. Developers never see or enter values.
 
 ## Repository requests
 

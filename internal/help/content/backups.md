@@ -1,11 +1,11 @@
 ---
 title: Backup and restore
-section: Administration
+section: Organization
 summary: Encrypted backups of Samuori's data, and how to restore them.
 roles: [administrator]
 order: 240
 ---
-**Backup & Restore** makes encrypted backups of the database, the controller's keys and CA, and files kept on this
+**Organization > Backups** makes encrypted backups of the database, the controller's keys and CA, and files kept on this
 controller. **Check** verifies a backup without restoring it.
 
 Backups are encrypted to your age recipients. Restoring needs the matching age identity, which Samuori never stores, so

@@ -18,6 +18,19 @@ hold; the server filters, so a guide outside the user's roles is not found, even
   never as HTML. A link to a guide the reader cannot open is shown as plain text.
 - Guides describe what the UI really does; a feature without UI is not described as if it had one.
 
+## Guides follow the menu
+
+- A page in `ui/src/shell/nav.ts` names its guides (`help: [...]`). A guide named by a page is filed under that
+  page's top-bar section (`section` in its front matter is the section's label, such as `Infrastructure`) and names
+  the page the way the menu does, section first: **Infrastructure > Workers & pools**. Guides no page names belong
+  to the general sections, **Getting started** and **Reference**.
+- The UI offers a guide that belongs to pages only to people who can see one of those pages, using the same role
+  rules as the menu, and lists the guides by section in menu order. The server's role filter still applies first;
+  hiding a guide is not the protection.
+- `ui/src/help/content.test.ts` fails when a page names a missing guide, a guide is filed under the wrong section,
+  a guide names a section or page the menu does not have (or a former name such as *Administration*), links to a
+  path outside the menu, or lists a role that sees none of its pages.
+
 ## API
 
 `GET /help/topics` lists the caller's guides; `GET /help/topics/{id}` returns one, or 404 when it does not exist or
@@ -27,7 +40,7 @@ covers the filtering, the load checks and broken links between guides.
 ## In the UI
 
 `PageHeader` takes `help="<id>"`; a **?** next to the page title links to that guide, shown only when the server
-lists it for the user.
+lists it for the user and the menu offers it.
 
 **API reference** (`/help/api-reference`, linked from the guide list and the account menu) renders the contract the
 server publishes at `/api/v1/openapi.json` for every signed-in user: operations by tag with search, roles,

@@ -3,7 +3,8 @@ import { api, describeError, type Schemas } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { TextField } from "../../components/Field";
-import { Alert, Badge, Loading } from "../../components/Feedback";
+import { Alert, Loading, StateBadge } from "../../components/Feedback";
+import { recipeStatus } from "../display";
 import { Table } from "../../components/Table";
 import { useLoader } from "../../hooks";
 import { useCan } from "../../session/session";
@@ -12,13 +13,6 @@ type OrgRuntime = Schemas["OrganizationRuntime"];
 type Runtimes = Schemas["RecipeRuntimes"];
 type ShippedRuntime = Schemas["RecipeRuntime"];
 type ShippedStatus = ShippedRuntime["status"];
-
-const tone = {
-  draft: "neutral",
-  approved: "ok",
-  deprecated: "warn",
-  withdrawn: "bad",
-} as const;
 
 const shippedActions: {
   status: ShippedStatus;
@@ -128,7 +122,7 @@ export function RecipeRuntimes({
                   name: "Status",
                   render: (r) => (
                     <>
-                      <Badge tone={tone[r.status]}>{r.status}</Badge>
+                      <StateBadge state={recipeStatus(r.status)} />
                       {r.statusReason && (
                         <div className="samuori-muted text-xs">
                           {r.statusReason}
@@ -186,7 +180,7 @@ export function RecipeRuntimes({
             <Table
               label="Organization runtimes"
               rows={data.organization}
-              empty="No runtimes added."
+              empty="No runtimes added. Choose Add runtime to offer another version."
               columns={[
                 {
                   id: "label",
@@ -220,7 +214,7 @@ export function RecipeRuntimes({
                   name: "Status",
                   render: (r) => (
                     <>
-                      <Badge tone={tone[r.status]}>{r.status}</Badge>
+                      <StateBadge state={recipeStatus(r.status)} />
                       {r.superseded && (
                         <div className="samuori-muted text-xs">
                           A Samuori release now ships {r.label}; builds use that
@@ -449,6 +443,7 @@ function AddRuntime({
         <code>docker buildx imagetools inspect node:26-bookworm-slim</code>.
       </p>
       <TextField
+        placeholder="26"
         label="Runtime version"
         description="As developers ask for it, for example 26 or 3.14"
         value={label}

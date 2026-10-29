@@ -1,11 +1,11 @@
 ---
 title: Database
-section: Administration
+section: Infrastructure
 summary: Check the database connection and hand every controller a new password.
 roles: [administrator]
 order: 235
 ---
-**Database** shows where Samuori keeps its records, how this controller reaches the database, and whether each live
+**Infrastructure > Database** shows where Samuori keeps its records, how this controller reaches the database, and whether each live
 controller can sign in.
 
 **Test connection** signs in with a new connection from the controller that handles the request.

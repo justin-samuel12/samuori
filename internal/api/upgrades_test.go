@@ -6,7 +6,7 @@ import (
 	"samuori.invalid/samuori/internal/version"
 )
 
-// TestUpgradeStatus covers the requests the Upgrades & Diagnostics page makes.
+// TestUpgradeStatus covers the requests Organization > Upgrades & diagnostics makes.
 func TestUpgradeStatus(t *testing.T) {
 	l := newLive(t, false)
 	l.setup(t)

@@ -141,7 +141,7 @@ export function RegistriesPage() {
         <Table
           label="Registries"
           rows={registries}
-          empty="No registry yet."
+          empty="No registry yet. Choose Add registry to connect one."
           columns={[
             {
               id: "name",
@@ -172,7 +172,7 @@ export function RegistriesPage() {
               id: "actions",
               name: "Actions",
               render: (r) => (
-                <div className="samuori-actions justify-start">
+                <div className="samuori-actions samuori-actions--start">
                   <Button
                     variant="quiet"
                     aria-label={`View or edit ${r.name}`}
@@ -208,7 +208,7 @@ export function RegistriesPage() {
         <Table
           label="Push credentials"
           rows={profiles}
-          empty="No credentials yet."
+          empty="No credentials yet. Choose Add credentials so Samuori can sign in to push."
           columns={[
             {
               id: "name",
@@ -250,7 +250,7 @@ export function RegistriesPage() {
               id: "actions",
               name: "Actions",
               render: (p) => (
-                <div className="samuori-actions justify-start">
+                <div className="samuori-actions samuori-actions--start">
                   <Button
                     variant="quiet"
                     onPress={() => void test(p)}
@@ -297,7 +297,7 @@ export function RegistriesPage() {
         <Table
           label="Destinations"
           rows={destinations}
-          empty="No destination yet."
+          empty="No destination yet. Choose Add destination to open a repository to projects."
           columns={[
             {
               id: "name",
@@ -338,7 +338,7 @@ export function RegistriesPage() {
               id: "actions",
               name: "Actions",
               render: (d) => (
-                <div className="samuori-actions justify-start">
+                <div className="samuori-actions samuori-actions--start">
                   <Button
                     variant="quiet"
                     aria-label={`View or edit destination ${d.name}`}
@@ -373,7 +373,7 @@ export function RegistriesPage() {
         <Table
           label="Signing keys"
           rows={keys}
-          empty="No signing key yet."
+          empty="No signing key yet. Create one below; destinations that sign cannot publish without it."
           columns={[
             {
               id: "name",
@@ -475,6 +475,7 @@ export function RegistriesPage() {
           className="samuori-form samuori-form--inline"
         >
           <TextField
+            placeholder="release-signing"
             label="New key name"
             value={keyName}
             onChange={setKeyName}
@@ -746,7 +747,13 @@ function RegistryDialog({
             key is never sent somewhere new. Delete those credentials first.
           </p>
         )}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          placeholder="main-registry"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
         <Select
           isDisabled={!!e0}
           description={
@@ -768,12 +775,14 @@ function RegistryDialog({
         {kind === "ecr" ? (
           <>
             <TextField
+              placeholder="123456789012"
               label="AWS account ID"
               value={account}
               onChange={setAccount}
               isRequired
             />
             <TextField
+              placeholder="eu-west-1"
               label="Region"
               value={region}
               onChange={setRegion}
@@ -784,6 +793,7 @@ function RegistryDialog({
         ) : (
           <>
             <TextField
+              placeholder="registry.example.com"
               label="Endpoint"
               value={endpoint}
               onChange={setEndpoint}
@@ -896,7 +906,13 @@ function ProfileDialog({
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          placeholder="registry-push"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
         <Select
           label="Registry"
           options={registries.map((r) => ({ id: r.id, label: r.name }))}
@@ -946,6 +962,7 @@ function ProfileDialog({
             {ecrAuth === "assume-role" && (
               <>
                 <TextField
+                  placeholder="arn:aws:iam::123456789012:role/samuori-push"
                   label="Role ARN"
                   value={roleArn}
                   onChange={setRoleArn}
@@ -983,6 +1000,7 @@ function ProfileDialog({
         )}
         {!ecr && type === "oci-basic" && (
           <TextField
+            placeholder="samuori"
             label="Username"
             value={username}
             onChange={setUsername}
@@ -1000,6 +1018,7 @@ function ProfileDialog({
           />
         )}
         <TextField
+          placeholder="team/*"
           label="Repository scopes"
           value={scopes}
           onChange={setScopes}
@@ -1099,6 +1118,7 @@ function DestinationDialog({
           </p>
         )}
         <TextField
+          placeholder="web"
           label="Name"
           value={name}
           onChange={setName}
@@ -1121,11 +1141,12 @@ function DestinationDialog({
           isRequired
         />
         <TextField
+          placeholder="team/web"
           label="Repository"
           value={repository}
           onChange={setRepository}
           isRequired
-          description="For example payments/orders-api"
+          description="A path on this registry, for example team/web."
         />
         <fieldset className="samuori-fieldset">
           <legend>Projects that may publish here</legend>
@@ -1144,6 +1165,7 @@ function DestinationDialog({
           ))}
         </fieldset>
         <TextField
+          placeholder="latest, v*"
           label="Protected tags"
           value={protectedTags}
           onChange={setProtectedTags}
@@ -1276,6 +1298,7 @@ function EcrRepositories({
           )}
           <Form onSubmit={create} className="samuori-form samuori-form--inline">
             <TextField
+              placeholder="team/api"
               label="New repository"
               value={name}
               onChange={setName}
@@ -1365,7 +1388,7 @@ function ImageSources({ profiles }: { profiles: Profile[] }) {
         <Table
           label="Approved image sources"
           rows={sources}
-          empty="No private image sources. Builds use public images through the configured mirrors."
+          empty="No private image sources. Builds use public images through the configured mirrors; choose Add image source for a private registry."
           columns={[
             {
               id: "name",
@@ -1553,8 +1576,15 @@ function ImageSourceDialog({
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
         <TextField
+          placeholder="upstream"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
+        <TextField
+          placeholder="registry.example.com"
           label="Upstream registry"
           value={upstream}
           onChange={setUpstream}
@@ -1567,6 +1597,7 @@ function ImageSourceDialog({
           }
         />
         <TextField
+          placeholder="mirror.example.com:5000"
           label="Mirror"
           value={mirror}
           onChange={setMirror}
@@ -1575,11 +1606,12 @@ function ImageSourceDialog({
           description="host:port of the authorizing mirror, as workers reach it"
         />
         <TextField
+          placeholder="team/*"
           label="Repositories"
           value={patterns}
           onChange={setPatterns}
           isRequired
-          description="Comma-separated patterns, such as payments/*"
+          description="Comma-separated patterns, such as team/*."
         />
         <Select
           label="Team"

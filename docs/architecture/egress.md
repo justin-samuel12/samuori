@@ -28,7 +28,7 @@ connections, DNS, worker-host services, host loopback and cloud metadata.
 Admission adds an `egress` policy decision. A recipe that needs a preset the policy does not allow is blocked with
 a plain explanation, and the policy dry run lists the specs a change would newly block. Destination hosts are
 lower-case DNS names or IP addresses; loopback, link-local (including metadata), multicast and unspecified addresses
-are refused. Administrators edit the policy on **Security → Egress** or through `PUT /policies/{id}`. Public and
+are refused. Administrators edit the policy on **Security > Egress** or through `PUT /policies/{id}`. Public and
 internal destinations are added separately, each with an optional reason, and stored with a `network`: `public` names must pass the same public-host check as project requests and
 resolve only to public addresses at the proxy; `internal` (the default, and what earlier policies hold) may resolve to
 private addresses. Like presets, each destination can be switched off (`disabled`) or kept from Dockerfile builds
@@ -36,7 +36,7 @@ private addresses. Like presets, each destination can be switched off (`disabled
 
 ### Who can reach a preset
 
-The Network egress page shows one **Who can reach it** choice per preset (owner decision 2026-10-27), stored in the
+Security > Egress shows one **Who can reach it** choice per preset (owner decision 2026-10-27), stored in the
 three lists:
 
 | Choice | Policy | Builds that get it |
@@ -80,7 +80,7 @@ was requested as internal, an internal one (ADR 0052 amendment).
 
 ### Promoting project allowances
 
-**Security → Egress → Granted to projects** (`GET /egress-allowances/by-destination`) groups the
+**Security > Egress > Granted to projects** (`GET /egress-allowances/by-destination`) groups the
 organization's active destination allowances by destination and network, most projects first. **Add to organization
 policy** (`POST /egress-allowances/promotion`, organization administrators, reason of 10 to 1024 characters) adds the
 destination to the egress policy for every build method, optionally not Dockerfile builds, and revokes the allowances
@@ -97,7 +97,7 @@ less open one is a conflict to resolve in the policy (ADR 0052, 2026-10-27 amend
 | Proxy | `internal/egress/proxy`, started in-process by `samuori-worker --egress-listen`. Every attempt gets its own credential, passed to steps as BuildKit's predefined `HTTP(S)_PROXY` build arguments, which do not enter image history; user-supplied proxy arguments are dropped. The proxy accepts CONNECT and absolute `http://` requests, matches host and port exactly, resolves names itself and dials only an address that passed the checks: public addresses for preset hosts, project allowances and public destinations, any non-loopback, non-link-local address for internal destinations. It does not intercept TLS. Revoking the credential ends the attempt's tunnels |
 | Mirrors | `--mirrors upstream=host:port` writes `buildkitd.toml` registry mirrors. Pulls that fall back to the upstream are refused by the firewall |
 | Decisions | Each attempt records up to 1000 decisions; the run log ends with one line per destination and outcome (`egress: allowed …`, `egress: denied … : reason`), and the attempt report carries the denied destinations as structured data ([below](#denied-destinations)) |
-| Scheduling | Workers report `strictEgress`. Uploaded source is never assigned to a worker without it (`egress-not-strict`); **Network egress** shows how many connected workers enforce it |
+| Scheduling | Workers report `strictEgress`. Uploaded source is never assigned to a worker without it (`egress-not-strict`); **Security > Egress** shows how many connected workers enforce it |
 
 A worker must choose: strict egress (`--egress-listen`, `--build-user`, `--build-group`, `--daemon-dir`) or
 `--egress unrestricted`, which is for trusted development hosts only and makes the worker ineligible for uploaded

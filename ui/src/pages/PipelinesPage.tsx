@@ -96,7 +96,7 @@ export function PipelinesPage() {
     <>
       <PageHeader
         title="Pipelines"
-        description="Build an image when a branch or tag changes in Git. A run fetches the commit, stores it as a snapshot and starts a build of the pipeline's spec; checks, approvals and publication then follow the project's settings."
+        description="Build an image when a branch or tag changes in Git; checks, approvals and publication follow the project's settings."
         actions={
           admin ? (
             <Button onPress={() => setCreating(true)}>New pipeline</Button>
@@ -296,6 +296,7 @@ function PipelineRuns({ pipeline }: { pipeline: Pipeline }) {
       {canRun && (
         <Form onSubmit={start} className="samuori-inline">
           <TextField
+            placeholder="refs/heads/main"
             label="Ref to build"
             value={ref}
             onChange={setRef}
@@ -459,7 +460,13 @@ function CreateDialog({
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          placeholder="web-main"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
         <Select
           label="Project"
           placeholder="Choose a project"
@@ -489,6 +496,7 @@ function CreateDialog({
           description="A service identity with the developer or maintainer role on the project. Runs stop if it loses that role."
         />
         <TextField
+          placeholder="https://git.example.com/team/web.git"
           label="Repository URL"
           value={repoUrl}
           onChange={setRepoUrl}
@@ -497,6 +505,7 @@ function CreateDialog({
           description="HTTPS clone URL, without credentials."
         />
         <TextField
+          placeholder="refs/heads/main, refs/tags/v*"
           label="Refs to build"
           value={refs}
           onChange={setRefs}
@@ -614,8 +623,15 @@ function EditDialog({
           The webhook URL and secret stay the same. Use New secret to replace
           the secret.
         </p>
-        <TextField label="Name" value={name} onChange={setName} isRequired />
         <TextField
+          placeholder="web-main"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
+        <TextField
+          placeholder="https://git.example.com/team/web.git"
           label="Repository URL"
           value={repoUrl}
           onChange={setRepoUrl}
@@ -624,6 +640,7 @@ function EditDialog({
           description="HTTPS clone URL, without credentials."
         />
         <TextField
+          placeholder="refs/heads/main, refs/tags/v*"
           label="Refs to build"
           value={refs}
           onChange={setRefs}

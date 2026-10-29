@@ -1,11 +1,11 @@
 ---
 title: Secrets and project access
-section: Administration
+section: Security
 summary: Store secrets, connect external stores, and grant keys to projects.
 roles: [administrator]
 order: 220
 ---
-**Secrets** has four tabs.
+**Security > Secrets** has four tabs.
 
 ## Stored secrets
 

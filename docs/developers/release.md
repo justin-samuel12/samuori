@@ -37,7 +37,7 @@ tampering failed verification.
 ## Update bundle
 
 `make update` builds every architecture in `UPDATE_ARCHES` (default `amd64 arm64`) and writes one signed file,
-`dist/samuori-<version>.samuoriupdate`, for upload under **Upgrades & Diagnostics** (ADR 0045,
+`dist/samuori-<version>.samuoriupdate`, for upload under **Organization > Upgrades & diagnostics** (ADR 0045,
 `../operators/upgrades.md#self-update`). It is an uncompressed tar of `manifest.json` (format, version, worker
 protocol, architectures), `samuori-<version>-linux-<arch>.tar.gz` per architecture, `SHA256SUMS` over the manifest and
 the archives, and `SHA256SUMS.sig` (the same `samuori-release` SSH signature as above, made by

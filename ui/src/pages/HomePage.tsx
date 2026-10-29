@@ -21,6 +21,7 @@ import { useCan, useMe } from "../session/session";
 import { RunsTable } from "./BuildsPage";
 import { WorkflowRail } from "../components/WorkflowRail";
 import { terminal } from "./builds";
+import { buttonClass } from "../components/Button";
 
 const page = 100;
 
@@ -79,10 +80,7 @@ export function HomePage() {
         description="Turn your application into a validated container image from the browser."
         actions={
           can("createSpec") && (
-            <Link
-              href="/new-image"
-              className="samuori-button samuori-button--primary no-underline"
-            >
+            <Link href="/new-image" className={buttonClass("primary")}>
               <SquarePlus size={16} aria-hidden="true" />
               New image
             </Link>

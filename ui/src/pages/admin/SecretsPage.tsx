@@ -82,7 +82,7 @@ export function SecretsPage() {
       <PageHeader
         help="secrets-admin"
         title="Secrets"
-        description="Values are encrypted at rest and never shown again. Builds receive a value only while they hold a lease, and only for keys granted to their project."
+        description="Values are encrypted at rest and never shown again. Builds get a value only while they hold a lease, and only for keys granted to their project."
       />
       {message && <Alert tone="success">{message}</Alert>}
       <Tabs>
@@ -112,7 +112,7 @@ export function SecretsPage() {
           <Table
             label="Stored secrets"
             rows={stored}
-            empty="No secrets stored yet."
+            empty="No secrets stored yet. Choose Store a secret to add one."
             columns={[
               {
                 id: "name",
@@ -184,7 +184,7 @@ export function SecretsPage() {
           <Table
             label="External secret stores"
             rows={externals}
-            empty="No external stores. Secrets come from the local encrypted store."
+            empty="No external stores. Secrets come from the local encrypted store; choose Add external store to connect one."
             columns={[
               {
                 id: "name",
@@ -234,7 +234,7 @@ export function SecretsPage() {
                 id: "actions",
                 name: "Actions",
                 render: (p) => (
-                  <div className="samuori-actions justify-start">
+                  <div className="samuori-actions samuori-actions--start">
                     <Button
                       variant="quiet"
                       onPress={() => void testProvider(p.id)}
@@ -582,7 +582,7 @@ function ProjectAccess({
           <Table
             label="Granted keys"
             rows={grants}
-            empty="No keys granted. Developers of this project cannot use secrets yet."
+            empty="No keys granted. Developers of this project cannot use secrets yet; choose Grant a key."
             columns={[
               {
                 id: "name",
@@ -876,6 +876,7 @@ function StoreDialog({
         ) : (
           <>
             <TextField
+              placeholder="npm_token"
               label="Name"
               value={name}
               onChange={setName}
@@ -1147,6 +1148,7 @@ function GrantDialog({
           />
         )}
         <TextField
+          placeholder="npm_token"
           label="Name developers see"
           value={name}
           onChange={setName}
@@ -1386,6 +1388,7 @@ function GrantEditDialog({
           and revoke this one.
         </p>
         <TextField
+          placeholder="npm_token"
           label="Name developers see"
           value={name}
           onChange={setName}
@@ -1565,6 +1568,7 @@ function AllowDialog({
         />
         {!aws && (
           <TextField
+            placeholder="secret"
             label="KV v2 mount"
             value={mount}
             onChange={setMount}
@@ -1750,7 +1754,13 @@ function ProviderDialog({
     >
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
-        <TextField label="Name" value={name} onChange={setName} isRequired />
+        <TextField
+          placeholder="team-vault"
+          label="Name"
+          value={name}
+          onChange={setName}
+          isRequired
+        />
         <Select
           label="Type"
           isDisabled={!!e0}
@@ -1768,6 +1778,7 @@ function ProviderDialog({
         />
         {aws ? (
           <TextField
+            placeholder="eu-west-1"
             label="Region"
             value={region}
             onChange={setRegion}
@@ -1776,6 +1787,7 @@ function ProviderDialog({
         ) : (
           <>
             <TextField
+              placeholder="https://vault.example.com:8200"
               label="Address"
               value={address}
               onChange={setAddress}
@@ -1807,6 +1819,7 @@ function ProviderDialog({
         {auth === "assume-role" && (
           <>
             <TextField
+              placeholder="arn:aws:iam::123456789012:role/samuori-secrets"
               label="Role ARN"
               value={roleArn}
               onChange={setRoleArn}

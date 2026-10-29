@@ -42,14 +42,14 @@ started in the UI (D29).
 `PATCH /pipelines/{id}` changes the name, repository URL, refs, pinned spec revision (`0` for the latest), username or
 repository token, as one audited change (`pipeline.update`, listing what changed). The token is write-only: a new one
 is stored as a new controller-only secret and is never returned, and the replaced one is left unused for an
-administrator to delete under **Secrets**, as after a webhook-secret rotation. The webhook URL, scheme and secret stay
+administrator to delete under **Security > Secrets**, as after a webhook-secret rotation. The webhook URL, scheme and secret stay
 the same; rotate the secret separately. The owner, project and spec are fixed; create a new pipeline to change them.
 
 `DELETE /pipelines/{id}` takes a pipeline out of use and is audited (`pipeline.delete`). It is refused with `409`
 while a run is queued or fetching; disable the pipeline and wait for the run to end. A deleted pipeline is no longer
 listed, its webhook answers `401` like an unknown pipeline, and its name is free for a new one. Its row, its runs and
 the builds they started are kept, so history and audit stay complete (migration 00070; ADR 0062). Its webhook secret
-and token are no longer referenced, so an administrator may delete them under **Secrets**. A run queued at the moment
+and token are no longer referenced, so an administrator may delete them under **Security > Secrets**. A run queued at the moment
 of deletion ends as `failed` with `deleted`.
 
 ## Webhooks (SEC-HOOK-01, SEC-HOOK-02)

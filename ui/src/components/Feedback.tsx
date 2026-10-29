@@ -245,6 +245,21 @@ export function Badge({
   );
 }
 
+/** A state's plain label as a badge; the labels and tones come from pages/display.ts. */
+export function StateBadge({
+  state,
+  live,
+}: {
+  state: { text: string; tone: BadgeTone };
+  live?: boolean;
+}) {
+  return (
+    <Badge tone={state.tone} live={live}>
+      {state.text}
+    </Badge>
+  );
+}
+
 export function Section({
   title,
   description,

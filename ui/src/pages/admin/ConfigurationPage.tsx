@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { FileTrigger, Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../../api/client";
-import { Button } from "../../components/Button";
+import { Button, buttonClass } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
-import { Alert, Badge, PageHeader, Section } from "../../components/Feedback";
+import {
+  Alert,
+  Badge,
+  PageHeader,
+  Section,
+  StateBadge,
+} from "../../components/Feedback";
 import { Table } from "../../components/Table";
 import { useCan } from "../../session/session";
+import { importAction } from "../display";
 
 type Plan = Schemas["ConfigurationImport"];
 type Item = Schemas["ConfigurationImportItem"];
-
-const actionTone = {
-  create: "ok",
-  update: "info",
-  unchanged: "neutral",
-  skip: "warn",
-} as const;
 
 const attentionLabel = {
   credential: "Credentials to add",
@@ -89,7 +89,7 @@ export function ConfigurationPage() {
       <PageHeader
         help="configuration"
         title="Export & import"
-        description="Move this organization's configuration to another installation, or back up its settings. Secrets, credentials, users, role bindings and projects are never in the file."
+        description="Copy this organization's configuration to another installation. Secrets, credentials, users, role bindings and projects are never in the file."
       />
       {can("exportConfiguration") && (
         <Section
@@ -97,7 +97,7 @@ export function ConfigurationPage() {
           description="Policies, build methods and providers, recipe decisions, custom recipes, worker pools, registries, destinations, notification channels and rules, sign-in and audit settings, as one YAML file."
         >
           <a
-            className="samuori-button samuori-button--secondary inline-flex"
+            className={buttonClass("secondary")}
             href="/api/v1/configuration/export"
             download
           >
@@ -110,22 +110,22 @@ export function ConfigurationPage() {
           title="Import"
           description="Choose an exported file to see what would change. Nothing changes until you apply it, and nothing that is missing from the file is deleted."
         >
-          <div className="samuori-actions justify-start">
-            <FileTrigger
-              acceptedFileTypes={[".yml", ".yaml", ".json"]}
-              onSelect={(list) => {
-                const f = list?.[0];
-                if (f) void f.text().then((text) => preview(f.name, text));
-              }}
-            >
-              <Button variant="secondary" isDisabled={busy}>
-                Choose file
-              </Button>
-            </FileTrigger>
-            <span className="samuori-muted">
-              {file ? file.name : "A configuration file exported by Samuori."}
-            </span>
-          </div>
+          <FileTrigger
+            acceptedFileTypes={[".yml", ".yaml", ".json"]}
+            onSelect={(list) => {
+              const f = list?.[0];
+              if (f) void f.text().then((text) => preview(f.name, text));
+            }}
+          >
+            <Button variant="secondary" isDisabled={busy}>
+              Choose file
+            </Button>
+          </FileTrigger>
+          <p className="samuori-muted mt-2 mb-0 text-sm">
+            {file
+              ? file.name
+              : "A .yml or .json file downloaded from Export, named samuori-configuration-….yml."}
+          </p>
           {busy && <p className="samuori-muted">Comparing…</p>}
           {error && (
             <Alert>
@@ -197,7 +197,7 @@ export function ConfigurationPage() {
                     id: "action",
                     name: "Change",
                     render: (it) => (
-                      <Badge tone={actionTone[it.action]}>{it.action}</Badge>
+                      <StateBadge state={importAction(it.action)} />
                     ),
                     sortValue: (it) => it.action,
                   },
@@ -214,7 +214,7 @@ export function ConfigurationPage() {
                 ]}
               />
               {plan.dryRun && (
-                <div className="samuori-actions justify-start">
+                <div className="samuori-actions samuori-actions--start">
                   <Button
                     isDisabled={busy || changes === 0}
                     onPress={() => setConfirming(true)}

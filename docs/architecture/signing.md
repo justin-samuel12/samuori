@@ -8,7 +8,7 @@ keys never reach workers, builds, the UI or the API.
 
 ## Keys
 
-- An administrator creates a key (`POST /signing-keys`, Build supply → Registries & destinations → Signing keys). The controller
+- An administrator creates a key (`POST /signing-keys`, Build supply > Registries & destinations > Signing keys). The controller
   generates an ECDSA P-256 key and stores the private key as a **controller-only** local secret
   (`secrets.md`). That secret cannot be bound to a project or read back through the API.
 - An organization has at most one **active** key. Creating a key retires the previous one, and retiring a key

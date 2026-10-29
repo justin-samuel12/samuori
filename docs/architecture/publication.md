@@ -134,7 +134,7 @@ CNCF Distribution. They cover:
   **Publish image** (destination and tags). Published publications offer **Promote**, **Roll back**,
   **Deprecate** and **Retire**.
 - **Approvals**: pending requests with **Decide**, and past decisions.
-- **Build supply → Registries & destinations**: registries, push credentials (with **Test**), destinations (projects, tag
+- **Build supply > Registries & destinations**: registries, push credentials (with **Test**), destinations (projects, tag
   rules, approval, signing, provenance, promotion only, restricted images) and signing keys.
 - Project page: switch between manual and automatic publication (maintainers and administrators).
 - Image referrers already present in internal storage are copied with the image.

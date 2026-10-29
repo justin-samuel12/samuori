@@ -35,8 +35,8 @@ see below. Both decisions apply at admission and planning; builds already planne
 ### Organization runtimes ([ADR 0051](../adr/0051-organization-runtimes.md))
 
 Shipped runtimes change only with a Samuori release, but each organization decides whether to keep offering each
-one ([ADR 0060](../adr/0060-deprecating-and-withdrawing-built-in-runtimes.md)). Under **Recipes & base images >
-Runtimes** an organization administrator can **Deprecate**, **Withdraw** or **Approve again** a shipped runtime, each
+one ([ADR 0060](../adr/0060-deprecating-and-withdrawing-built-in-runtimes.md)). Under **Build supply > Recipes & runtimes**, **Runtimes**
+an organization administrator can **Deprecate**, **Withdraw** or **Approve again** a shipped runtime, each
 with a required reason (`PUT /recipes/{recipeId}/versions/{version}/shipped-runtimes/{label}/status`). Decisions are
 stored per organization (migration 00068, `shipped_runtime_status`; no row means approved, and approving again
 deletes the row) and audited as `recipe.runtime.status`. A deprecated runtime still builds; admission warns
@@ -47,7 +47,7 @@ the reason. An organization runtime with the same label as a withdrawn shipped r
 never swaps in other images.
 
 Organization administrators add runtime versions
-to a built-in recipe version under **Recipes & base images > Runtimes**: a label (`26`, `3.14`, `10.0`), a build
+to a built-in recipe version under **Build supply > Recipes & runtimes**, **Runtimes**: a label (`26`, `3.14`, `10.0`), a build
 image and a run image, both full references pinned by digest and allowed by the base-image policy, and an optional
 note. They are stored per organization (migration 00060, `organization_runtimes`), so Samuori updates never overwrite
 them. A label may not repeat a shipped runtime or an active added one of that recipe version.
@@ -84,7 +84,7 @@ To retire it, **Withdraw** it with a reason; specs that ask for `26` are then re
 
 ### Custom recipes ([ADR 0041](../adr/0041-custom-recipes.md))
 
-Administrators add their own recipes under **Recipes & base images > Custom recipes** as YAML: identity and
+Administrators add their own recipes under **Build supply > Recipes & runtimes**, **Custom recipes**, as YAML: identity and
 platforms, typed **parameters** (string, version, port, path), the **secrets** and **egress presets** it needs, and
 **stages**, each from an image pinned by digest or an earlier stage, with steps from a fixed set (`workdir`,
 `copySource`, `copyFromStage`, `run`, `env`, `user`, `expose`, `label`, `cmd`). `internal/recipedef` validates the
@@ -132,11 +132,11 @@ block, it also returns a `confirmation` token. The token is valid for 15 minutes
 current version and that exact document. `PUT /policies/{id}` recomputes the impact itself. If anything would be
 newly blocked, it applies the change only with `X-Samuori-Confirm: <token>` and a `reason` of at least 10 characters,
 which is kept in the `policy.update` audit record; otherwise it answers `428 confirmation_required` with the impact.
-A change that blocks nothing needs neither. The Security > Egress page shows the impact and asks
+A change that blocks nothing needs neither. Security > Egress shows the impact and asks
 for the reason before applying such a change, as do the other policy editors.
 
-**Where each kind is edited.** `base-images` under Recipes & base images, `egress` under Network egress,
-`publication` under Registries > Image downloads, and `frontends`, `build-args`, `validation` and
+**Where each kind is edited.** `base-images` under Build supply > Recipes & runtimes, `egress` under Security > Egress,
+`publication` under Build supply > Registries & destinations > Image downloads, and `frontends`, `build-args`, `validation` and
 `sensitive-content` under Build supply > **Build policies** (`/admin/policies`, administrators). Each editor
 adds, edits and removes list entries locally (frontends, build-argument rules, ignored vulnerabilities, extra
 sensitive-content path rules), checks the obvious mistakes in the browser (digest form, rule IDs, relative paths),

@@ -343,7 +343,7 @@ function JoinRequests() {
             name: "Actions",
             render: (r) =>
               r.state === "pending" ? (
-                <div className="samuori-actions justify-start">
+                <div className="samuori-actions samuori-actions--start">
                   <Button
                     variant="secondary"
                     onPress={() =>
@@ -444,7 +444,7 @@ export function JoinControllers() {
           <code className="samuori-secret" data-testid="join-command">
             {joinCommand(issued)}
           </code>
-          <div className="samuori-actions justify-start">
+          <div className="samuori-actions samuori-actions--start">
             <Button
               variant="secondary"
               onPress={() =>

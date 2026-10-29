@@ -1,12 +1,12 @@
 ---
 title: Custom recipes
-section: Administration
+section: Build supply
 summary: Define your organization's own builds once, so developers pick them and fill in a few values.
 roles: [administrator]
 order: 225
 ---
 A custom recipe is a build your developers choose in **New image** without writing a Dockerfile. You define it once
-under **Recipes & base images > Custom recipes**; Samuori turns it into a Dockerfile itself.
+under **Build supply > Recipes & runtimes**, in **Custom recipes**; Samuori turns it into a Dockerfile itself.
 
 ## Create one
 
@@ -57,7 +57,7 @@ rules, secret grants, validation and publication.
 
 ## Built-in recipes and their runtimes
 
-Built-in recipes come with Samuori. Under **Recipes & base images**, **Change status** deprecates or withdraws a
+Built-in recipes come with Samuori. Under **Build supply > Recipes & runtimes**, **Change status** deprecates or withdraws a
 whole recipe version. **Runtimes** lists the runtime versions it ships, for example Node.js 22 and 24, and lets you
 act on one of them with a reason:
 

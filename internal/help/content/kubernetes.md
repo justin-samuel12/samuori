@@ -1,8 +1,8 @@
 ---
 title: Generate Kubernetes configuration
-section: Releasing
+section: Kubernetes
 summary: Turn a Compose file, source code or a Samuori image into manifests, a Helm chart or Kustomize, checked by Samuori, to review and apply yourself.
-roles: [developer, maintainer, administrator, publisher, operator, security-reviewer]
+roles: [developer, maintainer, publisher, security-reviewer, administrator]
 order: 75
 ---
 Samuori can write a starting point for running your app on Kubernetes. It **generates and checks** the files; it never

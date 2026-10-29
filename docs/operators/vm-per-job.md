@@ -43,7 +43,7 @@ The worker reports the guest image reference as its environment image. `--egress
 guest has no network device.
 
 ## Verify
-Run the pool self-test from the Workers screen. It boots VMs to run the probes and the host checks, which takes
+Run the pool self-test from Infrastructure > Workers & pools. It boots VMs to run the probes and the host checks, which takes
 several minutes. Then confirm that the pool shows **verified**.
 
 The provider's KVM acceptance tests were removed and not restored (ADR 0039 as amended); only its fake-guest and

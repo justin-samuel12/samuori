@@ -1,11 +1,11 @@
 ---
 title: Export and import configuration
-section: Administration
+section: Organization
 summary: Copy this organization's settings to another installation, with a preview before anything changes.
 roles: [administrator]
 order: 245
 ---
-**Export & import** saves this organization's configuration as one YAML file and applies such a file here.
+**Organization > Export & import** saves this organization's configuration as one YAML file and applies such a file here.
 
 The file holds policies, build methods and providers, recipe decisions and custom recipes, worker pools, registries,
 destinations, notification channels and rules, sign-in settings and audit retention. It never holds secrets,

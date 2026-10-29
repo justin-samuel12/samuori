@@ -198,7 +198,7 @@ creation and audited (`registry.update`, `registry.delete`, `registry-profile.up
 - **Delete is refused while in use**, listing each use: a registry with credentials, destinations, image sources (via
   its pull credentials), repository requests or publications (via its destinations); credentials used by a
   destination or image source. History rows count, so a registry that was ever published to is kept. A deleted
-  profile's secret stays reserved for the controller, so it never becomes available to builds; Security & Secrets >
+  profile's secret stays reserved for the controller, so it never becomes available to builds; Security >
   Secrets marks it **No longer used by Samuori** and lets an administrator delete it.
 - **Endpoint changes move destinations.** A registry's destinations publish to its new endpoint from the next
   publication; nothing already published is moved.

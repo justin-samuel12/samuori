@@ -39,7 +39,7 @@ export function CertificatesPage() {
     <>
       <PageHeader
         title="Certificates"
-        description="The internal certificate authority that identifies workers. Workers pin the CA, not a server certificate, and receive the trust bundle on every connection."
+        description="The internal certificate authority that identifies workers. Workers pin it and get the trust bundle on every connection."
         actions={
           bundle && (
             <div className="samuori-actions">

@@ -1,11 +1,11 @@
 ---
 title: Upgrades and diagnostics
-section: Operating Samuori
+section: Organization
 summary: Controller and worker versions, the database schema and self-update.
 roles: [operator, administrator]
 order: 110
 ---
-**Upgrades & Diagnostics** shows each controller's release, state and last heartbeat, the database schema version,
+**Organization > Upgrades & diagnostics** shows each controller's release, state and last heartbeat, the database schema version,
 and which releases the workers run, checked against the supported version matrix.
 
 ## Upgrade

@@ -134,7 +134,7 @@ export function AccountPage() {
           <Table
             label="API tokens"
             rows={tokens}
-            empty="You have no API tokens."
+            empty="You have no API tokens. Choose Create token to make one for a script."
             columns={[
               {
                 id: "name",
@@ -273,6 +273,7 @@ function CreateTokenDialog({
       <Form onSubmit={submit} className="samuori-form">
         {error && <Alert>{error}</Alert>}
         <TextField
+          placeholder="web-ci"
           label="Name"
           value={name}
           onChange={setName}

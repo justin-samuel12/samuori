@@ -1,11 +1,11 @@
 ---
 title: Servers
-section: Operating Samuori
+section: Infrastructure
 summary: Adding, accepting and removing controllers and workers.
 roles: [administrator]
 order: 95
 ---
-**Servers** lists every controller and worker of this installation in one place.
+**Infrastructure > Servers** lists every controller and worker of this installation in one place.
 
 ## Add a controller
 

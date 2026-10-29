@@ -61,7 +61,7 @@ export function BackupsPage() {
       <PageHeader
         help="backups"
         title="Backups"
-        description="Encrypted backups of the database, the controller's keys and CA, and blobs kept on this controller. Restoring needs the age identity, which Samuori never stores."
+        description="Encrypted backups of the database, keys and files on this controller. Restoring needs your age identity, which Samuori never stores."
       />
       {!list.enabled ? (
         <Alert tone="info">
@@ -94,7 +94,7 @@ export function BackupsPage() {
       <Table
         label="Backups"
         rows={list.items}
-        empty="No backup has been written yet."
+        empty="No backup has been written yet. Choose Back up now to write one."
         columns={[
           {
             id: "created",

@@ -48,7 +48,7 @@ export function WorkerJoinNotice({
           <code className="samuori-secret" data-testid="enroll-join-command">
             {joinCommand(code)}
           </code>
-          <div className="samuori-actions justify-start">
+          <div className="samuori-actions samuori-actions--start">
             <Button
               variant="secondary"
               onPress={() =>

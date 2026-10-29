@@ -4,30 +4,17 @@ import { HeartPulse, Server, UserRound, UsersRound } from "lucide-react";
 import { api } from "../../api/client";
 import {
   Alert,
-  Badge,
   Loading,
   PageHeader,
   Section,
   StatCard,
+  StateBadge,
 } from "../../components/Feedback";
+import { healthState } from "../display";
 import { Table } from "../../components/Table";
 import { useHealth } from "../../shell/health";
 import { useWorkerFigures } from "./WorkerStatus";
 import { figureMeaning } from "./workerFigures";
-
-const statusText: Record<string, string> = {
-  ok: "Healthy",
-  degraded: "Degraded",
-  unavailable: "Unavailable",
-  "not-configured": "Not configured",
-};
-
-const statusTone = {
-  ok: "ok",
-  degraded: "warn",
-  unavailable: "bad",
-  "not-configured": "neutral",
-} as const;
 
 export function OverviewPage() {
   const health = useHealth();
@@ -82,7 +69,7 @@ export function OverviewPage() {
         />
         <StatCard
           label="Controller"
-          value={h ? statusText[h.status] : "—"}
+          value={h ? healthState(h.status).text : "—"}
           icon={HeartPulse}
           accent={
             h?.status === "ok"
@@ -117,11 +104,7 @@ export function OverviewPage() {
                   id: "status",
                   name: "Status",
                   sortValue: (c) => c.status,
-                  render: (c) => (
-                    <Badge tone={statusTone[c.status]}>
-                      {statusText[c.status]}
-                    </Badge>
-                  ),
+                  render: (c) => <StateBadge state={healthState(c.status)} />,
                 },
                 {
                   id: "checked",

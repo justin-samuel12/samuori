@@ -9,7 +9,7 @@
 | Database schema | Migrated by the newest controller; an older controller refuses a newer schema |
 | PostgreSQL | 16–18 |
 
-The Upgrades & Diagnostics screen shows where every controller and worker stands.
+Organization > Upgrades & diagnostics shows where every controller and worker stands.
 
 ## Upgrade a standalone or all-in-one installation
 
@@ -24,7 +24,7 @@ The Upgrades & Diagnostics screen shows where every controller and worker stands
    the pre-upgrade backup; the others keep serving.
 2. Drain each worker (**Infrastructure > Workers & pools > Drain**), wait until it has no build, upgrade it and let it reconnect; it
    re-runs its self-test if its configuration changed. Workers on the previous minor release keep working until then.
-3. Check the Upgrades & Diagnostics screen: every controller compatible, every worker accepted.
+3. Check Organization > Upgrades & diagnostics: every controller compatible, every worker accepted.
 
 ## Roll back
 
@@ -51,7 +51,7 @@ Each host applies only releases signed by a key in `/etc/samuori/release-signers
    `RELEASE_KEY` or `RELEASE_SIGNERS`, then writes
    `dist/samuori-<version>.samuoriupdate`: a tar with `manifest.json` (version, worker protocol, architectures), one release
    archive per architecture, `SHA256SUMS` over all of them and its signature `SHA256SUMS.sig`.
-4. In **Upgrades & Diagnostics > Self-update**, upload the bundle. The controller verifies its structure, every
+4. In **Organization > Upgrades & diagnostics**, under **Self-update**, upload the bundle. The controller verifies its structure, every
    checksum and the signature before it keeps anything. **Changes** lists the bundle's commit history (one line per
    change, from `git log` when the bundle was made, kept as `CHANGES.tsv` inside each release archive so the
    signature covers it and controllers before 0.1.4 accept the bundle): what is new since the version this

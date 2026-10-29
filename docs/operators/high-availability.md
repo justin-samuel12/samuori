@@ -39,7 +39,7 @@ Joining a controller takes two steps (ADR 0045):
 2. The new host checks the pinned certificate, redeems the token and sends only the SHA-256 of a random secret it
    keeps. Redeeming opens a **join request** and returns no secrets. The host prints its verification code and waits
    up to an hour, polling every 3 seconds.
-3. The administrator compares the code under **Join requests** on the Servers page and accepts or rejects it, with an
+3. The administrator compares the code under **Join requests** on Infrastructure > Servers and accepts or rejects it, with an
    optional reason. Only after acceptance does the host, proving its secret, receive the database DSN, cluster key,
    storage settings and certificates for its own name, once. A wrong secret is refused exactly like an unknown
    request; rejected and expired requests are refused. Redemption, acceptance, rejection and collection are audited
@@ -52,7 +52,7 @@ which an administrator rejects when the host or verification code is unexpected.
 
 ### Join a worker
 
-**Add a worker** on the Servers page (or **Enroll a worker** under Workers & pools) shows one worker join code
+**Add a worker** on Infrastructure > Servers (or **Enroll a worker** on Infrastructure > Workers & pools) shows one worker join code
 (`samuoriwj_...`): this controller's worker endpoints (its non-loopback certificate names and the other live
 controllers, on port 8444), the CA pin and a single-use enrollment token valid for an hour. On the worker VM, from the
 release folder:
@@ -65,7 +65,7 @@ It asks to confirm that the VM runs nothing but Samuori builds (or takes `--conf
 controller answers with a certificate for the first endpoint's name chaining to the pinned CA, and refuses the code
 otherwise, before installing anything. It then runs `install.sh --worker-only --controller <endpoints>` (with
 `./allowed_signers` when present) and enrols with the token. The worker joins unassigned; assign it to a pool on the
-Servers page. No code is shown when the controller's worker endpoint listens on loopback only; the CA pin and token
+Infrastructure > Servers. No code is shown when the controller's worker endpoint listens on loopback only; the CA pin and token
 are shown either way, for `sudo samuori-enroll-worker <CA pin>` on a host already installed with `--worker-only`
 (SEC-WRK-11, TM-115).
 

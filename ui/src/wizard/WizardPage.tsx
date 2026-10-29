@@ -971,7 +971,7 @@ export function WizardPage({ projectId }: { projectId: string }) {
                   label="Image name"
                   isRequired
                   normalize={(t, done) => correctName(t, { done })}
-                  description="Saved in lowercase with dashes, for example orders-api."
+                  description="Saved in lowercase with dashes, for example web-api."
                 />
                 <TextAt
                   path={["metadata", "description"]}

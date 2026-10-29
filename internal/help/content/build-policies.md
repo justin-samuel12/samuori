@@ -1,12 +1,13 @@
 ---
 title: Build policies
-section: Administration
+section: Build supply
 summary: Approve Dockerfile frontends, refuse risky build arguments, choose required checks and sensitive-content outcomes.
 roles: [administrator]
 order: 227
 ---
 **Build supply > Build policies** holds four organization-wide policies. Base images are set under
-**Recipes & base images**, network access under **Network egress** and image downloads under **Registries**.
+**Build supply > Recipes & runtimes**, network access under **Security > Egress** and image downloads under
+**Build supply > Registries & destinations**.
 
 | Policy | What it decides |
 |---|---|

@@ -42,7 +42,7 @@ export function DatabasePage() {
       <PageHeader
         help="database"
         title="Database"
-        description="The metadata database every controller shares. Samuori never changes the database password: change it at the database first, then enter it here so every controller verifies it and switches."
+        description="The database every controller shares. Samuori never changes its password: change it at the database first, then enter it here."
         actions={
           <>
             <Button

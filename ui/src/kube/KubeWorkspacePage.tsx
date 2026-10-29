@@ -2,7 +2,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-aria-components";
 import { api, type Schemas } from "../api/client";
 import {
-  Badge,
+  StateBadge,
   EmptyState,
   Loading,
   PageHeader,
@@ -10,7 +10,8 @@ import {
 } from "../components/Feedback";
 import { Table } from "../components/Table";
 import { useCan } from "../session/session";
-import { GenerateButton, stateTone } from "./KubeConversionPage";
+import { GenerateButton } from "./KubeConversionPage";
+import { conversionState } from "../pages/display";
 
 type Conversion = Schemas["KubeConversion"];
 
@@ -53,9 +54,9 @@ export function KubeWorkspacePage() {
   return (
     <>
       <PageHeader
-        title="Kubernetes configuration"
+        title="Kubernetes configurations"
         help="kubernetes"
-        description="Manifests, Helm charts or Kustomize generated from your projects' Compose files and images, checked by Samuori, for you to review and apply. Samuori never deploys them."
+        description="Kubernetes files generated from your projects, to review and apply yourself. Samuori never deploys them."
       />
       {loading ? (
         <Loading />
@@ -99,7 +100,7 @@ export function KubeWorkspacePage() {
                   id: "state",
                   name: "State",
                   render: (c) => (
-                    <Badge tone={stateTone[c.state]}>{c.state}</Badge>
+                    <StateBadge state={conversionState(c.state)} />
                   ),
                 },
                 {

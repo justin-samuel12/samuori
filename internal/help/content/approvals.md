@@ -1,11 +1,11 @@
 ---
 title: Approvals
-section: Releasing
+section: Builds
 summary: Decide publication and exception requests that need a second person.
 roles: [publisher, security-reviewer, administrator]
 order: 80
 ---
-**Approvals** lists requests that need someone other than the requester to decide: publications to destinations
+**Builds > Approvals** lists requests that need someone other than the requester to decide: publications to destinations
 that require approval, repository requests, secret binding requests, base image requests and network access requests. Output exception requests appear in their
 own list for administrators.
 

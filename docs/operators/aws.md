@@ -129,7 +129,7 @@ region from metadata) have not run on EC2 yet.
 2. **ALB:** register ctrl1 in the target group ([ALB](#internal-alb)); its `degraded` health answers 200, so the ALB
    routes to it. Register each other controller only after it has joined: a registered host that is not running
    Samuori gets requests whenever the ALB fails open, and the portal then loads only partly.
-3. **Join codes:** sign in through the ALB or at `https://<ctrl1>:8443`. Under Workers >
+3. **Join codes:** sign in through the ALB or at `https://<ctrl1>:8443`. Under Infrastructure >
    Servers > Add a controller, select **Create a join code**. It shows one join code and the command.
 4. **Controllers 2 and 3:** run `sudo ./samuori-join controller <code>` from the release folder on each, with its own
    code. It takes the host's own name (its hostname, lowercased, with the DNS search domain added when that resolves to this host; otherwise the cloud instance's private DNS name) (`--host` overrides) and
@@ -273,7 +273,7 @@ file), never on workers.
    separate application role (`samuori_app`, `database.migrationDsn`) is optional (`database-migration.md`).
 5. **Password:** `samuori-setup` asks for it with no echo and URL-escapes it in the DSN. If you write the DSN by hand,
    percent-encode any character other than letters, digits and `-._~`, or use a long letters-and-digits password.
-   Change it later from the portal's Database page (`database.md#rotate-the-password`), not only in RDS.
+   Change it later from Infrastructure > Database in the portal (`database.md#rotate-the-password`), not only in RDS.
 6. **Check** from a controller host before running `samuori-setup`:
    `psql "host=<endpoint> user=samuori dbname=samuori sslmode=verify-full sslrootcert=/tmp/rds-ca.pem" -c 'select version()'`.
    `samuori-setup` repeats the check: it signs in, requires PostgreSQL 16–18, and refuses a database that already holds a

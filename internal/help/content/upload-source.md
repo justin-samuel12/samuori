@@ -1,6 +1,6 @@
 ---
 title: Upload your source
-section: Building images
+section: Projects
 summary: Send your application's files to Samuori and see what it detects, without running anything.
 roles: [developer, maintainer]
 order: 10

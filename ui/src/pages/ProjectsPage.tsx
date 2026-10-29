@@ -210,11 +210,12 @@ function CreateProjectDialog({
         <Form onSubmit={submit} className="samuori-form">
           {error && <Alert>{error}</Alert>}
           <TextField
+            placeholder="web"
             label="Project name"
             value={name}
             onChange={(v) => setName(correctName(v))}
             isRequired
-            description="Saved in lowercase with dashes, for example orders-api."
+            description="Saved in lowercase with dashes, for example web-api."
           />
           <Select
             label="Team"

@@ -145,7 +145,7 @@ test("the remote worker joins with a single-use token and passes its self-test",
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("textbox", { name: "Name" }).fill("builders");
   await dialog.getByRole("textbox", { name: "Trust domain" }).fill("default");
-  await chooseOption(page, "Isolation profile", /rootless-dedicated-vm/);
+  await chooseOption(page, "Isolation profile", /Rootless, dedicated VM/);
   await dialog.getByRole("button", { name: "Create pool" }).click();
   const pools = page.getByRole("grid", { name: "Worker pools" });
   await expect(pools).toContainText("builders");
@@ -164,7 +164,7 @@ test("the remote worker joins with a single-use token and passes its self-test",
   const workers = page.getByRole("grid", { name: "Workers" });
   await until(
     page,
-    async () => /enrolled, active/.test(await workers.innerText()),
+    async () => /\bActive\b/.test(await workers.innerText()),
     3,
     "the remote worker to enroll",
   );
