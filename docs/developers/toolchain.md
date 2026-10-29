@@ -29,11 +29,12 @@ Status: **Authoritative.** Pins are set in ADR 0011 and verified in `docs/depend
 | `make api-check` | OpenAPI validity, Samuori API rules and worker protocol rules via `tools/apicheck` |
 | `make yml-check` | Fails if any tracked or untracked file ends in `.yaml` outside the exceptions below |
 | `make ui-check` | Regenerates TS API types and fails on drift; then typecheck, UI unit tests, ESLint, Prettier and the Vite build |
+| `make screenshots-check` | Fails when a route in `ui/src/App.tsx` has no scene in `ui/e2e/tour/scenes.ts` and no listed reason; no browser |
 | `make license-check` | Fails on licenses outside the policy in `docs/dependencies.md` |
 | `make sbom` | SPDX SBOM and `THIRD_PARTY_NOTICES.txt` into `dist/` |
 | `make vuln` | `govulncheck` against a downloaded copy of the Go vulnerability database, offline |
 | `make vuln-ui` | `npm audit --omit=dev` for `ui/` (sends the lock file to the npm registry) |
-| `make ci` | `check-generated`, `fmt-check`, `vet`, `build`, `test`, `api-check`, `yml-check`, `ui-check` and `license-check` |
+| `make ci` | `check-generated`, `fmt-check`, `vet`, `build`, `test`, `api-check`, `yml-check`, `ui-check`, `screenshots-check` and `license-check` |
 | `make release` | Linux binaries, UI bundle, `LICENSE`, `NOTICE` and install files into `dist/samuori-linux-<arch>/` (`RELEASE_ARCH`, default `arm64`) |
 | `make release-key`, `release-artifacts`, `release-verify`, `update` | Signed release archives and update bundles, built locally ([release.md](release.md)) |
 
@@ -47,6 +48,7 @@ chart with `values.yml`, and a remote worker VM. `restore.yml` rehearses a resto
 |---|---|
 | `make dev` | Builds the UI and `samuori-server`, then runs it on `127.0.0.1:8080` with state in `~/.cache/samuori/dev` ([local-dev.md](local-dev.md)) |
 | `make dev-reset` | Deletes the `make dev` data directory |
+| `make screenshots` | Captures the screenshot tour into `docs/screenshots/` on a throwaway server ([screenshots](../screenshots/README.md)) |
 | `make aio-clean` | Builds a release and installs it as an all-in-one in the `samuori-clean` Lima VM |
 | `make aio-compose`, `aio-debian`, `aio-amd64` | The same install via Compose, on Debian, or on amd64 under emulation |
 | `make test-acceptance`, `test-acceptance-two-node` | Browser acceptance journeys against the `samuori-clean` install (and `samuori-remote` for two nodes) |

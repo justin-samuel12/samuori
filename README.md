@@ -30,6 +30,27 @@ defaults, and keeps a record of every step.
 
 The name comes from the same idea. "Sam" is from my name, Samuel, and *ori* (織り) is Japanese for weaving.
 
+## Take a look
+
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/signin-sign-in-dark.png"><img src="docs/screenshots/signin-sign-in-light.png" alt="Sign in" width="720"></picture></p>
+
+### For developers
+
+<table>
+<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/developer-overview-dark.png"><img src="docs/screenshots/developer-overview-light.png" alt="Overview: where each build stands" width="420"></picture><br><sub>Overview: where each build stands</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/developer-wizard-describe-dark.png"><img src="docs/screenshots/developer-wizard-describe-light.png" alt="New image wizard: describe the app" width="420"></picture><br><sub>New image wizard: describe the app</sub></td></tr>
+<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/developer-image-dark.png"><img src="docs/screenshots/developer-image-light.png" alt="An image, its validation and where it is published" width="420"></picture><br><sub>An image, its validation and where it is published</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/developer-deployment-files-dark.png"><img src="docs/screenshots/developer-deployment-files-light.png" alt="Deployment files for a validated image" width="420"></picture><br><sub>Deployment files for a validated image</sub></td></tr>
+</table>
+
+### For administrators
+
+<table>
+<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-administration-dark.png"><img src="docs/screenshots/admin-administration-light.png" alt="Administration overview" width="420"></picture><br><sub>Administration overview</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-workers-dark.png"><img src="docs/screenshots/admin-workers-light.png" alt="Worker pools and verified workers" width="420"></picture><br><sub>Worker pools and verified workers</sub></td></tr>
+<tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-registries-dark.png"><img src="docs/screenshots/admin-registries-light.png" alt="Registries, credentials and destinations" width="420"></picture><br><sub>Registries, credentials and destinations</sub></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-users-dark.png"><img src="docs/screenshots/admin-users-light.png" alt="Users and their roles" width="420"></picture><br><sub>Users and their roles</sub></td></tr>
+</table>
+
+Every screen, in light and dark, is in the [screenshot gallery](docs/screenshots/README.md). The screens show example
+data on a local install.
+
 ## What it does
 
 - **Figures out your project.** It reads the source to find the language, framework and start command, and never runs

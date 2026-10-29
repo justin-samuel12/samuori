@@ -12,7 +12,11 @@ export default tseslint.config(
   reactHooks.configs.flat.recommended,
   { languageOptions: { globals: { ...globals.browser } } },
   {
-    files: ["e2e/**", "playwright.acceptance.config.ts"],
+    files: [
+      "e2e/**",
+      "playwright.acceptance.config.ts",
+      "playwright.tour.config.ts",
+    ],
     languageOptions: { globals: { ...globals.node } },
   },
 );

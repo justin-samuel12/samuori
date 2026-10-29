@@ -11,6 +11,22 @@ refused. The server refuses the setting unless it is an all-in-one server on a l
 Compose, clusters and every real installation keep the full password policy. Never use it elsewhere. The forms leave
 the policy to the server, so the same short passwords work in Setup and Users.
 
+## Screenshots
+
+`make screenshots` builds the UI and `samuori-server`, starts a throwaway server on `127.0.0.1:18090` (override with
+`SAMUORI_TOUR_PORT`) with its own data directory under `/tmp`, seeds example data, captures every scene in
+`ui/e2e/tour/scenes.ts` in light and dark into `docs/screenshots/`, and deletes the server and its data. It never
+touches `~/.cache/samuori/dev`. A file is rewritten only when its pixels changed.
+
+Teams, users, projects, uploads, specs, builds, the registry, the pool, secrets and the request go through the public
+API. A local server has no worker, so `ui/e2e/tour/seed.ts` writes what only a worker produces (finished, running
+and failed builds with their logs, discovery results, validation, the enrolled worker and a publication) straight
+into the throwaway SQLite database, and refuses any data directory the script did not create. Secret values are
+random and never displayed.
+
+`make screenshots-check` (part of `make ci`) fails when a route in `ui/src/App.tsx` has no scene and no reason in
+`notCaptured`. A change that adds or changes a screen updates its scene and runs `make screenshots`.
+
 ## Two-node VMs
 
 `deploy/dev/lima/two-node.sh` runs a disposable controller (`samuori-clean`) and remote worker (`samuori-remote`) in Lima:
