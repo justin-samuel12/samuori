@@ -21,9 +21,8 @@ is rewritten only when it changed.
 
 The full gallery lives on the GitHub wiki, so the repository holds only the README's images. `make screenshots-wiki`
 clones the wiki into `dist/wiki` (once its first page exists), replaces the gallery and the short Home page, and
-commits them with this
-repository's own Git identity; review it, then publish with `git -C dist/wiki push`. Set `WIKI_URL` (for example in
-`local.mk`) when you reach GitHub through a different SSH host name.
+commits them with this repository's own Git identity; review it, then publish with `git -C dist/wiki push`. Set
+`WIKI_URL` (for example in `local.mk`) when you reach GitHub through a different SSH host name.
 
 Teams, users, projects, uploads, specs, builds, the registry, the pool, secrets and the request go through the public
 API. A local server has no worker, so `ui/e2e/tour/seed.ts` writes what only a worker produces (finished, running
