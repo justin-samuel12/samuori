@@ -61,10 +61,13 @@ test("paths map to their workspace and section", () => {
   assert.equal(at("/images/I1"), "builds /images");
   assert.equal(at("/admin/providers"), "workers /admin/providers");
   assert.equal(at("/projects/P1"), "projects /projects");
+  assert.equal(at("/projects/P1/upload"), "projects /projects");
   assert.equal(at("/projects/P1/kubernetes/new"), "kubernetes /kubernetes");
   assert.equal(at("/kube-conversions/K1"), "kubernetes /kubernetes");
   assert.equal(at("/builds/B1"), "builds /builds");
   assert.equal(at("/nowhere"), "undefined undefined");
+  const dev = visibleWorkspaces(as("developer", "team"));
+  assert.equal(locate(dev, "/projects/P1/new-image").item?.href, "/new-image");
   const admin = list.find((w) => w.id === "admin");
   assert.ok(admin);
   assert.equal(landing(admin), "/admin");

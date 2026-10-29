@@ -218,6 +218,7 @@ function CreateProjectDialog({
           />
           <Select
             label="Team"
+            placeholder="Choose a team"
             options={teams.map((t) => ({ id: t.id, label: t.name }))}
             value={teamId}
             onChange={setTeamId}

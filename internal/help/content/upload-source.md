@@ -11,7 +11,8 @@ your computer.
 ## Upload
 
 1. Open your project from **Projects**, then **Upload source** (or start from **New image**).
-2. **Choose files:** a folder or an archive.
+2. **Choose files:** drag your project folder or a ZIP, TAR or TAR.GZ archive onto the drop area, or use **Choose
+   folder** or **Choose ZIP or TAR**. The drop area shows the size and file limits your administrator set.
 3. **Review what will be uploaded.** Samuori leaves out build output, dependency folders and files that usually hold
    credentials, and lists what it left out. Add more under **Also leave out (optional)**. If a file over a limit is
    reported, leave it out or ask an administrator about the limits.

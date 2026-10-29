@@ -16,7 +16,7 @@ import {
   Section,
 } from "../components/Feedback";
 import { Table } from "../components/Table";
-import { useLoader } from "../hooks";
+import { useLoader, useProject } from "../hooks";
 import { navigate } from "../router";
 import { useCan } from "../session/session";
 import { KubeQuestions } from "./KubeQuestions";
@@ -59,6 +59,7 @@ export function KubeConversionPage({ id }: { id: string }) {
   const [rev, setRev] = useState<Revision>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const project = useProject(conv?.projectId);
 
   const load = useCallback(async () => {
     const [c, r, runList] = await Promise.all([
@@ -130,7 +131,10 @@ export function KubeConversionPage({ id }: { id: string }) {
         help="kubernetes"
         crumbs={[
           { label: "Projects", href: "/projects" },
-          { label: "Project", href: `/projects/${conv.projectId}` },
+          {
+            label: project?.name ?? "Project",
+            href: `/projects/${conv.projectId}`,
+          },
           {
             label: "Kubernetes",
             href: `/projects/${conv.projectId}/kubernetes`,
@@ -499,6 +503,7 @@ function RevisionView({
 
 /** The project's conversions, newest first, with the action that starts the wizard. */
 export function KubeConversionsPage({ projectId }: { projectId: string }) {
+  const project = useProject(projectId);
   const can = useCan();
   const [items, setItems] = useState<Conversion[]>();
   const load = useCallback(async () => {
@@ -515,7 +520,7 @@ export function KubeConversionsPage({ projectId }: { projectId: string }) {
         help="kubernetes"
         crumbs={[
           { label: "Projects", href: "/projects" },
-          { label: "Project", href: `/projects/${projectId}` },
+          { label: project?.name ?? "Project", href: `/projects/${projectId}` },
           { label: "Kubernetes" },
         ]}
         description="Manifests, Helm charts or Kustomize generated from this project's Compose files and images, for you to review and apply. Samuori never deploys them."

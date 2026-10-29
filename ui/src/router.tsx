@@ -19,6 +19,12 @@ export function navigate(to: string, message?: string) {
   emit();
 }
 
+/** Replaces the current history entry, so Back skips a page that only forwards. */
+export function redirect(to: string) {
+  window.history.replaceState(null, "", to);
+  emit();
+}
+
 export function takeNotice(): string | undefined {
   const n = notice;
   notice = undefined;

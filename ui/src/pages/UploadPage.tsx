@@ -1,5 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileTrigger, Link, ProgressBar, Label } from "react-aria-components";
+import {
+  DropZone,
+  FileTrigger,
+  ProgressBar,
+  Label,
+  isDirectoryDropItem,
+  isFileDropItem,
+  type DirectoryDropItem,
+  type DropItem,
+} from "react-aria-components";
 import { api, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { TextField } from "../components/Field";
@@ -10,9 +19,11 @@ import { navigate } from "../router";
 import { buildTar, markExecutables } from "../upload/tar";
 import {
   invalidPattern,
+  isArchiveName,
   makeExcluder,
   type UploadPolicy,
 } from "../upload/exclude";
+import { plural } from "./display";
 import {
   uploadArchive,
   UploadError,
@@ -51,6 +62,27 @@ function fromFolder(list: FileList): Selection | null {
     files.push({ path: rest.length ? rest.join("/") : rel, file: f });
   }
   return files.length ? { kind: "folder", name, files } : null;
+}
+
+async function fromDrop(items: DropItem[]): Promise<Selection | string> {
+  const dir = items.find(isDirectoryDropItem);
+  if (dir) {
+    const files: Picked[] = [];
+    const walk = async (d: DirectoryDropItem, prefix: string) => {
+      for await (const e of d.getEntries()) {
+        if (e.kind === "directory") await walk(e, `${prefix}${e.name}/`);
+        else files.push({ path: prefix + e.name, file: await e.getFile() });
+      }
+    };
+    await walk(dir, "");
+    return files.length
+      ? { kind: "folder", name: dir.name, files }
+      : "The dropped folder is empty.";
+  }
+  const file = items.find(isFileDropItem);
+  if (file && isArchiveName(file.name))
+    return { kind: "archive", file: await file.getFile() };
+  return "Drop one project folder, or a ZIP, TAR or TAR.GZ archive.";
 }
 
 export function UploadPage({ projectId }: { projectId: string }) {
@@ -113,7 +145,7 @@ export function UploadPage({ projectId }: { projectId: string }) {
       );
     if (tooBig.length)
       problems.push(
-        `${tooBig.length} file(s) exceed the ${bytes(policy.maxFileBytes)} per-file limit, for example ${tooBig[0]}.`,
+        `${plural(tooBig.length, "file")} ${tooBig.length === 1 ? "exceeds" : "exceed"} the ${bytes(policy.maxFileBytes)} per-file limit, for example ${tooBig[0]}.`,
       );
     return { included, excluded, secrets, size, problems };
   }, [policy, selection, extraPatterns, patternError]);
@@ -187,43 +219,61 @@ export function UploadPage({ projectId }: { projectId: string }) {
     !selection || !!patternError || (preview?.problems.length ?? 0) > 0;
   return (
     <>
-      <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
-        <Link href="/projects" className="samuori-link">
-          Projects
-        </Link>{" "}
-        /{" "}
-        <Link href={`/projects/${projectId}`} className="samuori-link">
-          {project?.name ?? "Project"}
-        </Link>{" "}
-        / Upload source
-      </nav>
       <PageHeader
         help="upload-source"
         title="Upload source"
+        crumbs={[
+          { label: "Projects", href: "/projects" },
+          { label: project?.name ?? "Project", href: `/projects/${projectId}` },
+          { label: "Upload" },
+        ]}
         description="Choose your project folder, or a ZIP or TAR archive. Nothing is run while we look at your files."
       />
       {error && <Alert>{error}</Alert>}
 
       <section className="samuori-section" aria-labelledby="choose-h">
         <h2 id="choose-h">1. Choose files</h2>
-        <div className="samuori-actions samuori-actions--start">
-          <FileTrigger
-            acceptDirectory
-            onSelect={(l) => l && setSelection(fromFolder(l) ?? undefined)}
-          >
-            <Button isDisabled={busy}>Choose folder</Button>
-          </FileTrigger>
-          <FileTrigger
-            acceptedFileTypes={archiveTypes}
-            onSelect={(l) =>
-              l?.[0] && setSelection({ kind: "archive", file: l[0] })
-            }
-          >
-            <Button variant="secondary" isDisabled={busy}>
-              Choose ZIP or TAR
-            </Button>
-          </FileTrigger>
-        </div>
+        <DropZone
+          className="samuori-dropzone"
+          aria-label="Drop a project folder or archive"
+          isDisabled={busy}
+          onDrop={(e) => {
+            void fromDrop(e.items).then((r) => {
+              if (typeof r === "string") setError(r);
+              else {
+                setError(undefined);
+                setSelection(r);
+              }
+            });
+          }}
+        >
+          <p className="m-0 font-medium">
+            Drop your project folder or an archive here, or choose one.
+          </p>
+          <p className="samuori-muted m-0 text-sm">
+            ZIP, TAR or TAR.GZ. Up to {bytes(policy.maxArchiveBytes)} and{" "}
+            {plural(policy.maxFiles, "file")} in all, each file at most{" "}
+            {bytes(policy.maxFileBytes)}.
+          </p>
+          <div className="samuori-actions samuori-actions--start">
+            <FileTrigger
+              acceptDirectory
+              onSelect={(l) => l && setSelection(fromFolder(l) ?? undefined)}
+            >
+              <Button isDisabled={busy}>Choose folder</Button>
+            </FileTrigger>
+            <FileTrigger
+              acceptedFileTypes={archiveTypes}
+              onSelect={(l) =>
+                l?.[0] && setSelection({ kind: "archive", file: l[0] })
+              }
+            >
+              <Button variant="secondary" isDisabled={busy}>
+                Choose ZIP or TAR
+              </Button>
+            </FileTrigger>
+          </div>
+        </DropZone>
         {selection?.kind === "archive" && (
           <p>
             Archive <strong>{selection.file.name}</strong> (
@@ -263,9 +313,10 @@ export function UploadPage({ projectId }: { projectId: string }) {
               )}
               {preview.secrets.length > 0 && (
                 <Alert tone="warning">
-                  {preview.secrets.length} file(s) that usually hold credentials
-                  are left out, for example <code>{preview.secrets[0]}</code>.
-                  Use secret references for anything the build needs.
+                  {plural(preview.secrets.length, "file")} that usually hold
+                  credentials {preview.secrets.length === 1 ? "is" : "are"} left
+                  out, for example <code>{preview.secrets[0]}</code>. Use secret
+                  references for anything the build needs.
                 </Alert>
               )}
               {preview.problems.map((p) => (

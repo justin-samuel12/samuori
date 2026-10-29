@@ -244,7 +244,7 @@ test("the developer's build runs on the remote worker, validates and publishes",
   for (let i = 0; i < 4; i++)
     await page.getByRole("button", { name: "Next" }).click();
   const arch = onWorker("uname -m").trim() === "aarch64" ? "arm64" : "amd64";
-  await page.getByRole("tab", { name: "YAML" }).click();
+  await page.getByRole("button", { name: "Advanced: edit as YAML" }).click();
   const editor = page.getByLabel("BuildSpec YAML");
   await editor.fill(
     (await editor.inputValue()).replace(
@@ -253,7 +253,7 @@ test("the developer's build runs on the remote worker, validates and publishes",
     ),
   );
   await page.getByRole("button", { name: "Apply YAML changes" }).click();
-  await page.getByRole("tab", { name: "Form" }).click();
+  await page.getByRole("button", { name: "Back to the form" }).click();
   await page.getByRole("button", { name: "Build", exact: true }).click();
 
   const state = page.getByTestId("run-state");
@@ -292,11 +292,11 @@ test("the developer's build runs on the remote worker, validates and publishes",
     .nth(1);
   await until(
     page,
-    async () => /published|blocked|failed/.test(await publication.innerText()),
+    async () => /Published|Blocked|Failed/.test(await publication.innerText()),
     10,
     "publication",
   );
-  await expect(publication).toContainText("published");
+  await expect(publication).toContainText("Published");
   expect(errors).toEqual([]);
 
   await page.context().clearCookies();

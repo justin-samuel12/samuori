@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { Select } from "../components/Field";
 import { Alert, Loading, PageHeader } from "../components/Feedback";
 import { useLoader } from "../hooks";
-import { navigate } from "../router";
+import { navigate, redirect } from "../router";
 import { useCan } from "../session/session";
 
 export function NewImagePage() {
@@ -18,10 +18,14 @@ export function NewImagePage() {
     setProjects(data?.items ?? []);
   }, []);
   useLoader(load);
-  if (!projects) return <Loading />;
-  const usable = projects.filter((p) =>
+  const usable = (projects ?? []).filter((p) =>
     can("createSpec", { teamId: p.teamId, projectId: p.id }),
   );
+  const only = usable.length === 1 ? usable[0]?.id : undefined;
+  useEffect(() => {
+    if (only) redirect(`/projects/${only}/new-image`);
+  }, [only]);
+  if (!projects || only) return <Loading />;
   return (
     <>
       <PageHeader
@@ -42,6 +46,7 @@ export function NewImagePage() {
             options={usable.map((p) => ({ id: p.id, label: p.name }))}
             value={choice}
             onChange={setChoice}
+            placeholder="Choose a project"
           />
           <div className="samuori-actions samuori-actions--start">
             <Button

@@ -28,10 +28,17 @@ order: 20
 6. **Destination & tags**: where the image may be published, and its name and tags.
 7. **Review & build**: confirm and press **Build**.
 
+## Progress
+
+The step list shows where you are: a check marks a step you have completed, a warning sign a step that still needs
+something (such as a missing port, or a check that predicts the build will fail), and steps you have not reached
+yet are greyed out. You can open any step.
+
 ## Form and YAML
 
-The same specification can be edited two ways: the **Form** asks every question in the step where it belongs, and
-**YAML** is the file itself. Switching keeps your changes; Samuori warns you before one view overwrites the other.
+The **Form** asks every question in the step where it belongs. To edit the file itself, open **Review & build** and
+choose **Advanced: edit as YAML**; **Back to the form** returns. Your changes are kept either way; Samuori warns you
+before one view overwrites the other.
 
 Install, build and test commands are lists: add a line per command and order them with the arrows. They run in
 order and the build stops at the first that fails. The start command is a single line, because a container runs one

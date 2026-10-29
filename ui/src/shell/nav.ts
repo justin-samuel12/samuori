@@ -436,6 +436,7 @@ export function isCurrent(href: string, path: string): boolean {
 }
 
 const kubernetesPaths = /^\/(kube-conversions\/|projects\/[^/]+\/kubernetes)/;
+const wizardPaths = /^\/projects\/[^/]+\/new-image$/;
 
 /** The workspace and section a path belongs to, among the user's workspaces. */
 export function locate(
@@ -446,6 +447,11 @@ export function locate(
     const workspace = list.find((w) => w.id === "kubernetes");
     if (workspace) return { workspace, item: items(workspace)[0] };
   }
+  if (wizardPaths.test(path))
+    for (const workspace of list) {
+      const item = items(workspace).find((i) => i.href === "/new-image");
+      if (item) return { workspace, item };
+    }
   let best: { workspace?: Workspace; item?: NavItem } = {};
   for (const workspace of list)
     for (const item of items(workspace))

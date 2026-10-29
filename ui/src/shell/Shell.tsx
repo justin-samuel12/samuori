@@ -210,6 +210,9 @@ function ContextBar({
       strip.scrollLeft = left - 24;
   }, [path]);
   if (all.length === 1 && path === home) return null;
+  // A tab with the workspace's own name already says where the user is.
+  const repeated =
+    all.length > 1 && all.some((i) => i.label === workspace.label);
   const name = (
     <>
       <span
@@ -224,7 +227,7 @@ function ContextBar({
   return (
     <div className="samuori-contextbar">
       <div className="samuori-contextbar-inner">
-        {path === home ? (
+        {repeated ? null : path === home ? (
           <p className="m-0 flex flex-none items-center gap-2 text-sm font-semibold text-fg">
             {name}
           </p>

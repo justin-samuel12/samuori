@@ -205,6 +205,7 @@ function ComponentChoice({
         {c.builds.length > 1 && (
           <Select
             label="Build"
+            placeholder="Choose a build"
             value={artifactId ?? null}
             onChange={(artifactId) =>
               onChange((x) => ({ ...x, artifactId, publicationId: undefined }))
@@ -218,6 +219,7 @@ function ComponentChoice({
         {publications.length > 1 && (
           <Select
             label="Publication"
+            placeholder="Choose a publication"
             value={
               choice.publicationId ??
               current?.publicationId ??

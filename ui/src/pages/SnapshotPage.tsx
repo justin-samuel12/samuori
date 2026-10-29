@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { RadioGroup } from "../components/Field";
 import { Alert, Loading, PageHeader } from "../components/Feedback";
-import { bytes, shortDigest } from "../format";
-import { useLoader } from "../hooks";
+import { bytes } from "../format";
+import { useLoader, useProject } from "../hooks";
 import { navigate } from "../router";
 import {
   comboKey,
@@ -47,6 +46,7 @@ export function SnapshotPage({
   const me = useMe();
   const [deleting, setDeleting] = useState(false);
   const [snap, setSnap] = useState<Schemas["SourceSnapshot"] | null>();
+  const project = useProject(projectId);
   const [discovery, setDiscovery] = useState<Discovery | null>();
   const [error, setError] = useState<string>();
   const [running, setRunning] = useState(false);
@@ -100,19 +100,14 @@ export function SnapshotPage({
   const warnings = snap.warnings ?? [];
   return (
     <>
-      <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
-        <Link href="/projects" className="samuori-link">
-          Projects
-        </Link>{" "}
-        /{" "}
-        <Link href={`/projects/${projectId}`} className="samuori-link">
-          Project
-        </Link>{" "}
-        / Upload {shortDigest(snap.digest)}
-      </nav>
       <PageHeader
         help="upload-source"
         title="Uploaded source"
+        crumbs={[
+          { label: "Projects", href: "/projects" },
+          { label: project?.name ?? "Project", href: `/projects/${projectId}` },
+          { label: `Upload ${new Date(snap.createdAt).toLocaleString()}` },
+        ]}
         description={`Uploaded ${new Date(snap.createdAt).toLocaleString()}. This copy never changes; upload again to use newer files.`}
         actions={
           !snap.deletedAt && isUploader(snap, me.principal.id) ? (

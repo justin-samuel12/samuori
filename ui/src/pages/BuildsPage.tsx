@@ -12,6 +12,7 @@ import { Table } from "../components/Table";
 import { shortDigest } from "../format";
 import { useLoader } from "../hooks";
 import { badgeTone, stateText, terminal } from "./builds";
+import { imageName } from "./display";
 
 type Run = Schemas["BuildRun"];
 
@@ -63,15 +64,28 @@ export function RunsTable({
         },
         {
           id: "spec",
-          name: "Spec",
+          name: "Build settings",
           sortValue: (r) => r.specRevision,
-          render: (r) => `revision ${r.specRevision}`,
+          render: (r) => `v${r.specRevision}`,
         },
         {
           id: "digest",
           name: "Image",
           render: (r) =>
-            r.artifactDigest ? (
+            r.artifactDigest && r.artifactId && !r.deletion ? (
+              <span className="flex flex-col">
+                <Link href={`/images/${r.artifactId}`} className="samuori-link">
+                  {imageName({
+                    name: projects[r.projectId],
+                    version: r.version,
+                    digest: r.artifactDigest,
+                  })}
+                </Link>
+                <code className="text-xs text-muted">
+                  {shortDigest(r.artifactDigest)}
+                </code>
+              </span>
+            ) : r.artifactDigest ? (
               <code>{shortDigest(r.artifactDigest)}</code>
             ) : (
               "—"

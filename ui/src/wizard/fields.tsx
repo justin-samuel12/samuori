@@ -111,6 +111,7 @@ export function SelectAt({
       value={(get(doc, path) as string | undefined) ?? null}
       onChange={(v) => edit(path, v)}
       description={description}
+      placeholder="Choose one"
     />
   );
 }

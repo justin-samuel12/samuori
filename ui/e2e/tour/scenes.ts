@@ -100,7 +100,7 @@ export const scenes: Scene[] = [
   dev({ name: "builds", caption: "Build runs", route: "/builds" }),
   dev({
     name: "build",
-    caption: "A build with its log and validation checks",
+    caption: "A finished build: next step, validation checks and log",
     route: "/builds/:id",
     url: (ids) => `/builds/${ids.succeeded}`,
     fullPage: true,

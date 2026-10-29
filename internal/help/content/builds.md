@@ -5,8 +5,9 @@ summary: What each build status means, and how to read, cancel and repeat a buil
 roles: [developer, maintainer, operator]
 order: 40
 ---
-**Build runs** lists every build you can see. Open one to see its status, inputs, timeline, attempts, validation
-and logs. The page updates as the build moves.
+**Build runs** lists every build you can see. Open one to see its status, what to do next, validation, attempts
+and logs. The page updates as the build moves. Digests, worker IDs and other raw values are under **Technical
+details** at the bottom; the **Timeline** appears once the page receives state changes while you watch.
 
 ## Statuses
 
@@ -20,12 +21,24 @@ and logs. The page updates as the build moves.
 | **Failed** | It ran and failed. The message says whether the application build or the build infrastructure failed |
 | **Timed out**, **Cancelled**, **Expired** | Stopped before it finished |
 
-A build may use several **attempts**: if a worker is lost, Samuori retries on another one.
+A build may use several **attempts**: if a worker is lost, Samuori retries on another one. Each attempt shows its
+state (such as **Completed** or **Failed**) and its build environment (**Cleaned up** once it was destroyed).
+
+## Next step
+
+- A **Built** image that passed validation offers **Publish image** if you may publish in this project. Otherwise
+  the card says who can (a publisher or maintainer of the project's team). **Open image**, **Download image** (when
+  allowed) and **Deployment files** are there too.
+- While the checks run, the card says publishing opens when every required check passes; an image that did not pass
+  cannot be published.
+- A **Failed** or **Timed out** build says why and links to the log and the attempts; a **Blocked** build says what
+  blocks it. Both offer **Build again**.
 
 ## Actions
 
 - **Cancel build** stops a running build. It ends as **Cancelled** with your reason, never as failed or built.
-- **Build again** repeats the same spec revision and upload.
+- **Build again** repeats the same build settings version (shown as **Build settings v1**, v2 and so on) and
+  upload.
 - **Logs** show each attempt. Secret values are masked before logs are stored.
 
 ## Blocked network access

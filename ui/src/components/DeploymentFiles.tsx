@@ -76,6 +76,7 @@ function DeploymentFilesDialog({
             {info.publications.length > 1 && (
               <Select
                 label="Publication"
+                placeholder="Choose a publication"
                 value={info.publicationId ?? null}
                 onChange={setPublicationId}
                 options={info.publications.map((p) => ({

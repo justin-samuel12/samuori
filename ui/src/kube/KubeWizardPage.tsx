@@ -5,7 +5,7 @@ import { Button } from "../components/Button";
 import { RadioGroup, Select, TextField } from "../components/Field";
 import { Alert, Loading, PageHeader } from "../components/Feedback";
 import { correctName } from "../format";
-import { useLoader } from "../hooks";
+import { useLoader, useProject } from "../hooks";
 import { navigate } from "../router";
 
 type Create = Schemas["KubeConversionCreate"];
@@ -43,6 +43,7 @@ function query(name: string): string | undefined {
 
 /** "Generate Kubernetes configuration": collects the input and options, then queues the conversion. */
 export function KubeWizardPage({ projectId }: { projectId: string }) {
+  const project = useProject(projectId);
   const build = query("build");
   const publication = query("publication");
   const [step, setStep] = useState(0);
@@ -160,8 +161,9 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
         help="kubernetes"
         crumbs={[
           { label: "Projects", href: "/projects" },
-          { label: "Project", href: `/projects/${projectId}` },
+          { label: project?.name ?? "Project", href: `/projects/${projectId}` },
           { label: "Kubernetes", href: `/projects/${projectId}/kubernetes` },
+          { label: "Generate" },
         ]}
         description="Samuori converts your Compose file, source or image with an approved provider on a worker, with no network and no credentials, and checks the result. It never deploys anything: you review and download the files."
       />
@@ -233,6 +235,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                   ) : (
                     <Select
                       label="Source upload"
+                      placeholder="Choose an upload"
                       options={snapshots.map((s) => ({
                         id: s.id,
                         label: `${new Date(s.createdAt).toLocaleString()} — ${s.fileCount} files`,
@@ -282,6 +285,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
               {kind === "build" && (
                 <Select
                   label="Built image"
+                  placeholder="Choose an image"
                   options={imageOptions}
                   value={buildRunId || null}
                   onChange={setBuildRunId}
@@ -295,6 +299,7 @@ export function KubeWizardPage({ projectId }: { projectId: string }) {
                 ) : (
                   <Select
                     label="Published image"
+                    placeholder="Choose a published image"
                     options={pubOptions}
                     value={publicationId || null}
                     onChange={setPublicationId}

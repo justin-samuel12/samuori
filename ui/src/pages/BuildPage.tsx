@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
+import { operationAccess } from "../api/generated/roles";
 import { Button } from "../components/Button";
 import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
@@ -7,10 +15,22 @@ import { TextField } from "../components/Field";
 import { EgressAccess, useEgressRequests } from "../components/EgressAccess";
 import { Alert, Badge, Loading, PageHeader } from "../components/Feedback";
 import { Table } from "../components/Table";
-import { useLoader } from "../hooks";
+import { shortDigest } from "../format";
+import { useLoader, useProject, useSpec } from "../hooks";
 import { navigate } from "../router";
-import { useCan, useCanDownload } from "../session/session";
+import type { Scope } from "../session/can";
+import { useCan, useCanDownload, type Role } from "../session/session";
 import { badgeTone, stateText, terminal } from "./builds";
+import {
+  attemptState,
+  checkOutcome,
+  cleanupState,
+  imageName,
+  isolationText,
+} from "./display";
+import { PublishDialog } from "./ImagesPage";
+import { roleLabel } from "./labels";
+import { isArchived } from "./ProjectLifecycle";
 
 type Run = Schemas["BuildRun"];
 type Attempt = Schemas["BuildAttempt"];
@@ -19,6 +39,17 @@ interface TimelineEntry {
   seq: number;
   state: string;
   reason?: string;
+}
+
+function whoMayPublish(): string {
+  const access = operationAccess.requestPublication;
+  const names =
+    typeof access === "string"
+      ? []
+      : access.map((r) => roleLabel(r as Role).toLowerCase());
+  return names.length > 0
+    ? `a ${names.join(" or ")} of this project's team`
+    : "someone with publishing rights";
 }
 
 export function BuildPage({ id }: { id: string }) {
@@ -30,8 +61,12 @@ export function BuildPage({ id }: { id: string }) {
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
   const [error, setError] = useState<string>();
   const reloadedFor = useRef<string | null | undefined>(null);
+  const project = useProject(run?.projectId);
+  const spec = useSpec(run?.specId);
 
   const load = useCallback(async () => {
     const [r, a] = await Promise.all([
@@ -115,53 +150,52 @@ export function BuildPage({ id }: { id: string }) {
       <Alert>This build does not exist, or you do not have access to it.</Alert>
     );
   const finished = terminal.has(run.state);
+  const scope: Scope = project
+    ? {
+        teamId: project.teamId,
+        projectId: project.id,
+        archived: isArchived(project),
+      }
+    : { projectId: run.projectId };
+  const built = !run.deletion && run.state === "succeeded" && !!run.artifactId;
   const downloadable =
-    !run.deletion &&
-    run.state === "succeeded" &&
-    !!run.artifactId &&
-    run.validation?.verdict === "passed" &&
-    mayDownload;
+    built && run.validation?.verdict === "passed" && mayDownload;
+  const name = imageName({
+    name: spec?.name ?? project?.name,
+    version: run.version,
+    digest: run.artifactDigest,
+  });
+  const started = new Date(run.createdAt).toLocaleString();
   return (
     <>
       <PageHeader
         help="builds"
-        title="Build"
+        title={run.version ? `Build ${run.version}` : "Build"}
         crumbs={[
           { label: "Build runs", href: "/builds" },
-          { label: new Date(run.createdAt).toLocaleString() },
+          {
+            label: project?.name ?? "Project",
+            href: `/projects/${run.projectId}`,
+          },
+          { label: run.version ?? started },
         ]}
-        description={`Spec revision ${run.specRevision}, started ${new Date(run.createdAt).toLocaleString()}.`}
+        description={`Build settings v${run.specRevision}, started ${started}.`}
         actions={
           finished ? (
             <>
-              {downloadable && (
-                <a
-                  className="samuori-button samuori-button--secondary no-underline"
-                  href={`/api/v1/artifacts/${run.artifactId}/download`}
-                  download
-                >
-                  Download image
-                </a>
-              )}
-              {!run.deletion &&
-                run.state === "succeeded" &&
-                run.artifactId &&
-                can("getDeploymentFiles") && (
-                  <DeploymentFiles artifactId={run.artifactId} />
-                )}
-              {can("createBuild") && (
+              {can("createBuild", scope) && (
                 <Button variant="secondary" onPress={() => void rebuild()}>
                   Build again
                 </Button>
               )}
-              {can("deleteBuild") && !run.deletion && (
+              {can("deleteBuild", scope) && !run.deletion && (
                 <Button variant="danger" onPress={() => setDeleting(true)}>
                   Delete build
                 </Button>
               )}
             </>
           ) : (
-            can("cancelBuild") && (
+            can("cancelBuild", scope) && (
               <Button variant="danger" onPress={() => setConfirm(true)}>
                 Cancel build
               </Button>
@@ -195,13 +229,13 @@ export function BuildPage({ id }: { id: string }) {
             [
               "Isolation",
               attempts.length > 0
-                ? (run.isolationProfile ?? "—")
+                ? (isolationText(run.isolationProfile) ?? "—")
                 : "Chosen when a worker takes it",
             ],
             ["Attempts", `${run.attemptsUsed ?? 0} of ${run.maxAttempts ?? 0}`],
             ["Version", run.version ?? "Given when the build succeeds"],
-            ["Spec revision", String(run.specRevision)],
-            ["Started", new Date(run.createdAt).toLocaleString()],
+            ["Build settings", `v${run.specRevision}`],
+            ["Started", started],
           ].map(([k, v]) => (
             <div key={k} className="min-w-0">
               <dt className="text-xs font-semibold tracking-wider text-muted uppercase">
@@ -212,20 +246,6 @@ export function BuildPage({ id }: { id: string }) {
           ))}
         </dl>
       </div>
-      {run.state === "blocked" && (
-        <Alert tone="warning">
-          <strong>This build cannot run yet.</strong> {run.blockedReason}
-        </Alert>
-      )}
-      {run.state === "failed" && (
-        <Alert>
-          The build failed (
-          {run.failureClass === "infrastructure"
-            ? "a problem with the build infrastructure"
-            : "a problem in the application build"}
-          ). See the attempts below.
-        </Alert>
-      )}
       {attempts[0] && (
         <EgressDenials
           attempt={attempts[0]}
@@ -233,105 +253,82 @@ export function BuildPage({ id }: { id: string }) {
           run={run}
         />
       )}
-      <section className="samuori-card" aria-labelledby="digests-h">
-        <h2 id="digests-h">Inputs and output</h2>
-        <dl className="samuori-details mb-0">
-          <dt>Source</dt>
-          <dd>
-            <code>{run.snapshotDigest}</code>
-          </dd>
-          <dt>Spec</dt>
-          <dd>
-            <code>{run.specDigest}</code>
-          </dd>
-          {run.planDigest && (
-            <>
-              <dt>Build plan</dt>
-              <dd>
-                <code>{run.planDigest}</code>
-              </dd>
-            </>
+      {built && run.artifactId && (
+        <NextStep>
+          {published ? (
+            <p>
+              Publication requested. Follow it on the{" "}
+              <Link href={`/images/${run.artifactId}`} className="samuori-link">
+                image page
+              </Link>
+              .
+            </p>
+          ) : run.validation?.verdict === "passed" ? (
+            can("requestPublication", scope) ? (
+              <p>
+                <strong>{name}</strong> passed validation. Publish it to a
+                registry to use it.
+              </p>
+            ) : (
+              <p>
+                <strong>{name}</strong> passed validation. Ask a publisher to
+                publish it: {whoMayPublish()} can.
+              </p>
+            )
+          ) : run.validation?.verdict ? (
+            <p>
+              <strong>{name}</strong> did not pass validation, so it cannot be
+              published. See Validation below.
+            </p>
+          ) : (
+            <p>
+              <strong>{name}</strong> is being validated. Publishing opens when
+              every required check passes.
+            </p>
           )}
-          {(run.baseImagePins ?? []).length > 0 && (
-            <>
-              <dt>Base images</dt>
-              <dd>
-                <ul className="samuori-plain-list">
-                  {run.baseImagePins?.map((p) => (
-                    <li key={p.ref}>
-                      <code>{p.ref}</code> → <code>{p.image}</code> (pinned at
-                      admission)
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </>
-          )}
-          <MetadataRows term="Image labels" values={run.imageLabels} />
-          <MetadataRows
-            term="Image annotations"
-            values={run.imageAnnotations}
-          />
-          {run.artifactDigest && (
-            <>
-              <dt>Image</dt>
-              <dd>
-                <code>{run.artifactDigest}</code>
-              </dd>
-            </>
-          )}
-        </dl>
-      </section>
-      <section className="samuori-section" aria-labelledby="timeline-h">
-        <h2 id="timeline-h">Timeline</h2>
-        <ol className="samuori-timeline" aria-live="polite">
-          {timeline.map((t) => (
-            <li key={t.seq}>
-              {stateText[t.state] ?? t.state}
-              {t.reason ? ` — ${t.reason}` : ""}
-            </li>
-          ))}
-        </ol>
-      </section>
-      <section className="samuori-section" aria-labelledby="attempts-h">
-        <h2 id="attempts-h">Attempts</h2>
-        <Table
-          label="Attempts"
-          rows={attempts}
-          empty="No attempt has started."
-          columns={[
-            {
-              id: "n",
-              name: "Attempt",
-              isRowHeader: true,
-              render: (a) => `#${a.number}`,
-            },
-            { id: "state", name: "State", render: (a) => a.state },
-            {
-              id: "detail",
-              name: "Details",
-              render: (a) =>
-                a.detail ? `${a.failureClass ?? ""}: ${a.detail}` : "",
-            },
-            {
-              id: "worker",
-              name: "Worker",
-              render: (a) => <code>{a.workerId}</code>,
-            },
-            {
-              id: "cleanup",
-              name: "Environment",
-              render: (a) => a.cleanup?.outcome ?? "pending",
-            },
-            {
-              id: "started",
-              name: "Started",
-              render: (a) =>
-                a.startedAt ? new Date(a.startedAt).toLocaleTimeString() : "—",
-            },
-          ]}
-        />
-      </section>
+          <div className="samuori-actions samuori-actions--start">
+            {run.validation?.verdict === "passed" &&
+              !published &&
+              can("requestPublication", scope) && (
+                <Button onPress={() => setPublishing(true)}>
+                  Publish image
+                </Button>
+              )}
+            <Link
+              href={`/images/${run.artifactId}`}
+              className="samuori-button samuori-button--secondary no-underline"
+            >
+              Open image
+            </Link>
+            {downloadable && (
+              <a
+                className="samuori-button samuori-button--secondary no-underline"
+                href={`/api/v1/artifacts/${run.artifactId}/download`}
+                download
+              >
+                Download image
+              </a>
+            )}
+            {can("getDeploymentFiles", scope) && (
+              <DeploymentFiles artifactId={run.artifactId} />
+            )}
+          </div>
+        </NextStep>
+      )}
+      {run.state === "blocked" && (
+        <NextStep tone="warning">
+          <p>
+            <strong>This build cannot run yet.</strong> {run.blockedReason}
+          </p>
+          <RetryActions scope={scope} onRebuild={rebuild} />
+        </NextStep>
+      )}
+      {(run.state === "failed" || run.state === "timed_out") && (
+        <NextStep tone="error">
+          <FailedStep run={run} attempts={attempts} />
+          <RetryActions scope={scope} onRebuild={rebuild} />
+        </NextStep>
+      )}
       {run.validation && (
         <ValidationSection
           id={run.validation.id}
@@ -346,10 +343,80 @@ export function BuildPage({ id }: { id: string }) {
           }}
         />
       )}
+      {timeline.length > 0 && (
+        <section className="samuori-section" aria-labelledby="timeline-h">
+          <h2 id="timeline-h">Timeline</h2>
+          <ol className="samuori-timeline" aria-live="polite">
+            {timeline.map((t) => (
+              <li key={t.seq}>
+                {stateText[t.state] ?? t.state}
+                {t.reason ? ` — ${t.reason}` : ""}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      <section className="samuori-section" aria-labelledby="attempts-h">
+        <h2 id="attempts-h">Attempts</h2>
+        <Table
+          label="Attempts"
+          rows={attempts}
+          empty="No attempt has started."
+          columns={[
+            {
+              id: "n",
+              name: "Attempt",
+              isRowHeader: true,
+              render: (a) => `#${a.number}`,
+            },
+            {
+              id: "state",
+              name: "State",
+              render: (a) => {
+                const s = attemptState(a.state);
+                return <Badge tone={s.tone}>{s.text}</Badge>;
+              },
+            },
+            {
+              id: "detail",
+              name: "Details",
+              render: (a) =>
+                a.detail ? `${a.failureClass ?? ""}: ${a.detail}` : "",
+            },
+            {
+              id: "cleanup",
+              name: "Environment",
+              render: (a) => {
+                const s = cleanupState(a.cleanup?.outcome);
+                return <Badge tone={s.tone}>{s.text}</Badge>;
+              },
+            },
+            {
+              id: "started",
+              name: "Started",
+              render: (a) =>
+                a.startedAt ? new Date(a.startedAt).toLocaleTimeString() : "—",
+            },
+          ]}
+        />
+      </section>
       <RailpackSection key={`rp-${String(finished)}`} id={id} />
       <BuildpacksSection key={`cnb-${String(finished)}`} id={id} />
       {!run.deletion && (
         <LogsSection key={String(finished)} id={id} finished={finished} />
+      )}
+      <TechnicalDetails run={run} attempts={attempts} />
+      {built && run.artifactId && (
+        <PublishDialog
+          isOpen={publishing}
+          artifactId={run.artifactId}
+          projectId={run.projectId}
+          onClose={() => setPublishing(false)}
+          onDone={() => {
+            setPublishing(false);
+            setPublished(true);
+          }}
+        />
       )}
       <Dialog
         title="Delete this build?"
@@ -395,26 +462,176 @@ export function BuildPage({ id }: { id: string }) {
   );
 }
 
-type Validation = Schemas["ValidationRun"];
+function NextStep({
+  tone,
+  children,
+}: {
+  tone?: "warning" | "error";
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={`samuori-card samuori-next-step mb-6 ${tone ? `samuori-next-step--${tone}` : ""}`}
+      aria-labelledby="next-h"
+    >
+      <h2 id="next-h">Next step</h2>
+      {children}
+    </section>
+  );
+}
 
-const verdictText: Record<string, string> = {
-  passed: "Passed",
-  failed: "Failed",
-  blocked: "Blocked",
-  incomplete: "Incomplete",
-};
+function FailedStep({ run, attempts }: { run: Run; attempts: Attempt[] }) {
+  const failing = [...attempts]
+    .sort((a, b) => b.number - a.number)
+    .find((a) => a.state === "failed" || a.detail);
+  const cause =
+    run.state === "timed_out"
+      ? "The build ran out of time"
+      : run.failureClass === "infrastructure"
+        ? "The build failed because of a problem with the build infrastructure"
+        : "The build failed in the application build";
+  return (
+    <>
+      <p>
+        <strong>{cause}.</strong>{" "}
+        {failing?.detail
+          ? `Attempt #${failing.number}: ${failing.detail}`
+          : "The log shows the step that failed."}
+      </p>
+      <p>
+        {!run.deletion && (
+          <>
+            <a href="#logs-h" className="samuori-link">
+              Go to the log
+            </a>
+            {" · "}
+          </>
+        )}
+        <a href="#attempts-h" className="samuori-link">
+          See the attempts
+        </a>
+      </p>
+    </>
+  );
+}
+
+function RetryActions({
+  scope,
+  onRebuild,
+}: {
+  scope: Scope;
+  onRebuild: () => Promise<void>;
+}) {
+  const can = useCan();
+  if (!can("createBuild", scope)) return null;
+  return (
+    <div className="samuori-actions samuori-actions--start">
+      <Button onPress={() => void onRebuild()}>Build again</Button>
+    </div>
+  );
+}
+
+/** Identifiers and raw values for troubleshooting, collapsed so the page reads in plain words first. */
+function TechnicalDetails({
+  run,
+  attempts,
+}: {
+  run: Run;
+  attempts: Attempt[];
+}) {
+  return (
+    <details className="samuori-details-toggle samuori-section">
+      <summary>Technical details</summary>
+      <dl className="samuori-details mb-0">
+        <dt>Source</dt>
+        <dd>
+          <code>{run.snapshotDigest}</code>
+        </dd>
+        <dt>Spec</dt>
+        <dd>
+          <code>{run.specDigest}</code> (revision {run.specRevision})
+        </dd>
+        {run.planDigest && (
+          <>
+            <dt>Build plan</dt>
+            <dd>
+              <code>{run.planDigest}</code>
+            </dd>
+          </>
+        )}
+        {(run.baseImagePins ?? []).length > 0 && (
+          <>
+            <dt>Base images</dt>
+            <dd>
+              <ul className="samuori-plain-list">
+                {run.baseImagePins?.map((p) => (
+                  <li key={p.ref}>
+                    <code>{p.ref}</code> → <code>{p.image}</code> (pinned at
+                    admission)
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </>
+        )}
+        <MetadataRows term="Image labels" values={run.imageLabels} />
+        <MetadataRows term="Image annotations" values={run.imageAnnotations} />
+        {run.artifactDigest && (
+          <>
+            <dt>Image</dt>
+            <dd>
+              {run.artifactId ? (
+                <Link
+                  href={`/images/${run.artifactId}`}
+                  className="samuori-link"
+                  aria-label={`Open image ${shortDigest(run.artifactDigest)}`}
+                >
+                  <code>{run.artifactDigest}</code>
+                </Link>
+              ) : (
+                <code>{run.artifactDigest}</code>
+              )}
+            </dd>
+          </>
+        )}
+        {run.isolationProfile && (
+          <>
+            <dt>Isolation profile</dt>
+            <dd>
+              <code>{run.isolationProfile}</code>
+            </dd>
+          </>
+        )}
+        {attempts.map((a) => (
+          <div key={a.id} className="contents">
+            <dt>Attempt #{a.number}</dt>
+            <dd>
+              state <code>{a.state}</code>, environment{" "}
+              <code>{a.cleanup?.outcome ?? "pending"}</code>
+              {a.workerId && (
+                <>
+                  , worker <code>{a.workerId}</code>
+                </>
+              )}
+              {a.isolationProfile && (
+                <>
+                  , isolation <code>{a.isolationProfile}</code>
+                </>
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
+type Validation = Schemas["ValidationRun"];
 
 const vulnOutcome: Record<string, string> = {
   fail: "Fails policy",
   report: "Reported",
   ignored: "Ignored by policy",
-};
-
-const verdictTone: Record<string, string> = {
-  passed: "ok",
-  failed: "error",
-  blocked: "error",
-  incomplete: "warning",
 };
 
 function ValidationSection({
@@ -486,12 +703,13 @@ function ValidationSection({
       {error && <Alert>{error}</Alert>}
       <p>
         Verdict:{" "}
-        <span
-          className={`samuori-status samuori-status--${verdictTone[v.verdict ?? ""] ?? "pending"}`}
-          data-testid="validation-verdict"
+        <Badge
+          tone={v.verdict ? checkOutcome(v.verdict).tone : "info"}
+          live={!v.verdict}
+          testId="validation-verdict"
         >
-          {v.verdict ? verdictText[v.verdict] : "Checking…"}
-        </span>
+          {v.verdict ? checkOutcome(v.verdict).text : "Checking…"}
+        </Badge>
         {can("startRevalidation") &&
           v.verdict &&
           v.verdict !== "passed" &&
@@ -507,9 +725,9 @@ function ValidationSection({
         {v.classification === "restricted" && (
           <>
             {" "}
-            <span className="samuori-status samuori-status--warning">
+            <Badge tone="warn">
               Restricted: passed only through an approved exception
-            </span>
+            </Badge>
           </>
         )}
       </p>
@@ -529,7 +747,14 @@ function ValidationSection({
             name: "Required",
             render: (c) => (c.required ? "Yes" : "No"),
           },
-          { id: "outcome", name: "Outcome", render: (c) => c.outcome },
+          {
+            id: "outcome",
+            name: "Outcome",
+            render: (c) => {
+              const o = checkOutcome(c.outcome);
+              return <Badge tone={o.tone}>{o.text}</Badge>;
+            },
+          },
           {
             id: "reason",
             name: "Details",

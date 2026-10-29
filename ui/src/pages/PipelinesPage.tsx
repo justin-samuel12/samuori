@@ -121,6 +121,7 @@ export function PipelinesPage() {
       <div className="samuori-toolbar">
         <Select
           label="Project"
+          placeholder="Choose a project"
           value={project || (admin ? "all" : null)}
           onChange={(v) => {
             setProject(v === "all" ? "" : v);
@@ -286,11 +287,9 @@ function PipelineRuns({ pipeline }: { pipeline: Pipeline }) {
             ? "GitLab secret token (X-Gitlab-Token)"
             : "HMAC-SHA256 signature (X-Hub-Signature-256); content type application/json"}
         </dd>
-        <dt>Spec revision</dt>
+        <dt>Build settings</dt>
         <dd>
-          {pipeline.specRevision === 0
-            ? "Latest"
-            : `Revision ${pipeline.specRevision}`}
+          {pipeline.specRevision === 0 ? "Latest" : `v${pipeline.specRevision}`}
         </dd>
       </dl>
       {error && <Alert>{error}</Alert>}
@@ -463,6 +462,7 @@ function CreateDialog({
         <TextField label="Name" value={name} onChange={setName} isRequired />
         <Select
           label="Project"
+          placeholder="Choose a project"
           value={project}
           onChange={(v) => {
             setProject(v);
@@ -472,12 +472,13 @@ function CreateDialog({
           isRequired
         />
         <Select
-          label="Spec"
+          label="Image definition"
+          placeholder="Choose an image definition"
           value={spec}
           onChange={setSpec}
           options={specs}
           isRequired
-          description="Runs build the spec's latest revision."
+          description="Runs build the newest version of its build settings."
         />
         <Select
           label="Run as"
@@ -576,7 +577,7 @@ function EditDialog({
         { id: "0", label: "Latest revision" },
         ...(data?.items ?? []).map((r) => ({
           id: String(r.revision),
-          label: `Revision ${r.revision}`,
+          label: `v${r.revision}`,
         })),
       ]);
     })();
@@ -630,11 +631,12 @@ function EditDialog({
           description="Full refs separated by commas; * and ? are wildcards."
         />
         <Select
-          label="Spec revision"
+          label="Build settings version"
+          placeholder="Choose a version"
           value={revision}
           onChange={setRevision}
           options={revisions}
-          description="Latest builds whatever the newest revision is when a run starts."
+          description="Latest builds whatever the newest version is when a run starts."
         />
         <TextField
           label="Username (optional)"

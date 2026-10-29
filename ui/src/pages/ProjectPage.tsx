@@ -11,12 +11,13 @@ import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import { TextField } from "../components/Field";
-import { Alert, Loading, PageHeader } from "../components/Feedback";
+import { Alert, Badge, Loading, PageHeader } from "../components/Feedback";
 import { Table } from "../components/Table";
 import { DeleteUploadDialog, isUploader } from "../components/DeleteUpload";
 import { ProjectDeploymentFiles } from "../components/ProjectDeploymentFiles";
 import { WithdrawDialog } from "../components/Withdraw";
-import { bytes, correctName, shortDigest } from "../format";
+import { bytes, correctName } from "../format";
+import { exceptionState } from "./display";
 import { useLoader } from "../hooks";
 import { navigate } from "../router";
 import { isForbidden, useCan, useMe } from "../session/session";
@@ -39,6 +40,7 @@ export function ProjectPage({ id }: { id: string }) {
   const can = useCan();
   const { teams } = useTeams();
   const [project, setProject] = useState<Schemas["Project"] | null>();
+  const [snaps, setSnaps] = useState<Schemas["SourceSnapshot"][]>();
 
   useEffect(() => {
     void api
@@ -69,14 +71,12 @@ export function ProjectPage({ id }: { id: string }) {
   };
   return (
     <>
-      <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
-        <Link href="/projects" className="samuori-link">
-          Projects
-        </Link>{" "}
-        / {project.name}
-      </nav>
       <PageHeader
         title={project.name}
+        crumbs={[
+          { label: "Projects", href: "/projects" },
+          { label: project.name },
+        ]}
         actions={
           <>
             {can("getProjectDeploymentFiles", scope) && (
@@ -107,15 +107,28 @@ export function ProjectPage({ id }: { id: string }) {
         <ProjectLocations projectId={project.id} scope={scope} />
         <dt>Created</dt>
         <dd>{new Date(project.createdAt).toLocaleString()}</dd>
-        <dt>Project ID</dt>
-        <dd>
-          <code>{project.id}</code>
-        </dd>
       </dl>
       <ProjectWorkflow projectId={project.id} scope={scope} />
-      <Sources projectId={project.id} scope={scope} />
+      <Sources projectId={project.id} scope={scope} onLoad={setSnaps} />
       <KubeSection projectId={project.id} scope={scope} />
       <RequestsAndExceptions projectId={project.id} scope={scope} />
+      <details className="samuori-details-toggle samuori-section">
+        <summary>Technical details</summary>
+        <dl className="samuori-details mb-0">
+          <dt>Project ID</dt>
+          <dd>
+            <code>{project.id}</code>
+          </dd>
+          {(snaps ?? []).map((s) => (
+            <div key={s.id} className="contents">
+              <dt>Upload {new Date(s.createdAt).toLocaleString()}</dt>
+              <dd>
+                Content ID <code>{s.digest}</code>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </details>
     </>
   );
 }
@@ -225,7 +238,15 @@ function ProjectWorkflow({
   );
 }
 
-function Sources({ projectId, scope }: { projectId: string; scope: Scope }) {
+function Sources({
+  projectId,
+  scope,
+  onLoad,
+}: {
+  projectId: string;
+  scope: Scope;
+  onLoad: (snaps: Schemas["SourceSnapshot"][]) => void;
+}) {
   const me = useMe();
   const can = useCan();
   const [snaps, setSnaps] = useState<Schemas["SourceSnapshot"][]>();
@@ -237,7 +258,8 @@ function Sources({ projectId, scope }: { projectId: string; scope: Scope }) {
     });
     setForbidden(isForbidden(res));
     setSnaps(res.data?.items ?? []);
-  }, [projectId]);
+    onLoad(res.data?.items ?? []);
+  }, [projectId, onLoad]);
   useLoader(load);
   const canUpload = can("createUploadSession", scope);
   const canCreateSpec = can("createSpec", scope);
@@ -305,11 +327,6 @@ function Sources({ projectId, scope }: { projectId: string; scope: Scope }) {
               id: "warnings",
               name: "Things to check",
               render: (s) => (s.warnings?.length ?? 0) || "None",
-            },
-            {
-              id: "digest",
-              name: "Content ID",
-              render: (s) => <code>{shortDigest(s.digest)}</code>,
             },
             {
               id: "actions",
@@ -443,7 +460,14 @@ function OutputExceptions({
               name: "Classes",
               render: (x) => (x.classes.length ? x.classes.join(", ") : "any"),
             },
-            { id: "state", name: "State", render: (x) => x.state },
+            {
+              id: "state",
+              name: "State",
+              render: (x) => {
+                const st = exceptionState(x.state);
+                return <Badge tone={st.tone}>{st.text}</Badge>;
+              },
+            },
             {
               id: "why",
               name: "Justification",

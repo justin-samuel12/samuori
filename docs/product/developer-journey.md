@@ -41,7 +41,8 @@ and Detailed modes into one form on 2026-10-26 (ADR 0005 amendment).
   and test commands are ordered lists of command lines (Add, Remove, Move up/down); one line is saved as a string,
   several as one shell string joined with `&&`, because a list in the BuildSpec is one command's argument vector.
   The start command stays one line: a container runs one main process, so several need a start script.
-- **YAML** — the canonical serialization, schema-validated as the user types.
+- **YAML** — the canonical serialization, schema-validated as the user types. It is opened from the Review
+  step with **Advanced: edit as YAML** and left with **Back to the form**, so the form stays the default path.
 
 Changes round-trip without semantic loss; fields the form cannot edit (argument-vector commands, `x-*` extensions,
 buildpacks `env` and bindings, expected sensitive content) are kept and listed as YAML-only. Overwriting a field last

@@ -244,6 +244,7 @@ function DecideDialog({
         {fulfills && (
           <Select
             label="Destination"
+            placeholder="Choose a destination"
             value={destination}
             onChange={setDestination}
             options={destinations}

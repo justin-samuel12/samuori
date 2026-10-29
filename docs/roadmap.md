@@ -17,6 +17,17 @@ independently testable, not scope cuts. Update task status in the same PR that d
   screenshot tour, screenshot not yet captured) and `samuori config export|import [--apply]`. Runnable: API, CLI and
   UI; SEC-CFG-01 (`TestConfigurationExportImport`) passes on SQLite. Not yet run: PostgreSQL, a browser check of the
   page, an import between two separately installed servers.
+- **Developer journey (2026-10-29, usability review).** A finished build shows a **Next step** card (Publish image
+  for those allowed, otherwise who can; Open image, Download image, Deployment files; for failed, timed-out or
+  blocked builds the cause, links to the log and attempts, and Build again). Images are named by app and version
+  (`shop · 2026-10-29.1`) with the short digest beside them, in lists, titles and breadcrumbs. Digests, IDs, worker
+  and raw isolation values sit under a collapsed **Technical details**; states read as badges with plain labels;
+  "Build settings v1" replaces "Spec revision". The wizard's step list marks done, current, not reached and
+  needs-attention steps, and YAML editing moved to **Advanced: edit as YAML** on the Review step. Breadcrumbs show
+  project names; the Projects context bar no longer repeats its name; wizard routes highlight New image; New image
+  with one usable project opens its wizard; the upload page has a drop zone with the server's limits. Runnable: UI;
+  `display.test.ts`, `nav.test.ts` and `exclude.test.ts` pass. Not yet checked in a browser; the acceptance specs
+  were updated but not rerun.
 - **Screenshots (2026-10-28, owner request).** `make screenshots` captures every scene in `ui/e2e/tour/scenes.ts`
   (sign-in, developer and administrator screens, light and dark, 1440×900) from a throwaway local server with
   example data; the README shows a selection from `docs/screenshots/` and the [wiki gallery](https://github.com/justin-samuel12/samuori/wiki/Screenshots) every screen;

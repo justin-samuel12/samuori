@@ -68,6 +68,11 @@ export function makeExcluder(
   };
 }
 
+/** The archive kinds the server extracts: ZIP, TAR and gzip-compressed TAR. */
+export function isArchiveName(name: string): boolean {
+  return /\.(zip|tar|tgz|tar\.gz)$/i.test(name);
+}
+
 /** Rejects patterns the server refuses, so the user sees the problem before uploading. */
 export function invalidPattern(p: string): string | null {
   if (!p) return "Empty pattern";

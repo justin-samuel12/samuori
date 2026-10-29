@@ -6,7 +6,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Link, Tab, TabList, TabPanel, Tabs } from "react-aria-components";
+import { AlertTriangle, Check } from "lucide-react";
+import { Link } from "react-aria-components";
 import { api, describeError, type Schemas } from "../api/client";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
@@ -61,6 +62,14 @@ import {
   type BuildMethod,
 } from "../components/EgressAccess";
 import { correctName } from "../format";
+import { stepStatus, type StepStatus } from "../pages/display";
+
+const stepStatusText: Record<StepStatus, string> = {
+  current: "current step",
+  done: "done",
+  todo: "not reached yet",
+  problem: "needs attention",
+};
 
 type Finding = Schemas["DetectorFinding"];
 type Recipe = Schemas["Recipe"];
@@ -128,6 +137,7 @@ export function WizardPage({ projectId }: { projectId: string }) {
   } | null>(null);
   const [yamlDirty, setYamlDirty] = useState(false);
   const [leaveYaml, setLeaveYaml] = useState<Mode | null>(null);
+  const [furthest, setFurthest] = useState(0);
   const [report, setReport] = useState<Schemas["AdmissionReport"]>();
   const egressRequests = useEgressRequests(projectId);
   const [existing, setExisting] = useState<{
@@ -183,6 +193,8 @@ export function WizardPage({ projectId }: { projectId: string }) {
     }
   }, [projectId]);
   useLoader(load);
+
+  if (state && state.step > furthest) setFurthest(state.step);
 
   // Readiness is recomputed against the current egress policy, so reaching the checks step fetches it again.
   const [recheck, setRecheck] = useState(0);
@@ -710,37 +722,46 @@ export function WizardPage({ projectId }: { projectId: string }) {
   const needsLanguage =
     !method || !["dockerfile", "railpack", "buildpacks"].includes(method);
   // What the Describe step still needs before Next; the schema requires the same on save.
-  const missing =
-    state.step === 2
-      ? [
-          !get(state.doc, ["metadata", "name"]) && "Image name",
-          !kind && "Kind of application",
-          needsLanguage &&
-            !get(state.doc, ["spec", "application", "runtime", "language"]) &&
-            "Language",
-          kind === "http-service" &&
-            !get(state.doc, ["spec", "application", "port"]) &&
-            "Port",
-          method === "recipe" &&
-            kind === "http-service" &&
-            !get(state.doc, ["spec", "build", "recipe", "start"]) &&
-            "Start command",
-        ].filter((x): x is string => !!x)
-      : [];
+  const described = [
+    !get(state.doc, ["metadata", "name"]) && "Image name",
+    !kind && "Kind of application",
+    needsLanguage &&
+      !get(state.doc, ["spec", "application", "runtime", "language"]) &&
+      "Language",
+    kind === "http-service" &&
+      !get(state.doc, ["spec", "application", "port"]) &&
+      "Port",
+    method === "recipe" &&
+      kind === "http-service" &&
+      !get(state.doc, ["spec", "build", "recipe", "start"]) &&
+      "Start command",
+  ].filter((x): x is string => !!x);
+  const missing = state.step === 2 ? described : [];
+  const readiness = state.dockerfile
+    ? dockerfiles.find((d) => d.path === state.dockerfile)?.readiness
+    : finding?.readiness;
+  const problems = [
+    !state.snapshotId,
+    false,
+    described.length > 0,
+    false,
+    (readiness ?? []).some((r) => r.severity === "will-fail"),
+    false,
+    !!report && !report.admissible,
+  ];
 
   return (
     <EditorContext.Provider
       value={{ doc: state.doc, mode: state.mode, edit, readOnly: false }}
     >
-      <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
-        <Link href={`/projects/${projectId}`} className="samuori-link">
-          {project?.name ?? "Project"}
-        </Link>{" "}
-        / New image
-      </nav>
       <PageHeader
         help="new-image"
         title="New image"
+        crumbs={[
+          { label: "Projects", href: "/projects" },
+          { label: project?.name ?? "Project", href: `/projects/${projectId}` },
+          { label: "New image" },
+        ]}
         description="Describe your application; we turn it into a build specification you can review."
       />
       {resumed && (
@@ -754,6 +775,7 @@ export function WizardPage({ projectId }: { projectId: string }) {
               });
               setDraftVersion(0);
               setResumed(undefined);
+              setFurthest(0);
               setState({
                 step: 0,
                 mode: state.mode,
@@ -770,779 +792,698 @@ export function WizardPage({ projectId }: { projectId: string }) {
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
 
       <ol className="samuori-stepper" aria-label="Steps">
-        {steps.map((name, i) => (
-          <li key={name}>
-            <Button
-              variant="quiet"
-              onPress={() => update((s) => ({ ...s, step: i }))}
-              aria-current={i === state.step ? "step" : undefined}
-            >
-              {i + 1}. {name}
-            </Button>
-          </li>
-        ))}
+        {steps.map((name, i) => {
+          const status = stepStatus(i, state.step, furthest, !!problems[i]);
+          return (
+            <li key={name} data-status={status}>
+              <Button
+                variant="quiet"
+                onPress={() => update((s) => ({ ...s, step: i }))}
+                aria-current={i === state.step ? "step" : undefined}
+              >
+                {status === "done" && <Check size={14} aria-hidden="true" />}
+                {status === "problem" && (
+                  <AlertTriangle size={14} aria-hidden="true" />
+                )}
+                {i + 1}. {name}
+                <span className="sr-only"> ({stepStatusText[status]})</span>
+              </Button>
+            </li>
+          );
+        })}
       </ol>
 
-      <Tabs
-        selectedKey={state.mode}
-        onSelectionChange={(k) => switchMode(k as Mode)}
-        className="samuori-tabs"
-      >
-        <TabList aria-label="Editing view" className="samuori-tablist">
-          <Tab id="form" className="samuori-tab">
-            Form
-          </Tab>
-          <Tab id="yaml" className="samuori-tab">
-            YAML
-          </Tab>
-        </TabList>
-
-        {(["form", "yaml"] as const).map((m) => (
-          <TabPanel
-            key={m}
-            id={m}
-            className="samuori-tabpanel"
-            shouldForceMount
-          >
-            {state.mode === m && (
-              <>
-                <section className="samuori-section" aria-labelledby="step-h">
-                  <h2 id="step-h">
-                    Step {state.step + 1}: {steps[state.step]}
-                  </h2>
-                  {state.mode === "yaml" ? (
-                    <YamlEditor
-                      doc={state.doc}
-                      onDirty={setYamlDirty}
-                      onApply={(d) => {
-                        const prov = { ...state.provenance };
-                        for (const p of formPaths)
-                          if (
-                            JSON.stringify(get(d, p)) !==
-                            JSON.stringify(get(state.doc, p))
-                          )
-                            prov[pathKey(p)] = "yaml";
-                        update((s) => ({ ...s, doc: d, provenance: prov }));
-                      }}
-                    />
-                  ) : (
+      <section className="samuori-section" aria-labelledby="step-h">
+        <h2 id="step-h">
+          {state.mode === "yaml"
+            ? "Edit as YAML"
+            : `Step ${state.step + 1}: ${steps[state.step]}`}
+        </h2>
+        {state.mode === "yaml" ? (
+          <>
+            <div className="samuori-actions samuori-actions--start">
+              <Button variant="secondary" onPress={() => switchMode("form")}>
+                Back to the form
+              </Button>
+            </div>
+            <YamlEditor
+              doc={state.doc}
+              onDirty={setYamlDirty}
+              onApply={(d) => {
+                const prov = { ...state.provenance };
+                for (const p of formPaths)
+                  if (
+                    JSON.stringify(get(d, p)) !==
+                    JSON.stringify(get(state.doc, p))
+                  )
+                    prov[pathKey(p)] = "yaml";
+                update((s) => ({ ...s, doc: d, provenance: prov }));
+              }}
+            />
+          </>
+        ) : (
+          <>
+            {hidden.length > 0 && (
+              <Alert tone="info">
+                These settings can only be edited as YAML and are kept as they
+                are:{" "}
+                {hidden.map((h) => (
+                  <code key={h}>{h} </code>
+                ))}
+              </Alert>
+            )}
+            {state.step === 0 && (
+              <StepBody>
+                {snapshots.length === 0 ? (
+                  <p>
+                    No uploads yet.{" "}
+                    <Link
+                      href={`/projects/${projectId}/upload`}
+                      className="samuori-link"
+                    >
+                      Upload your project
+                    </Link>{" "}
+                    first.
+                  </p>
+                ) : (
+                  <Select
+                    label="Source upload"
+                    placeholder="Choose an upload"
+                    options={snapshots.map((s) => ({
+                      id: s.id,
+                      label: `${new Date(s.createdAt).toLocaleString()} — ${s.fileCount} files`,
+                    }))}
+                    value={state.snapshotId ?? null}
+                    onChange={(v) =>
+                      update((s) => ({
+                        ...s,
+                        snapshotId: v,
+                        appKey: undefined,
+                      }))
+                    }
+                  />
+                )}
+                <Link
+                  href={`/projects/${projectId}/upload`}
+                  className="samuori-link"
+                >
+                  Upload newer files
+                </Link>
+              </StepBody>
+            )}
+            {state.step === 1 && (
+              <StepBody>
+                {discovery === undefined && <Loading />}
+                {discovery === null && (
+                  <Alert tone="warning">
+                    This upload has not been analysed. Open it from the project
+                    page and choose “Analyse source”, or describe your app
+                    yourself.
+                  </Alert>
+                )}
+                {apps.length === 0 && discovery && (
+                  <Alert tone="info">
+                    No application was recognised. You can still describe it in
+                    the next step.
+                  </Alert>
+                )}
+                {apps.length + dockerfiles.length > 0 && (
+                  <RadioGroup
+                    label={
+                      apps.length + dockerfiles.length > 1
+                        ? "What do you want to build?"
+                        : apps.length > 0
+                          ? "Detected application"
+                          : "Your Dockerfile"
+                    }
+                    value={state.appKey ?? ""}
+                    onChange={(k) =>
+                      k.startsWith(dockerfilePrefix)
+                        ? chooseDockerfileApp(k.slice(dockerfilePrefix.length))
+                        : k.startsWith(comboPrefix)
+                          ? chooseCombo(k)
+                          : chooseApp(k)
+                    }
+                    options={[
+                      ...dockerfiles.map((d) => ({
+                        id: dockerfileKey(d.path),
+                        label: `Build my Dockerfile (${d.path})`,
+                        description:
+                          "exactly as written; you describe the app in the next step",
+                      })),
+                      ...combos.map(({ fe, be }) => ({
+                        id: comboKey(fe, be),
+                        label: `Frontend + backend in one image (${fe.sourceSubpath} and ${be.sourceSubpath})`,
+                        description:
+                          "Samuori's web launcher serves the frontend and forwards /api to the backend",
+                      })),
+                      ...apps.map((f) => ({
+                        id: findingKey(f),
+                        label: `${[f.framework, f.language].filter(Boolean).join(" · ")}${f.sourceSubpath === "." ? "" : ` in ${f.sourceSubpath}`}`,
+                        description:
+                          f.confidence === "high"
+                            ? "detected"
+                            : f.confidence === "medium"
+                              ? "likely, please confirm the details"
+                              : "unsure, please check every detail",
+                      })),
+                    ]}
+                  />
+                )}
+                {!state.appKey &&
+                  apps.length === 0 &&
+                  dockerfiles.length === 0 && (
+                    <Button variant="secondary" onPress={() => chooseApp("")}>
+                      Describe it myself
+                    </Button>
+                  )}
+              </StepBody>
+            )}
+            {state.step === 2 && (
+              <StepBody>
+                {(finding?.warnings ?? []).map((w, i) => (
+                  <Alert key={i} tone="warning">
+                    {w.message}
+                  </Alert>
+                ))}
+                <TextAt
+                  path={["metadata", "name"]}
+                  label="Image name"
+                  isRequired
+                  normalize={(t, done) => correctName(t, { done })}
+                  description="Saved in lowercase with dashes, for example orders-api."
+                />
+                <TextAt
+                  path={["metadata", "description"]}
+                  label="Description (optional)"
+                />
+                <SelectAt
+                  path={["spec", "application", "type"]}
+                  label="What kind of application is it?"
+                  options={kindOptions}
+                />
+                {needsLanguage && (
+                  <SelectAt
+                    path={["spec", "application", "runtime", "language"]}
+                    label="Language"
+                    options={languageOptions}
+                    description="Detected from your source when we recognise it; otherwise choose it."
+                  />
+                )}
+                {method !== "dockerfile" &&
+                  method !== "railpack" &&
+                  method !== "buildpacks" && (
                     <>
-                      {hidden.length > 0 && (
-                        <Alert tone="info">
-                          These settings can only be edited as YAML and are kept
-                          as they are:{" "}
-                          {hidden.map((h) => (
-                            <code key={h}>{h} </code>
-                          ))}
-                        </Alert>
-                      )}
-                      {state.step === 0 && (
-                        <StepBody>
-                          {snapshots.length === 0 ? (
-                            <p>
-                              No uploads yet.{" "}
-                              <Link
-                                href={`/projects/${projectId}/upload`}
-                                className="samuori-link"
-                              >
-                                Upload your project
-                              </Link>{" "}
-                              first.
-                            </p>
-                          ) : (
-                            <Select
-                              label="Source upload"
-                              options={snapshots.map((s) => ({
-                                id: s.id,
-                                label: `${new Date(s.createdAt).toLocaleString()} — ${s.fileCount} files`,
-                              }))}
-                              value={state.snapshotId ?? null}
-                              onChange={(v) =>
-                                update((s) => ({
-                                  ...s,
-                                  snapshotId: v,
-                                  appKey: undefined,
-                                }))
-                              }
-                            />
-                          )}
-                          <Link
-                            href={`/projects/${projectId}/upload`}
-                            className="samuori-link"
-                          >
-                            Upload newer files
-                          </Link>
-                        </StepBody>
-                      )}
-                      {state.step === 1 && (
-                        <StepBody>
-                          {discovery === undefined && <Loading />}
-                          {discovery === null && (
-                            <Alert tone="warning">
-                              This upload has not been analysed. Open it from
-                              the project page and choose “Analyse source”, or
-                              describe your app yourself.
-                            </Alert>
-                          )}
-                          {apps.length === 0 && discovery && (
-                            <Alert tone="info">
-                              No application was recognised. You can still
-                              describe it in the next step.
-                            </Alert>
-                          )}
-                          {apps.length + dockerfiles.length > 0 && (
-                            <RadioGroup
-                              label={
-                                apps.length + dockerfiles.length > 1
-                                  ? "What do you want to build?"
-                                  : apps.length > 0
-                                    ? "Detected application"
-                                    : "Your Dockerfile"
-                              }
-                              value={state.appKey ?? ""}
-                              onChange={(k) =>
-                                k.startsWith(dockerfilePrefix)
-                                  ? chooseDockerfileApp(
-                                      k.slice(dockerfilePrefix.length),
-                                    )
-                                  : k.startsWith(comboPrefix)
-                                    ? chooseCombo(k)
-                                    : chooseApp(k)
-                              }
-                              options={[
-                                ...dockerfiles.map((d) => ({
-                                  id: dockerfileKey(d.path),
-                                  label: `Build my Dockerfile (${d.path})`,
-                                  description:
-                                    "exactly as written; you describe the app in the next step",
-                                })),
-                                ...combos.map(({ fe, be }) => ({
-                                  id: comboKey(fe, be),
-                                  label: `Frontend + backend in one image (${fe.sourceSubpath} and ${be.sourceSubpath})`,
-                                  description:
-                                    "Samuori's web launcher serves the frontend and forwards /api to the backend",
-                                })),
-                                ...apps.map((f) => ({
-                                  id: findingKey(f),
-                                  label: `${[f.framework, f.language].filter(Boolean).join(" · ")}${f.sourceSubpath === "." ? "" : ` in ${f.sourceSubpath}`}`,
-                                  description:
-                                    f.confidence === "high"
-                                      ? "detected"
-                                      : f.confidence === "medium"
-                                        ? "likely, please confirm the details"
-                                        : "unsure, please check every detail",
-                                })),
-                              ]}
-                            />
-                          )}
-                          {!state.appKey &&
-                            apps.length === 0 &&
-                            dockerfiles.length === 0 && (
-                              <Button
-                                variant="secondary"
-                                onPress={() => chooseApp("")}
-                              >
-                                Describe it myself
-                              </Button>
-                            )}
-                        </StepBody>
-                      )}
-                      {state.step === 2 && (
-                        <StepBody>
-                          {(finding?.warnings ?? []).map((w, i) => (
-                            <Alert key={i} tone="warning">
-                              {w.message}
-                            </Alert>
-                          ))}
-                          <TextAt
-                            path={["metadata", "name"]}
-                            label="Image name"
-                            isRequired
-                            normalize={(t, done) => correctName(t, { done })}
-                            description="Saved in lowercase with dashes, for example orders-api."
-                          />
-                          <TextAt
-                            path={["metadata", "description"]}
-                            label="Description (optional)"
-                          />
-                          <SelectAt
-                            path={["spec", "application", "type"]}
-                            label="What kind of application is it?"
-                            options={kindOptions}
-                          />
-                          {needsLanguage && (
-                            <SelectAt
-                              path={[
-                                "spec",
-                                "application",
-                                "runtime",
-                                "language",
-                              ]}
-                              label="Language"
-                              options={languageOptions}
-                              description="Detected from your source when we recognise it; otherwise choose it."
-                            />
-                          )}
-                          {method !== "dockerfile" &&
-                            method !== "railpack" &&
-                            method !== "buildpacks" && (
-                              <>
-                                <LinesAt
-                                  path={["spec", "build", "recipe", "install"]}
-                                  label="Install dependencies"
-                                  item="install command"
-                                  placeholder="npm ci"
-                                  addLabel="Add install command"
-                                  description="Commands run in order; the build stops at the first that fails."
-                                  commands
-                                />
-                                <LinesAt
-                                  path={["spec", "build", "recipe", "build"]}
-                                  label={
-                                    kind === "static-site"
-                                      ? "Build commands (produce the site)"
-                                      : "Build commands (optional)"
-                                  }
-                                  item="build command"
-                                  addLabel="Add build command"
-                                  commands
-                                />
-                                {kind !== "static-site" && (
-                                  <TextAt
-                                    path={["spec", "build", "recipe", "start"]}
-                                    label={
-                                      kind === "cli-task"
-                                        ? "Command to run"
-                                        : "Start command"
-                                    }
-                                    isRequired={kind === "http-service"}
-                                    description="One command: a container runs one main process. To start several processes, add a start script to your project and run it here."
-                                  />
-                                )}
-                                <LinesAt
-                                  path={["spec", "build", "recipe", "test"]}
-                                  label="Test commands (optional)"
-                                  item="test command"
-                                  addLabel="Add test command"
-                                  commands
-                                />
-                              </>
-                            )}
-                          {method === "recipe" &&
-                            get(state.doc, [
-                              "spec",
-                              "build",
-                              "recipe",
-                              "frontend",
-                            ]) !== undefined && (
-                              <fieldset className="samuori-fieldset">
-                                <legend>Frontend in the same image</legend>
-                                <p className="samuori-muted samuori-line-help">
-                                  Samuori&apos;s web launcher serves the built
-                                  frontend on the image&apos;s port, forwards
-                                  the API paths to your backend, and starts the
-                                  backend with its start command.
-                                </p>
-                                <TextAt
-                                  path={["spec", "build", "recipe", "path"]}
-                                  label="Backend folder"
-                                  isRequired
-                                />
-                                <TextAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "path",
-                                  ]}
-                                  label="Frontend folder"
-                                  isRequired
-                                />
-                                <LinesAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "install",
-                                  ]}
-                                  label="Install the frontend's dependencies"
-                                  item="frontend install command"
-                                  placeholder="npm ci"
-                                  addLabel="Add install command"
-                                  commands
-                                />
-                                <LinesAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "build",
-                                  ]}
-                                  label="Build the frontend"
-                                  item="frontend build command"
-                                  placeholder="npm run build"
-                                  addLabel="Add build command"
-                                  commands
-                                />
-                                <TextAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "output",
-                                  ]}
-                                  label="Folder the frontend build writes"
-                                  placeholder="dist"
-                                />
-                                <LinesAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "apiPrefixes",
-                                  ]}
-                                  label="API paths sent to the backend"
-                                  item="API path"
-                                  placeholder="/api"
-                                  addLabel="Add API path"
-                                />
-                                <NumberAt
-                                  path={[
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                    "backendPort",
-                                  ]}
-                                  label="Port the backend listens on"
-                                  description="Your start command must make the backend listen on this port, on 127.0.0.1 or all addresses."
-                                />
-                              </fieldset>
-                            )}
-                          {kind === "http-service" && (
-                            <>
-                              <NumberAt
-                                path={["spec", "application", "port"]}
-                                label={
-                                  get(state.doc, [
-                                    "spec",
-                                    "build",
-                                    "recipe",
-                                    "frontend",
-                                  ]) !== undefined
-                                    ? "Port the image listens on"
-                                    : "Port the app listens on"
-                                }
-                                isRequired
-                                description="Check your code or configuration; we do not guess it."
-                              />
-                              <TextAt
-                                path={["spec", "application", "healthPath"]}
-                                label="Health check path (optional)"
-                                placeholder="/healthz"
-                              />
-                            </>
-                          )}
-                        </StepBody>
-                      )}
-                      {state.step === 3 && (
-                        <StepBody>
-                          <RadioGroup
-                            label="How should we build it?"
-                            value={
-                              state.strategy ??
-                              (method === "dockerfile" && state.dockerfile
-                                ? dockerfileKey(state.dockerfile)
-                                : method === "railpack" ||
-                                    method === "buildpacks"
-                                  ? method
-                                  : "recipe")
-                            }
-                            onChange={chooseStrategy}
-                            options={[
-                              {
-                                id: "auto",
-                                label: "Automatic (recommended)",
-                                description: `uses ${strategyLabel(recommend().strategy)}: ${recommend().why}`,
-                              },
-                              {
-                                id: "railpack",
-                                label: "Railpack",
-                                description: allowed("railpack")
-                                  ? "plans and builds from your project files on a build worker"
-                                  : (methodOption("railpack")?.reason ??
-                                    "not available"),
-                                isDisabled: !allowed("railpack"),
-                              },
-                              {
-                                id: "buildpacks",
-                                label: "Paketo Buildpacks",
-                                description: allowed("buildpacks")
-                                  ? "detects and builds your project with an approved builder on a build worker"
-                                  : (methodOption("buildpacks")?.reason ??
-                                    "not available"),
-                                isDisabled: !allowed("buildpacks"),
-                              },
-                              {
-                                id: "recipe",
-                                label: "Samuori recipe",
-                                description: allowed("recipe")
-                                  ? "an approved recipe for your language"
-                                  : (methodOption("recipe")?.reason ??
-                                    "not available"),
-                                isDisabled: !allowed("recipe"),
-                              },
-                              ...(dockerfiles.length > 0
-                                ? dockerfiles.map((d) => ({
-                                    id: dockerfileKey(d.path),
-                                    label: `Custom Dockerfile (${d.path})`,
-                                    description: allowed("dockerfile")
-                                      ? "builds exactly as written"
-                                      : (methodOption("dockerfile")?.reason ??
-                                        "not available"),
-                                    isDisabled: !allowed("dockerfile"),
-                                  }))
-                                : [
-                                    {
-                                      id: "dockerfile:",
-                                      label: "Custom Dockerfile",
-                                      description:
-                                        "the upload has no Dockerfile",
-                                      isDisabled: true,
-                                    },
-                                  ]),
-                            ]}
-                          />
-                          {method && !allowed(method) && (
-                            <Alert tone="warning">
-                              {methodOption(method)?.reason ??
-                                "This build method is not allowed here."}{" "}
-                              Choose another way to build.
-                            </Alert>
-                          )}
-                          {method === "buildpacks" && (
-                            <>
-                              <TextAt
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "buildpacks",
-                                  "context",
-                                ]}
-                                label="Folder to build (optional)"
-                                placeholder="."
-                                description="Relative to the upload. The buildpacks see this folder only."
-                              />
-                              <p className="samuori-muted">
-                                The administrator's approved builder detects and
-                                builds the project on a build worker, inside the
-                                build's isolation, as a non-root user, with
-                                network access only to the sources an
-                                administrator allowed. Buildpack settings such
-                                as BP_NODE_VERSION go under
-                                spec.build.buildpacks.env, and each build secret
-                                needs a binding under
-                                spec.build.buildpacks.bindings, for example an
-                                npmrc binding for an npm token; edit them in the
-                                BuildSpec editor.
-                              </p>
-                            </>
-                          )}
-                          {method === "railpack" && (
-                            <>
-                              <TextAt
-                                path={["spec", "build", "railpack", "context"]}
-                                label="Folder to build (optional)"
-                                placeholder="."
-                                description="Relative to the upload. Railpack reads this folder only."
-                              />
-                              <TextAt
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "railpack",
-                                  "buildCommand",
-                                ]}
-                                label="Build command (optional)"
-                                description="Leave empty to let Railpack choose. It runs during the build, never while planning."
-                              />
-                              <TextAt
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "railpack",
-                                  "startCommand",
-                                ]}
-                                label="Start command (optional)"
-                                description="Leave empty to let Railpack choose; the build fails if it finds none."
-                              />
-                              <p className="samuori-muted">
-                                Railpack plans the build on a build worker,
-                                inside the build's isolation, with network
-                                access only to the sources an administrator
-                                allowed. The plan is kept with the build.
-                                Secrets reach build steps as environment
-                                variables, for example npm-token as NPM_TOKEN.
-                              </p>
-                            </>
-                          )}
-                          {method === "recipe" && (
-                            <Select
-                              label="Recipe"
-                              options={compatible.map((r) => ({
-                                id: `${r.id}@${r.version}`,
-                                label: `${r.displayName} ${r.version}${r.status === "deprecated" ? " (deprecated)" : ""}`,
-                              }))}
-                              value={
-                                recipe ? `${recipe.id}@${recipe.version}` : null
-                              }
-                              onChange={(v) => {
-                                const [id, version] = v.split("@");
-                                edit(["spec", "build", "recipe", "id"], id);
-                                edit(
-                                  ["spec", "build", "recipe", "version"],
-                                  version,
-                                );
-                              }}
-                              description={
-                                recipe?.description ??
-                                (compatible.length === 0
-                                  ? "No approved recipe fits this application. Use a Dockerfile, or ask an administrator."
-                                  : undefined)
-                              }
-                            />
-                          )}
-                          {method === "recipe" &&
-                            selectedRecipe?.custom &&
-                            (selectedRecipe.parameters ?? []).map((p) => (
-                              <TextAt
-                                key={p.name}
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "recipe",
-                                  "parameters",
-                                  p.name,
-                                ]}
-                                label={p.name}
-                                isRequired={p.required}
-                                placeholder={p.default}
-                                description={[
-                                  p.description,
-                                  p.enum?.length
-                                    ? `One of ${p.enum.join(", ")}.`
-                                    : undefined,
-                                  p.default
-                                    ? `Leave empty for ${p.default}.`
-                                    : undefined,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" ")}
-                              />
-                            ))}
-                          {method === "recipe" && recipe && !recipe.custom && (
-                            <>
-                              <SelectAt
-                                path={[
-                                  "spec",
-                                  "application",
-                                  "runtime",
-                                  "versionConstraint",
-                                ]}
-                                label="Runtime version"
-                                options={runtimeOptions(
-                                  recipe,
-                                  get(state.doc, [
-                                    "spec",
-                                    "application",
-                                    "runtime",
-                                    "versionConstraint",
-                                  ]),
-                                )}
-                                description={
-                                  finding?.runtimeConstraints &&
-                                  Object.values(finding.runtimeConstraints)[0]
-                                    ? `Your project asks for ${Object.values(finding.runtimeConstraints)[0]}. Approved versions only.`
-                                    : "Approved versions only."
-                                }
-                              />
-                              <LinesAt
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "recipe",
-                                  "systemPackages",
-                                  "build",
-                                ]}
-                                label="System packages for the build (optional)"
-                                item="build package"
-                                placeholder="build-essential"
-                                addLabel="Add build package"
-                                description="Operating system packages the build needs, such as compilers or git. Package names only, for example python3; installed with the base image's package manager."
-                              />
-                              <LinesAt
-                                path={[
-                                  "spec",
-                                  "build",
-                                  "recipe",
-                                  "systemPackages",
-                                  "runtime",
-                                ]}
-                                label="System packages in the image (optional)"
-                                item="image package"
-                                placeholder="ca-certificates"
-                                addLabel="Add image package"
-                                description="Packages your app needs when it runs, such as shared libraries. Each one adds to the image's size and to what security scans report."
-                              />
-                            </>
-                          )}
-                          {method === "dockerfile" && (
-                            <>
-                              <SelectAt
-                                path={["spec", "build", "dockerfile", "target"]}
-                                label="Final stage"
-                                options={(
-                                  dockerfiles.find(
-                                    (d) => d.path === state.dockerfile,
-                                  )?.stages ?? []
-                                ).map((s) => ({ id: s, label: s }))}
-                              />
-                              {(
-                                dockerfiles.find(
-                                  (d) => d.path === state.dockerfile,
-                                )?.ambiguities ?? []
-                              ).map((w, i) => (
-                                <Alert key={i} tone="warning">
-                                  {w.message}
-                                </Alert>
-                              ))}
-                            </>
-                          )}
-                          {(method === "recipe" || method === "dockerfile") && (
-                            <BuildArgsAt path={["spec", "build", "args"]} />
-                          )}
-                          <EngineAt />
-
-                          <PlatformsAt
-                            path={["spec", "target", "platforms"]}
-                            single={singlePlatform}
-                          />
-                          <SecretsPanel
-                            readiness={report?.secretReadiness}
-                            mounted={mountedSecrets}
-                            projectId={projectId}
-                          />
-                        </StepBody>
-                      )}
-                      {state.step === 4 && (
-                        <StepBody>
-                          <ReadinessList
-                            heading="Before you build"
-                            access={discoveryAccess}
-                            items={
-                              state.dockerfile
-                                ? dockerfiles.find(
-                                    (d) => d.path === state.dockerfile,
-                                  )?.readiness
-                                : finding?.readiness
-                            }
-                          />
-                          <div className="samuori-actions samuori-actions--start">
-                            <Button
-                              variant="secondary"
-                              onPress={() => setRecheck((n) => n + 1)}
-                            >
-                              Check again
-                            </Button>
-                          </div>
-                          <SelectAt
-                            path={["spec", "validation", "profile"]}
-                            label="How should we check the image works?"
-                            options={profiles}
-                            description={`Recommended: ${profiles.find((p) => p.id === defaultProfile(kind))?.label}.`}
-                          />
-                          <p className="samuori-muted">
-                            Checks an administrator requires are added
-                            automatically and cannot be removed. They run when
-                            builds become available.
-                          </p>
-                          <NumberAt
-                            path={["spec", "validation", "timeoutSeconds"]}
-                            label="Check timeout in seconds (optional)"
-                            description="Default 60. Checks stop after at most 600 seconds."
-                          />
-                          <CheckAt path={["spec", "outputs", "sbom"]}>
-                            Produce a software bill of materials (SBOM)
-                          </CheckAt>
-                          <LinesAt
-                            path={["spec", "validation", "extraChecks"]}
-                            label="Extra checks (optional)"
-                            item="extra check"
-                            addLabel="Add extra check"
-                            description="Check IDs in lowercase with dashes. Kept in the spec; builds do not run extra checks yet."
-                          />
-                          <CheckAt path={["spec", "outputs", "provenance"]}>
-                            Record build provenance (kept in the spec; builds do
-                            not use it yet)
-                          </CheckAt>
-                        </StepBody>
-                      )}
-                      {state.step === 5 && (
-                        <StepBody>
-                          <LinesAt
-                            path={["spec", "outputs", "image", "tags"]}
-                            label="Tags (optional)"
-                            item="tag"
-                            addLabel="Add tag"
-                            placeholder="{version}"
-                            description="Tags a publication applies when the person publishing gives none. {version} is the build's version, the UTC date it succeeded and a counter for that day, such as 2026-10-27.1. Leave empty for {version} alone. Add latest here if you want it. Every image also keeps its permanent samuori- tag."
-                          />
-                          <PairsAt
-                            path={["spec", "outputs", "image", "labels"]}
-                            label="Image labels (optional)"
-                            item="label"
-                            description="Written into the image's configuration, where docker inspect shows them. For example org.opencontainers.image.source. Samuori adds the build time, the image name and, for builds from a Git pipeline, the commit; a value you set wins. Not applied by Railpack or buildpacks builds."
-                          />
-                          <PairsAt
-                            path={["spec", "outputs", "image", "annotations"]}
-                            label="Image annotations (optional)"
-                            item="annotation"
-                            description="Written onto the image manifest, where registries show them, with the same automatic values. Not applied by buildpacks builds."
-                          />
-                          <p className="samuori-muted">
-                            Labels and annotations describe the image; they are
-                            not tags, which name it in a registry. Anyone who
-                            can pull the image can read them, so never put
-                            secrets in them.
-                          </p>
-                        </StepBody>
-                      )}
-                      {state.step === 6 && (
-                        <Review
-                          projectId={projectId}
-                          doc={state.doc}
-                          report={report}
-                          access={reportAccess}
-                          onSave={() => void save()}
-                          onCheck={() => void check()}
-                          onBuild={() => void build()}
-                          canCheck={!!state.snapshotId}
-                          scope={{ teamId: project?.teamId, projectId }}
+                      <LinesAt
+                        path={["spec", "build", "recipe", "install"]}
+                        label="Install dependencies"
+                        item="install command"
+                        placeholder="npm ci"
+                        addLabel="Add install command"
+                        description="Commands run in order; the build stops at the first that fails."
+                        commands
+                      />
+                      <LinesAt
+                        path={["spec", "build", "recipe", "build"]}
+                        label={
+                          kind === "static-site"
+                            ? "Build commands (produce the site)"
+                            : "Build commands (optional)"
+                        }
+                        item="build command"
+                        addLabel="Add build command"
+                        commands
+                      />
+                      {kind !== "static-site" && (
+                        <TextAt
+                          path={["spec", "build", "recipe", "start"]}
+                          label={
+                            kind === "cli-task"
+                              ? "Command to run"
+                              : "Start command"
+                          }
+                          isRequired={kind === "http-service"}
+                          description="One command: a container runs one main process. To start several processes, add a start script to your project and run it here."
                         />
                       )}
+                      <LinesAt
+                        path={["spec", "build", "recipe", "test"]}
+                        label="Test commands (optional)"
+                        item="test command"
+                        addLabel="Add test command"
+                        commands
+                      />
                     </>
                   )}
-                </section>
-              </>
+                {method === "recipe" &&
+                  get(state.doc, ["spec", "build", "recipe", "frontend"]) !==
+                    undefined && (
+                    <fieldset className="samuori-fieldset">
+                      <legend>Frontend in the same image</legend>
+                      <p className="samuori-muted samuori-line-help">
+                        Samuori&apos;s web launcher serves the built frontend on
+                        the image&apos;s port, forwards the API paths to your
+                        backend, and starts the backend with its start command.
+                      </p>
+                      <TextAt
+                        path={["spec", "build", "recipe", "path"]}
+                        label="Backend folder"
+                        isRequired
+                      />
+                      <TextAt
+                        path={["spec", "build", "recipe", "frontend", "path"]}
+                        label="Frontend folder"
+                        isRequired
+                      />
+                      <LinesAt
+                        path={[
+                          "spec",
+                          "build",
+                          "recipe",
+                          "frontend",
+                          "install",
+                        ]}
+                        label="Install the frontend's dependencies"
+                        item="frontend install command"
+                        placeholder="npm ci"
+                        addLabel="Add install command"
+                        commands
+                      />
+                      <LinesAt
+                        path={["spec", "build", "recipe", "frontend", "build"]}
+                        label="Build the frontend"
+                        item="frontend build command"
+                        placeholder="npm run build"
+                        addLabel="Add build command"
+                        commands
+                      />
+                      <TextAt
+                        path={["spec", "build", "recipe", "frontend", "output"]}
+                        label="Folder the frontend build writes"
+                        placeholder="dist"
+                      />
+                      <LinesAt
+                        path={[
+                          "spec",
+                          "build",
+                          "recipe",
+                          "frontend",
+                          "apiPrefixes",
+                        ]}
+                        label="API paths sent to the backend"
+                        item="API path"
+                        placeholder="/api"
+                        addLabel="Add API path"
+                      />
+                      <NumberAt
+                        path={[
+                          "spec",
+                          "build",
+                          "recipe",
+                          "frontend",
+                          "backendPort",
+                        ]}
+                        label="Port the backend listens on"
+                        description="Your start command must make the backend listen on this port, on 127.0.0.1 or all addresses."
+                      />
+                    </fieldset>
+                  )}
+                {kind === "http-service" && (
+                  <>
+                    <NumberAt
+                      path={["spec", "application", "port"]}
+                      label={
+                        get(state.doc, [
+                          "spec",
+                          "build",
+                          "recipe",
+                          "frontend",
+                        ]) !== undefined
+                          ? "Port the image listens on"
+                          : "Port the app listens on"
+                      }
+                      isRequired
+                      description="Check your code or configuration; we do not guess it."
+                    />
+                    <TextAt
+                      path={["spec", "application", "healthPath"]}
+                      label="Health check path (optional)"
+                      placeholder="/healthz"
+                    />
+                  </>
+                )}
+              </StepBody>
             )}
-          </TabPanel>
-        ))}
-      </Tabs>
+            {state.step === 3 && (
+              <StepBody>
+                <RadioGroup
+                  label="How should we build it?"
+                  value={
+                    state.strategy ??
+                    (method === "dockerfile" && state.dockerfile
+                      ? dockerfileKey(state.dockerfile)
+                      : method === "railpack" || method === "buildpacks"
+                        ? method
+                        : "recipe")
+                  }
+                  onChange={chooseStrategy}
+                  options={[
+                    {
+                      id: "auto",
+                      label: "Automatic (recommended)",
+                      description: `uses ${strategyLabel(recommend().strategy)}: ${recommend().why}`,
+                    },
+                    {
+                      id: "railpack",
+                      label: "Railpack",
+                      description: allowed("railpack")
+                        ? "plans and builds from your project files on a build worker"
+                        : (methodOption("railpack")?.reason ?? "not available"),
+                      isDisabled: !allowed("railpack"),
+                    },
+                    {
+                      id: "buildpacks",
+                      label: "Paketo Buildpacks",
+                      description: allowed("buildpacks")
+                        ? "detects and builds your project with an approved builder on a build worker"
+                        : (methodOption("buildpacks")?.reason ??
+                          "not available"),
+                      isDisabled: !allowed("buildpacks"),
+                    },
+                    {
+                      id: "recipe",
+                      label: "Samuori recipe",
+                      description: allowed("recipe")
+                        ? "an approved recipe for your language"
+                        : (methodOption("recipe")?.reason ?? "not available"),
+                      isDisabled: !allowed("recipe"),
+                    },
+                    ...(dockerfiles.length > 0
+                      ? dockerfiles.map((d) => ({
+                          id: dockerfileKey(d.path),
+                          label: `Custom Dockerfile (${d.path})`,
+                          description: allowed("dockerfile")
+                            ? "builds exactly as written"
+                            : (methodOption("dockerfile")?.reason ??
+                              "not available"),
+                          isDisabled: !allowed("dockerfile"),
+                        }))
+                      : [
+                          {
+                            id: "dockerfile:",
+                            label: "Custom Dockerfile",
+                            description: "the upload has no Dockerfile",
+                            isDisabled: true,
+                          },
+                        ]),
+                  ]}
+                />
+                {method && !allowed(method) && (
+                  <Alert tone="warning">
+                    {methodOption(method)?.reason ??
+                      "This build method is not allowed here."}{" "}
+                    Choose another way to build.
+                  </Alert>
+                )}
+                {method === "buildpacks" && (
+                  <>
+                    <TextAt
+                      path={["spec", "build", "buildpacks", "context"]}
+                      label="Folder to build (optional)"
+                      placeholder="."
+                      description="Relative to the upload. The buildpacks see this folder only."
+                    />
+                    <p className="samuori-muted">
+                      The administrator's approved builder detects and builds
+                      the project on a build worker, inside the build's
+                      isolation, as a non-root user, with network access only to
+                      the sources an administrator allowed. Buildpack settings
+                      such as BP_NODE_VERSION go under
+                      spec.build.buildpacks.env, and each build secret needs a
+                      binding under spec.build.buildpacks.bindings, for example
+                      an npmrc binding for an npm token; edit them in the
+                      BuildSpec editor.
+                    </p>
+                  </>
+                )}
+                {method === "railpack" && (
+                  <>
+                    <TextAt
+                      path={["spec", "build", "railpack", "context"]}
+                      label="Folder to build (optional)"
+                      placeholder="."
+                      description="Relative to the upload. Railpack reads this folder only."
+                    />
+                    <TextAt
+                      path={["spec", "build", "railpack", "buildCommand"]}
+                      label="Build command (optional)"
+                      description="Leave empty to let Railpack choose. It runs during the build, never while planning."
+                    />
+                    <TextAt
+                      path={["spec", "build", "railpack", "startCommand"]}
+                      label="Start command (optional)"
+                      description="Leave empty to let Railpack choose; the build fails if it finds none."
+                    />
+                    <p className="samuori-muted">
+                      Railpack plans the build on a build worker, inside the
+                      build's isolation, with network access only to the sources
+                      an administrator allowed. The plan is kept with the build.
+                      Secrets reach build steps as environment variables, for
+                      example npm-token as NPM_TOKEN.
+                    </p>
+                  </>
+                )}
+                {method === "recipe" && (
+                  <Select
+                    label="Recipe"
+                    placeholder="Choose a recipe"
+                    options={compatible.map((r) => ({
+                      id: `${r.id}@${r.version}`,
+                      label: `${r.displayName} ${r.version}${r.status === "deprecated" ? " (deprecated)" : ""}`,
+                    }))}
+                    value={recipe ? `${recipe.id}@${recipe.version}` : null}
+                    onChange={(v) => {
+                      const [id, version] = v.split("@");
+                      edit(["spec", "build", "recipe", "id"], id);
+                      edit(["spec", "build", "recipe", "version"], version);
+                    }}
+                    description={
+                      recipe?.description ??
+                      (compatible.length === 0
+                        ? "No approved recipe fits this application. Use a Dockerfile, or ask an administrator."
+                        : undefined)
+                    }
+                  />
+                )}
+                {method === "recipe" &&
+                  selectedRecipe?.custom &&
+                  (selectedRecipe.parameters ?? []).map((p) => (
+                    <TextAt
+                      key={p.name}
+                      path={["spec", "build", "recipe", "parameters", p.name]}
+                      label={p.name}
+                      isRequired={p.required}
+                      placeholder={p.default}
+                      description={[
+                        p.description,
+                        p.enum?.length
+                          ? `One of ${p.enum.join(", ")}.`
+                          : undefined,
+                        p.default ? `Leave empty for ${p.default}.` : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    />
+                  ))}
+                {method === "recipe" && recipe && !recipe.custom && (
+                  <>
+                    <SelectAt
+                      path={[
+                        "spec",
+                        "application",
+                        "runtime",
+                        "versionConstraint",
+                      ]}
+                      label="Runtime version"
+                      options={runtimeOptions(
+                        recipe,
+                        get(state.doc, [
+                          "spec",
+                          "application",
+                          "runtime",
+                          "versionConstraint",
+                        ]),
+                      )}
+                      description={
+                        finding?.runtimeConstraints &&
+                        Object.values(finding.runtimeConstraints)[0]
+                          ? `Your project asks for ${Object.values(finding.runtimeConstraints)[0]}. Approved versions only.`
+                          : "Approved versions only."
+                      }
+                    />
+                    <LinesAt
+                      path={[
+                        "spec",
+                        "build",
+                        "recipe",
+                        "systemPackages",
+                        "build",
+                      ]}
+                      label="System packages for the build (optional)"
+                      item="build package"
+                      placeholder="build-essential"
+                      addLabel="Add build package"
+                      description="Operating system packages the build needs, such as compilers or git. Package names only, for example python3; installed with the base image's package manager."
+                    />
+                    <LinesAt
+                      path={[
+                        "spec",
+                        "build",
+                        "recipe",
+                        "systemPackages",
+                        "runtime",
+                      ]}
+                      label="System packages in the image (optional)"
+                      item="image package"
+                      placeholder="ca-certificates"
+                      addLabel="Add image package"
+                      description="Packages your app needs when it runs, such as shared libraries. Each one adds to the image's size and to what security scans report."
+                    />
+                  </>
+                )}
+                {method === "dockerfile" && (
+                  <>
+                    <SelectAt
+                      path={["spec", "build", "dockerfile", "target"]}
+                      label="Final stage"
+                      options={(
+                        dockerfiles.find((d) => d.path === state.dockerfile)
+                          ?.stages ?? []
+                      ).map((s) => ({ id: s, label: s }))}
+                    />
+                    {(
+                      dockerfiles.find((d) => d.path === state.dockerfile)
+                        ?.ambiguities ?? []
+                    ).map((w, i) => (
+                      <Alert key={i} tone="warning">
+                        {w.message}
+                      </Alert>
+                    ))}
+                  </>
+                )}
+                {(method === "recipe" || method === "dockerfile") && (
+                  <BuildArgsAt path={["spec", "build", "args"]} />
+                )}
+                <EngineAt />
+
+                <PlatformsAt
+                  path={["spec", "target", "platforms"]}
+                  single={singlePlatform}
+                />
+                <SecretsPanel
+                  readiness={report?.secretReadiness}
+                  mounted={mountedSecrets}
+                  projectId={projectId}
+                />
+              </StepBody>
+            )}
+            {state.step === 4 && (
+              <StepBody>
+                <ReadinessList
+                  heading="Before you build"
+                  access={discoveryAccess}
+                  items={
+                    state.dockerfile
+                      ? dockerfiles.find((d) => d.path === state.dockerfile)
+                          ?.readiness
+                      : finding?.readiness
+                  }
+                />
+                <div className="samuori-actions samuori-actions--start">
+                  <Button
+                    variant="secondary"
+                    onPress={() => setRecheck((n) => n + 1)}
+                  >
+                    Check again
+                  </Button>
+                </div>
+                <SelectAt
+                  path={["spec", "validation", "profile"]}
+                  label="How should we check the image works?"
+                  options={profiles}
+                  description={`Recommended: ${profiles.find((p) => p.id === defaultProfile(kind))?.label}.`}
+                />
+                <p className="samuori-muted">
+                  Checks an administrator requires are added automatically and
+                  cannot be removed. They run when builds become available.
+                </p>
+                <NumberAt
+                  path={["spec", "validation", "timeoutSeconds"]}
+                  label="Check timeout in seconds (optional)"
+                  description="Default 60. Checks stop after at most 600 seconds."
+                />
+                <CheckAt path={["spec", "outputs", "sbom"]}>
+                  Produce a software bill of materials (SBOM)
+                </CheckAt>
+                <LinesAt
+                  path={["spec", "validation", "extraChecks"]}
+                  label="Extra checks (optional)"
+                  item="extra check"
+                  addLabel="Add extra check"
+                  description="Check IDs in lowercase with dashes. Kept in the spec; builds do not run extra checks yet."
+                />
+                <CheckAt path={["spec", "outputs", "provenance"]}>
+                  Record build provenance (kept in the spec; builds do not use
+                  it yet)
+                </CheckAt>
+              </StepBody>
+            )}
+            {state.step === 5 && (
+              <StepBody>
+                <LinesAt
+                  path={["spec", "outputs", "image", "tags"]}
+                  label="Tags (optional)"
+                  item="tag"
+                  addLabel="Add tag"
+                  placeholder="{version}"
+                  description="Tags a publication applies when the person publishing gives none. {version} is the build's version, the UTC date it succeeded and a counter for that day, such as 2026-10-27.1. Leave empty for {version} alone. Add latest here if you want it. Every image also keeps its permanent samuori- tag."
+                />
+                <PairsAt
+                  path={["spec", "outputs", "image", "labels"]}
+                  label="Image labels (optional)"
+                  item="label"
+                  description="Written into the image's configuration, where docker inspect shows them. For example org.opencontainers.image.source. Samuori adds the build time, the image name and, for builds from a Git pipeline, the commit; a value you set wins. Not applied by Railpack or buildpacks builds."
+                />
+                <PairsAt
+                  path={["spec", "outputs", "image", "annotations"]}
+                  label="Image annotations (optional)"
+                  item="annotation"
+                  description="Written onto the image manifest, where registries show them, with the same automatic values. Not applied by buildpacks builds."
+                />
+                <p className="samuori-muted">
+                  Labels and annotations describe the image; they are not tags,
+                  which name it in a registry. Anyone who can pull the image can
+                  read them, so never put secrets in them.
+                </p>
+              </StepBody>
+            )}
+            {state.step === 6 && (
+              <Review
+                projectId={projectId}
+                doc={state.doc}
+                report={report}
+                access={reportAccess}
+                onSave={() => void save()}
+                onYaml={() => switchMode("yaml")}
+                onCheck={() => void check()}
+                onBuild={() => void build()}
+                canCheck={!!state.snapshotId}
+                scope={{ teamId: project?.teamId, projectId }}
+              />
+            )}
+          </>
+        )}
+      </section>
 
       <div className="samuori-actions">
         <Button
@@ -1687,6 +1628,7 @@ function Review({
   onSave,
   onCheck,
   onBuild,
+  onYaml,
   canCheck,
   scope,
 }: {
@@ -1697,6 +1639,7 @@ function Review({
   onSave: () => void;
   onCheck: () => void;
   onBuild: () => void;
+  onYaml: () => void;
   canCheck: boolean;
   scope: Scope;
 }) {
@@ -1756,6 +1699,11 @@ function Review({
           {yaml?.canonicalYaml}
         </pre>
       </details>
+      <div className="samuori-actions samuori-actions--start">
+        <Button variant="quiet" onPress={onYaml}>
+          Advanced: edit as YAML
+        </Button>
+      </div>
       <div className="samuori-actions samuori-actions--start">
         <Button variant="secondary" onPress={onSave} isDisabled={!yaml?.valid}>
           Save draft

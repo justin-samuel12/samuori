@@ -151,7 +151,7 @@ async function reviewSpec(page: Page) {
     page.getByRole("heading", { name: "Step 7: Review & build" }),
   ).toBeVisible();
   const arch = onHost("uname -m").trim() === "aarch64" ? "arm64" : "amd64";
-  await page.getByRole("tab", { name: "YAML" }).click();
+  await page.getByRole("button", { name: "Advanced: edit as YAML" }).click();
   const editor = page.getByLabel("BuildSpec YAML");
   const text = await editor.inputValue();
   expect(text).not.toContain("target:");
@@ -163,7 +163,7 @@ async function reviewSpec(page: Page) {
   );
   await expect(page.getByRole("status").getByText("Valid")).toBeVisible();
   await page.getByRole("button", { name: "Apply YAML changes" }).click();
-  await page.getByRole("tab", { name: "Form" }).click();
+  await page.getByRole("button", { name: "Back to the form" }).click();
   await expect(
     page.getByRole("heading", { name: "Step 7: Review & build" }),
   ).toBeVisible();
@@ -303,7 +303,7 @@ test("the developer builds, validates and publishes the image using only the bro
   await goTo(page, "Images");
   await chooseOption(page, "Project", "orders-api");
   await expect(page.getByRole("grid", { name: "Images" })).toContainText(
-    "passed",
+    "Passed",
   );
   await expect(page.getByRole("grid", { name: "Images" })).toContainText("—");
   await page
@@ -322,12 +322,12 @@ test("the developer builds, validates and publishes the image using only the bro
     .nth(1);
   await until(
     page,
-    async () => /published|blocked|failed/.test(await publication.innerText()),
+    async () => /Published|Blocked|Failed/.test(await publication.innerText()),
     10,
     "publication",
   );
-  await expect(publication).toContainText("published");
-  await expect(publication).toContainText("signature and provenance");
+  await expect(publication).toContainText("Published");
+  await expect(publication).toContainText("Signature and provenance");
   await expect(publication).toContainText(
     /payments\/orders-api@sha256:[0-9a-f]{64}/,
   );
@@ -358,7 +358,7 @@ test("the developer builds, validates and publishes the image using only the bro
     .getByRole("dialog")
     .getByRole("button", { name: "Deprecate" })
     .click();
-  await expect(publication).toContainText("deprecated");
+  await expect(publication).toContainText("Deprecated");
   await page
     .getByRole("button", { name: /^Retire \S*payments\/orders-api@/ })
     .click({ timeout: 30_000 });
@@ -367,7 +367,7 @@ test("the developer builds, validates and publishes the image using only the bro
     .getByRole("dialog")
     .getByRole("button", { name: "Retire" })
     .click();
-  await expect(publication).toContainText("retired");
+  await expect(publication).toContainText("Retired");
   await expect(page.getByRole("button", { name: /^Promote from/ })).toHaveCount(
     0,
   );

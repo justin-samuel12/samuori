@@ -10,7 +10,9 @@ administrator set up and opened to your project.
 
 ## Publish
 
-1. Open **Images**, choose the project, then the image.
+1. Open **Images**, choose the project, then the image. Images are named by app and version, such as
+   `shop · 2026-10-29.1`, with the short digest beside them. A finished build's **Next step** card offers the same
+   **Publish image**.
 2. **Publish image**: pick a destination and the tags.
 3. Samuori checks again before pushing: your permission, the destination, the validation verdict, approvals, signing
    and, for restricted images, that the destination accepts them. The publication records the image digest.

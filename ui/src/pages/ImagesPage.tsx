@@ -5,23 +5,22 @@ import { Button } from "../components/Button";
 import { DeploymentFiles } from "../components/DeploymentFiles";
 import { Dialog } from "../components/Dialog";
 import { Checkbox, Select, TextField } from "../components/Field";
-import { Alert, EmptyState, Loading, PageHeader } from "../components/Feedback";
+import {
+  Alert,
+  Badge,
+  EmptyState,
+  Loading,
+  PageHeader,
+} from "../components/Feedback";
 import { Table } from "../components/Table";
-import { useLoader } from "../hooks";
+import { shortDigest as short } from "../format";
+import { useLoader, useProject, useSpec } from "../hooks";
 import { GenerateButton } from "../kube/KubeConversionPage";
 import { useCan, useCanDownload } from "../session/session";
+import { checkOutcome, imageName, publicationState } from "./display";
 
 type Image = Schemas["ImageSummary"];
 type Publication = Schemas["Publication"];
-
-const short = (d: string) => d.replace("sha256:", "").slice(0, 12);
-
-const verdictTone: Record<string, string> = {
-  passed: "ok",
-  failed: "error",
-  blocked: "error",
-  incomplete: "warning",
-};
 
 const finishedPublication = new Set([
   "published",
@@ -39,14 +38,16 @@ export function Verdict({
   v?: { state: string; verdict?: string | null } | null;
 }) {
   if (!v) return <span className="samuori-muted">Not validated</span>;
-  const label = v.verdict ?? (v.state === "completed" ? "done" : "checking");
-  return (
-    <span
-      className={`samuori-status samuori-status--${verdictTone[v.verdict ?? ""] ?? "pending"}`}
-    >
-      {label}
-    </span>
-  );
+  if (!v.verdict)
+    return v.state === "completed" ? (
+      <Badge>Done</Badge>
+    ) : (
+      <Badge tone="info" live>
+        Checking
+      </Badge>
+    );
+  const o = checkOutcome(v.verdict);
+  return <Badge tone={o.tone}>{o.text}</Badge>;
 }
 
 export function ImagesPage() {
@@ -73,6 +74,7 @@ export function ImagesPage() {
   }, [project]);
   useLoader(loadImages);
   if (!projects) return <Loading />;
+  const projectName = projects.find((p) => p.id === project)?.label;
   return (
     <>
       <PageHeader
@@ -91,6 +93,7 @@ export function ImagesPage() {
             options={projects}
             value={project}
             onChange={setProject}
+            placeholder="Choose a project"
           />
         </div>
       )}
@@ -105,23 +108,20 @@ export function ImagesPage() {
               name: "Image",
               isRowHeader: true,
               render: (i) => (
-                <Link href={`/images/${i.artifactId}`} className="samuori-link">
-                  <code>{short(i.digest)}</code>
-                </Link>
+                <span className="flex flex-col">
+                  <Link
+                    href={`/images/${i.artifactId}`}
+                    className="samuori-link font-medium"
+                  >
+                    {imageName({
+                      name: i.app ?? projectName,
+                      version: i.version,
+                      digest: i.digest,
+                    })}
+                  </Link>
+                  <code className="text-xs text-muted">{short(i.digest)}</code>
+                </span>
               ),
-            },
-            {
-              id: "version",
-              name: "Version",
-              render: (i) =>
-                i.version ? (
-                  <>
-                    <code>{i.version}</code>
-                    {i.app && <span className="samuori-muted"> · {i.app}</span>}
-                  </>
-                ) : (
-                  (i.app ?? "—")
-                ),
               sortValue: (i) => i.version ?? "",
             },
             {
@@ -153,7 +153,7 @@ export function ImagesPage() {
                       className="samuori-button samuori-button--quiet no-underline"
                       href={`/api/v1/artifacts/${i.artifactId}/download`}
                       download
-                      aria-label={`Download ${short(i.digest)}`}
+                      aria-label={`Download ${imageName({ name: i.app ?? projectName, version: i.version, digest: i.digest })}`}
                     >
                       Download
                     </a>
@@ -185,6 +185,8 @@ export function ImagePage({ id }: { id: string }) {
     pub: Publication;
     action: LifecycleAction;
   }>();
+  const project = useProject(run?.projectId);
+  const spec = useSpec(run?.specId);
   const load = useCallback(async () => {
     const a = await api.GET("/artifacts/{artifactId}", {
       params: { path: { artifactId: id } },
@@ -211,18 +213,34 @@ export function ImagePage({ id }: { id: string }) {
     return (
       <Alert>This image does not exist, or you do not have access to it.</Alert>
     );
+  const name = imageName({
+    name: spec?.name ?? project?.name,
+    version: art.version,
+    digest: art.digest,
+  });
   return (
     <>
-      <nav aria-label="Breadcrumb" className="samuori-breadcrumb">
-        <Link href="/images" className="samuori-link">
-          Images
-        </Link>{" "}
-        / {short(art.digest)}
-      </nav>
       <PageHeader
         help="publishing"
-        title={`Image ${short(art.digest)}`}
-        description="Images are published by digest; publishing never rebuilds them."
+        title={name}
+        crumbs={[
+          { label: "Images", href: "/images" },
+          ...(run
+            ? [
+                {
+                  label: project?.name ?? "Project",
+                  href: `/projects/${run.projectId}`,
+                },
+              ]
+            : []),
+          { label: name },
+        ]}
+        description={
+          <>
+            <code>{short(art.digest)}</code> · Images are published by digest;
+            publishing never rebuilds them.
+          </>
+        }
         actions={
           run && (
             <>
@@ -268,11 +286,11 @@ export function ImagePage({ id }: { id: string }) {
         <dt>Distribution</dt>
         <dd>
           {art.sensitivity === "restricted" ? (
-            <span className="samuori-status samuori-status--warning">
-              restricted: only destinations that accept restricted images
-            </span>
+            <Badge tone="warn">
+              Restricted: only destinations that accept restricted images
+            </Badge>
           ) : (
-            "standard"
+            "Standard"
           )}
         </dd>
       </dl>
@@ -287,22 +305,15 @@ export function ImagePage({ id }: { id: string }) {
               id: "state",
               name: "State",
               isRowHeader: true,
-              render: (p) => (
-                <>
-                  {p.state.replace("_", " ")}
-                  {p.deprecatedAt && (
-                    <>
-                      {" "}
-                      <span
-                        className="samuori-status samuori-status--warning"
-                        title={p.deprecationReason}
-                      >
-                        deprecated
-                      </span>
-                    </>
-                  )}
-                </>
-              ),
+              render: (p) => {
+                const s = publicationState(p.state);
+                return (
+                  <span className="flex flex-wrap gap-1">
+                    <Badge tone={s.tone}>{s.text}</Badge>
+                    {p.deprecatedAt && <Badge tone="warn">Deprecated</Badge>}
+                  </span>
+                );
+              },
             },
             { id: "tags", name: "Tags", render: (p) => p.tags?.join(", ") },
             {
@@ -322,8 +333,8 @@ export function ImagePage({ id }: { id: string }) {
               render: (p) =>
                 p.signatureRef
                   ? p.attestationRef
-                    ? "signature and provenance"
-                    : "signature"
+                    ? "Signature and provenance"
+                    : "Signature"
                   : "",
             },
             {
@@ -440,9 +451,9 @@ export function ImagePage({ id }: { id: string }) {
 }
 
 const kindText: Record<string, string> = {
-  publish: "publish",
-  promote: "promotion",
-  rollback: "rollback",
+  publish: "Publish",
+  promote: "Promotion",
+  rollback: "Rollback",
 };
 
 type LifecycleAction = "rollback" | "deprecate" | "undeprecate" | "retire";
@@ -563,7 +574,7 @@ function LifecycleDialog({
   );
 }
 
-function PublishDialog({
+export function PublishDialog({
   isOpen,
   artifactId,
   projectId,
@@ -639,6 +650,7 @@ function PublishDialog({
             value={dest}
             onChange={setDest}
             isRequired
+            placeholder="Choose a destination"
           />
         )}
         {source && (
