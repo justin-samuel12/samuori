@@ -7,13 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
 
 	"samuori.invalid/samuori/internal/api/apigen"
@@ -23,6 +24,7 @@ import (
 	"samuori.invalid/samuori/internal/health"
 	"samuori.invalid/samuori/internal/sources"
 	"samuori.invalid/samuori/internal/tenancy"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 type headerAuth map[string]authz.Principal
@@ -42,7 +44,7 @@ type env struct {
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,11 +213,18 @@ func TestHealthViaGeneratedClientMatchesSchema(t *testing.T) {
 	assertMatchesContract(t, http.MethodGet, "/system/health", resp.StatusCode(), resp.HTTPResponse.Header, resp.Body)
 }
 
+var contractRouter = sync.OnceValues(func() (routers.Router, error) {
+	spec, err := apigen.GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	spec.Servers = nil
+	return legacy.NewRouter(spec)
+})
+
 func assertMatchesContract(t *testing.T, method, path string, status int, header http.Header, body []byte) {
 	t.Helper()
-	spec, _ := apigen.GetSwagger()
-	spec.Servers = nil
-	router, err := legacy.NewRouter(spec)
+	router, err := contractRouter()
 	if err != nil {
 		t.Fatal(err)
 	}

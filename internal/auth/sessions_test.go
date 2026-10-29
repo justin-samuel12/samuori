@@ -5,19 +5,19 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/tenancy"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 func TestSessionExpiry(t *testing.T) {
 	t.Run("SEC-AUTH-11", func(t *testing.T) {
 		ctx := context.Background()
-		d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+		d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 		if err != nil {
 			t.Fatal(err)
 		}

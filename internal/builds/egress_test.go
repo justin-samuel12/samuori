@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"samuori.invalid/samuori/internal/egress/proxy"
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	workerv1 "samuori.invalid/samuori/internal/workerproto/workerv1"
 )
 
@@ -19,7 +19,7 @@ import (
 // report and advises on them; denial text in the attempt detail, which build output can forge, yields nothing.
 func TestEgressDenialReport(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

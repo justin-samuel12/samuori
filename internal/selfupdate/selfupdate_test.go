@@ -20,6 +20,7 @@ import (
 	"samuori.invalid/samuori/internal/cluster"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/storage"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	"samuori.invalid/samuori/internal/updatebundle"
 	workerv1 "samuori.invalid/samuori/internal/workerproto/workerv1"
 	"samuori.invalid/samuori/internal/workers"
@@ -124,7 +125,7 @@ func setup(t *testing.T, controllerVersion string) (*Service, *db.DB, *fakeWorke
 	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(dir, "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, dir))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"samuori.invalid/samuori/internal/isolation"
 	"samuori.invalid/samuori/internal/providers"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 type fakeProviders struct{ c providers.Config }
@@ -35,7 +35,7 @@ func (f fakeProviders) MethodAllowed(_ context.Context, _, _, pool, project stri
 // per-project cache scope (SEC-RPK-04, SEC-RPK-03).
 func TestRailpackDispatch(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

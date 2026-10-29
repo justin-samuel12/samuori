@@ -3,13 +3,13 @@ package builds
 import (
 	"context"
 	"maps"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"samuori.invalid/samuori/internal/buildplan"
 	"samuori.invalid/samuori/internal/buildspec"
 	"samuori.invalid/samuori/internal/db"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	"samuori.invalid/samuori/internal/workers"
 )
 
@@ -75,7 +75,7 @@ func TestImageMetadataInPlanDigest(t *testing.T) {
 // since older workers would build without it.
 func TestImageMetadataNeedsProtocol16(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

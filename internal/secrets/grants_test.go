@@ -3,12 +3,12 @@ package secrets
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/db"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 type fixture struct {
@@ -20,7 +20,7 @@ type fixture struct {
 func newFixture(t *testing.T) fixture {
 	t.Helper()
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

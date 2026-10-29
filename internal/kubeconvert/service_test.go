@@ -24,6 +24,7 @@ import (
 	"samuori.invalid/samuori/internal/sources"
 	"samuori.invalid/samuori/internal/storage"
 	"samuori.invalid/samuori/internal/tenancy"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	"samuori.invalid/samuori/internal/version"
 	workerv1 "samuori.invalid/samuori/internal/workerproto/workerv1"
 	"samuori.invalid/samuori/internal/workers"
@@ -59,7 +60,7 @@ func newEnv(t *testing.T) *env {
 	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(dir, "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, dir))
 	if err != nil {
 		t.Fatal(err)
 	}

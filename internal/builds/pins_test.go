@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -11,13 +10,14 @@ import (
 	"samuori.invalid/samuori/internal/buildplan"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/isolation"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestPinnedPlansNeedBuildKit: a plan with base images pinned at admission goes only to BuildKit workers, which
 // build the pinned image in place of the tag (ADR 0049).
 func TestPinnedPlansNeedBuildKit(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

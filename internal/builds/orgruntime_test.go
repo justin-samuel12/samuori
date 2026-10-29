@@ -3,7 +3,6 @@ package builds
 import (
 	"bytes"
 	"context"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,13 +15,14 @@ import (
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestOrganizationRuntimePlan: an approved organization runtime is planned like a shipped one; the plan records its
 // images by digest and its ID and source, and renders to the same Dockerfile apart from the images (ADR 0051).
 func TestOrganizationRuntimePlan(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

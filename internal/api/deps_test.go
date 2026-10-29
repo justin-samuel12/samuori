@@ -80,7 +80,8 @@ func testDeps(t *testing.T, d *db.DB, store *tenancy.Store, log *slog.Logger, h 
 		t.Fatal(err)
 	}
 	t.Cleanup(src.Wait)
-	runner := sandbox.Runner{Command: []string{os.Args[0], "child-discover"}, Limits: sandbox.DefaultLimits(), Namespaces: true}
+	// Without the setting, a race-built child idles a second before exiting (docs/developers/testing.md#fast-setup).
+	runner := sandbox.Runner{Command: []string{"/usr/bin/env", "GORACE=atexit_sleep_ms=0", os.Args[0], "child-discover"}, Limits: sandbox.DefaultLimits(), Namespaces: true}
 	cat, err := recipes.LoadBuiltin()
 	if err != nil {
 		t.Fatal(err)

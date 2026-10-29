@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -16,13 +15,14 @@ import (
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestSystemPackagesPlan: system packages are installed with each image's own package manager in its stage, the
 // distribution's egress preset joins the plan, and an image whose distribution is unknown is refused.
 func TestSystemPackagesPlan(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -65,6 +65,7 @@ type Service struct {
 }
 
 func NewService(d *db.DB, t *tenancy.Store, p Policy) *Service {
+	dummyHash()
 	return &Service{db: d, tenancy: t, policy: p, now: time.Now,
 		perIP: map[string][]time.Time{}}
 }
@@ -128,7 +129,7 @@ func (s *Service) login(ctx context.Context, providerID, username, password, new
 	err = s.db.SQL.QueryRowContext(ctx, s.db.Rebind(`SELECT u.id, u.org_id, u.disabled, c.password_hash, c.temporary_until FROM users u JOIN user_credentials c ON c.user_id = u.id WHERE u.username = ?`), username).
 		Scan(&userID, &orgID, &disabled, &hash, &temporary)
 	if errors.Is(err, sql.ErrNoRows) {
-		VerifyPassword(dummyHash, password)
+		VerifyPassword(dummyHash(), password)
 		s.fail(ctx, key, now)
 		s.auditLogin(ctx, "", username, "denied", "unknown user", requestID)
 		return Session{}, ErrInvalidCredentials
@@ -475,8 +476,12 @@ func (s *Service) auditLogin(ctx context.Context, orgID, username, outcome, reas
 	})
 }
 
-// dummyHash makes unknown-user logins cost the same as real ones.
-var dummyHash, _ = HashPassword("samuori-timing-equalizer-not-a-password")
+// dummyHash makes unknown-user logins cost the same as real ones. NewService computes it, so the server has it before
+// serving, and sandbox children that re-execute the binary do not pay for it.
+var dummyHash = sync.OnceValue(func() string {
+	h, _ := HashPassword("samuori-timing-equalizer-not-a-password")
+	return h
+})
 
 // ClientIP uses the connection address; forwarded headers are not trusted until proxy support is configured.
 func ClientIP(r *http.Request) string {

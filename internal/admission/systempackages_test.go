@@ -2,7 +2,6 @@ package admission
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -14,13 +13,14 @@ import (
 	"samuori.invalid/samuori/internal/egress"
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestSystemPackagesAdmission: system packages add their distribution's egress preset, and admission refuses them
 // with the field and reason when an image's package manager is unknown.
 func TestSystemPackagesAdmission(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,6 +18,7 @@ import (
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/isolation"
 	"samuori.invalid/samuori/internal/pki"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	"samuori.invalid/samuori/internal/version"
 )
 
@@ -25,7 +26,7 @@ func TestWorkerAssignment(t *testing.T) {
 	t.Run("SEC-WRK-10", func(t *testing.T) {
 		ctx := context.Background()
 		dir := t.TempDir()
-		d, err := db.Open(ctx, "sqlite://"+filepath.Join(dir, "samuori.db"))
+		d, err := db.Open(ctx, dbtest.SQLite(t, dir))
 		if err != nil {
 			t.Fatal(err)
 		}

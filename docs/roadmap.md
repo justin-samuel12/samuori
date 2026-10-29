@@ -5,6 +5,17 @@ independently testable, not scope cuts. Update task status in the same PR that d
 
 ## Current position
 
+- **Faster `make ci` (2026-10-29, owner request).** `make ci` went from 833 s to 100 s on the development Mac, and
+  `internal/api` under `-race` from 790 s to 48 s, by making setup cheaper; `-race`, `-count=1`, the timeout and
+  every test and assertion are unchanged, and nothing runs in parallel that did not before
+  ([testing](developers/testing.md#fast-setup)). Each test binary migrates SQLite once into a template
+  (`internal/testsupport/dbtest`), and each test gets its own copy; the API handler and the contract assertion parse
+  the OpenAPI document once per process instead of once per server or response; `internal/auth` computes its
+  unknown-user timing hash when the service is built, not at package init, so every sandbox child the server
+  re-executes (discovery, scans) no longer runs a 64 MiB argon2id hash at startup; API-test discovery children skip
+  the race runtime's one-second exit pause. `TestPasswordHashUsesProductionCost` pins the production argon2id cost.
+  Runnable: `make ci`. Not verified: the PostgreSQL path (`SAMUORI_TEST_POSTGRES`), `make test-vm` on Linux, and a
+  cause for the earlier `TestNATSMemberRemoval` i/o timeout under load (not reproduced; its waits are unchanged).
 - **One consistent product (2026-10-29, usability review, polish after the developer journey and ADR 0070).** In-app
   help follows the menu: each page in `ui/src/shell/nav.ts` names its guides, guides are filed under that page's
   top-bar section and name pages as *Section > Page*, and the UI offers a page's guide only to people who can see the

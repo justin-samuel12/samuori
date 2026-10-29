@@ -2,12 +2,12 @@ package notify
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"samuori.invalid/samuori/internal/audit"
 	"samuori.invalid/samuori/internal/db"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestBuildFactsFormat: durations and sizes read naturally, and a requester's name cannot inject chat markup.
@@ -23,7 +23,7 @@ func TestBuildFactsFormat(t *testing.T) {
 		}
 	}
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

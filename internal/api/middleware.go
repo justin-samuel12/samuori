@@ -8,6 +8,7 @@ import (
 	"samuori.invalid/samuori/internal/version"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -38,23 +39,50 @@ func operationRoles(ctx context.Context) []authz.Role {
 // guard enforces, before any handler runs: route match, authentication, coarse role check from x-samuori-roles,
 // and request validation against the contract. Handlers still check resource scope.
 func guard(next http.Handler, authn Authenticator, limit *limiter) (http.Handler, error) {
-	spec, err := apigen.GetSwagger()
+	c, err := embeddedContract()
 	if err != nil {
 		return nil, err
 	}
-	return guardSpec(spec, next, authn, limit)
+	return guardContract(c, next, authn, limit), nil
 }
 
 func guardSpec(spec *openapi3.T, next http.Handler, authn Authenticator, limit *limiter) (http.Handler, error) {
+	c, err := loadContract(spec)
+	if err != nil {
+		return nil, err
+	}
+	return guardContract(c, next, authn, limit), nil
+}
+
+type contract struct {
+	router     routers.Router
+	deprecated map[*openapi3.Operation]deprecation
+}
+
+// The embedded contract is parsed once per process; handlers share it read-only, as their requests do.
+var embeddedContract = sync.OnceValues(func() (contract, error) {
+	spec, err := apigen.GetSwagger()
+	if err != nil {
+		return contract{}, err
+	}
+	return loadContract(spec)
+})
+
+func loadContract(spec *openapi3.T) (contract, error) {
 	spec.Servers = nil
 	router, err := legacy.NewRouter(spec)
 	if err != nil {
-		return nil, err
+		return contract{}, err
 	}
 	deprecated, err := deprecations(spec)
 	if err != nil {
-		return nil, err
+		return contract{}, err
 	}
+	return contract{router: router, deprecated: deprecated}, nil
+}
+
+func guardContract(c contract, next http.Handler, authn Authenticator, limit *limiter) http.Handler {
+	router, deprecated := c.router, c.deprecated
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		lookup := r.Clone(r.Context())
 		lookup.URL.Path = strings.TrimPrefix(r.URL.Path, "/api/v1")
@@ -131,7 +159,7 @@ func guardSpec(spec *openapi3.T, next http.Handler, authn Authenticator, limit *
 		}
 		r.Body = validated.Body
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}), nil
+	})
 }
 
 const defaultBodyLimit = 1 << 20

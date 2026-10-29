@@ -16,11 +16,12 @@ import (
 	"samuori.invalid/samuori/internal/authz"
 	"samuori.invalid/samuori/internal/config"
 	"samuori.invalid/samuori/internal/db"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 func store(t *testing.T) *Store {
 	t.Helper()
-	d, err := db.Open(context.Background(), "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(context.Background(), dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"samuori.invalid/samuori/internal/isolation"
 	"samuori.invalid/samuori/internal/providers"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestBuildpacksDispatch: the plan pins the approved builder and run image by digest and names secrets by logical ID
@@ -21,7 +21,7 @@ import (
 // for the project (SEC-CNB-02, SEC-CNB-04).
 func TestBuildpacksDispatch(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

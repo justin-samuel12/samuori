@@ -2,7 +2,6 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -16,13 +15,14 @@ import (
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
 	"samuori.invalid/samuori/internal/sources"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestFrontendPlan: a frontend gets a pinned Node.js image from the Node.js recipe, its defaults, the npm egress
 // preset beside the application's own, and a launcher requirement; custom recipes cannot take one (ADR 0055).
 func TestFrontendPlan(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

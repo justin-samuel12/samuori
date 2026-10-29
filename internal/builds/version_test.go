@@ -2,18 +2,18 @@ package builds
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"samuori.invalid/samuori/internal/db"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestBuildVersions: successful builds are numbered per project and UTC day, in the order they succeed, and a
 // version is never handed out twice (ADR 0054).
 func TestBuildVersions(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

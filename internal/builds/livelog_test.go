@@ -3,7 +3,6 @@ package builds
 import (
 	"bytes"
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/policy"
 	"samuori.invalid/samuori/internal/recipes"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 	workerv1 "samuori.invalid/samuori/internal/workerproto/workerv1"
 )
 
@@ -18,7 +18,7 @@ import (
 // that uses secrets gets none, and reconciliation removes the output once the attempt ends.
 func TestLiveLog(t *testing.T) {
 	ctx := context.Background()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 	if err != nil {
 		t.Fatal(err)
 	}

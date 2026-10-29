@@ -3,7 +3,6 @@ package recipes
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"samuori.invalid/samuori/internal/buildplan"
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/engine/render"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 const recipe = `
@@ -35,7 +35,7 @@ stages:
 func TestCustomRecipeLifecycle(t *testing.T) {
 	t.Run("SEC-SPC-07", func(t *testing.T) {
 		ctx := context.Background()
-		d, err := db.Open(ctx, "sqlite://"+filepath.Join(t.TempDir(), "samuori.db"))
+		d, err := db.Open(ctx, dbtest.SQLite(t, t.TempDir()))
 		if err != nil {
 			t.Fatal(err)
 		}

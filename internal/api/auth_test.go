@@ -21,6 +21,7 @@ import (
 	"samuori.invalid/samuori/internal/discovery/sandbox"
 	"samuori.invalid/samuori/internal/sources"
 	"samuori.invalid/samuori/internal/tenancy"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 func TestMain(m *testing.M) {
@@ -49,10 +50,10 @@ func newLiveWith(t *testing.T, secure bool, cfg sources.Config, tweak func(*Deps
 	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
-	dsn := "sqlite://" + filepath.Join(dir, "samuori.db")
 	// SAMUORI_TEST_POSTGRES points one test at an empty PostgreSQL database, for example -run TestUpgradeStatus.
-	if pg := os.Getenv("SAMUORI_TEST_POSTGRES"); pg != "" {
-		dsn = pg
+	dsn := os.Getenv("SAMUORI_TEST_POSTGRES")
+	if dsn == "" {
+		dsn = dbtest.SQLite(t, dir)
 	}
 	d, err := db.Open(ctx, dsn)
 	if err != nil {

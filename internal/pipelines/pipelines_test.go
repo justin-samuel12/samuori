@@ -21,6 +21,7 @@ import (
 	"samuori.invalid/samuori/internal/sources"
 	"samuori.invalid/samuori/internal/specs"
 	"samuori.invalid/samuori/internal/tenancy"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 const (
@@ -100,7 +101,7 @@ func setup(t *testing.T) *fixture {
 	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(dir, "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, dir))
 	if err != nil {
 		t.Fatal(err)
 	}

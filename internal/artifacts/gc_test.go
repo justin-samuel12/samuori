@@ -8,6 +8,7 @@ import (
 
 	"samuori.invalid/samuori/internal/db"
 	"samuori.invalid/samuori/internal/storage"
+	"samuori.invalid/samuori/internal/testsupport/dbtest"
 )
 
 // TestDeletedBuildsAreNotKept: garbage collection stops keeping a deleted build's image, logs and failed
@@ -15,7 +16,7 @@ import (
 func TestDeletedBuildsAreNotKept(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	d, err := db.Open(ctx, "sqlite://"+filepath.Join(dir, "samuori.db"))
+	d, err := db.Open(ctx, dbtest.SQLite(t, dir))
 	if err != nil {
 		t.Fatal(err)
 	}
